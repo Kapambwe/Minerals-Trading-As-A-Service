@@ -1,0 +1,248 @@
+@page "/positions-portfolio"
+@using Platform.Mining.Trading.Models
+@using Platform.Mining.Trading.Services
+@inject IPositionService PositionService
+
+<h3>Positions & Portfolio</h3>
+
+@if (loading)
+{
+    <RadzenProgressBar />
+}
+else
+{
+    <!-- Summary Cards -->
+    <div class="row">
+        <div class="col-md-3">
+            <RadzenCard Style="margin-bottom: 20px; background-color: #e3f2fd;">
+                <h6><RadzenIcon Icon="inventory_2" /> Total Positions</h6>
+                <h4>@positions.Count</h4>
+            </RadzenCard>
+        </div>
+        <div class="col-md-3">
+            <RadzenCard Style="@($"margin-bottom: 20px; background-color: {(totalPnL >= 0 ? "#e8f5e9" : "#ffebee")}")">
+                <h6><RadzenIcon Icon="show_chart" /> Total P&L</h6>
+                <h4 style="color: @(totalPnL >= 0 ? "green" : "red")">
+                    @totalPnL.ToString("N2")
+                </h4>
+            </RadzenCard>
+        </div>
+        <div class="col-md-3">
+            <RadzenCard Style="margin-bottom: 20px; background-color: #fff3e0;">
+                <h6><RadzenIcon Icon="trending_up" /> Unrealized P&L</h6>
+                <h4 style="color: @(unrealizedPnL >= 0 ? "green" : "red")">
+                    @unrealizedPnL.ToString("N2")
+                </h4>
+            </RadzenCard>
+        </div>
+        <div class="col-md-3">
+            <RadzenCard Style="margin-bottom: 20px; background-color: #f3e5f5;">
+                <h6><RadzenIcon Icon="account_balance" /> Required Margin</h6>
+                <h4>@totalMarginRequired.ToString("N2")</h4>
+            </RadzenCard>
+        </div>
+    </div>
+
+    <!-- Positions Grid -->
+    <div class="row">
+        <div class="col-md-12">
+            <RadzenCard>
+                <div style="margin-bottom: 15px;">
+                    <RadzenButton Text="Refresh"
+                                 Icon="refresh"
+                                 ButtonStyle="ButtonStyle.Primary"
+                                 Click="@LoadPositions" />
+                </div>
+
+                <h5><RadzenIcon Icon="inventory_2" /> Position Details</h5>
+                <RadzenDataGrid Data="@positions" 
+                               TItem="Position" 
+                               AllowPaging="true" 
+                               PageSize="10"
+                               AllowSorting="true">
+                    <Columns>
+                        <RadzenDataGridColumn TItem="Position" Property="Instrument" Title="Instrument" />
+                        <RadzenDataGridColumn TItem="Position" Property="MineralType" Title="Mineral Type" />
+                        <RadzenDataGridColumn TItem="Position" Property="Account" Title="Account" />
+                        <RadzenDataGridColumn TItem="Position" Property="OpenQuantity" Title="Quantity" FormatString="{0:N0}" />
+                        <RadzenDataGridColumn TItem="Position" Property="AveragePrice" Title="Avg Price" FormatString="{0:N2}" />
+                        <RadzenDataGridColumn TItem="Position" Property="CurrentPrice" Title="Current Price" FormatString="{0:N2}" />
+                        <RadzenDataGridColumn TItem="Position" Property="MarkToMarket" Title="Market Value" FormatString="{0:N2}" />
+                        <RadzenDataGridColumn TItem="Position" Property="UnrealizedPnL" Title="Unrealized P&L" FormatString="{0:N2}">
+                            <Template Context="position">
+                                <span style="color: @(position.UnrealizedPnL >= 0 ? "green" : "red"); font-weight: bold;">
+                                    @position.UnrealizedPnL.ToString("N2")
+                                </span>
+                            </Template>
+                        </RadzenDataGridColumn>
+                        <RadzenDataGridColumn TItem="Position" Property="RealizedPnL" Title="Realized P&L" FormatString="{0:N2}">
+                            <Template Context="position">
+                                <span style="color: @(position.RealizedPnL >= 0 ? "green" : "red")">
+                                    @position.RealizedPnL.ToString("N2")
+                                </span>
+                            </Template>
+                        </RadzenDataGridColumn>
+                        <RadzenDataGridColumn TItem="Position" Property="TotalPnL" Title="Total P&L" FormatString="{0:N2}">
+                            <Template Context="position">
+                                <span style="color: @(position.TotalPnL >= 0 ? "green" : "red"); font-weight: bold;">
+                                    @position.TotalPnL.ToString("N2")
+                                </span>
+                            </Template>
+                        </RadzenDataGridColumn>
+                        <RadzenDataGridColumn TItem="Position" Property="RequiredMargin" Title="Required Margin" FormatString="{0:N2}" />
+                        <RadzenDataGridColumn TItem="Position" Property="CollateralPosted" Title="Collateral" FormatString="{0:N2}" />
+                        <RadzenDataGridColumn TItem="Position" Property="LastUpdated" Title="Last Updated" FormatString="{0:yyyy-MM-dd HH:mm}" />
+                        <RadzenDataGridColumn TItem="Position" Title="Actions">
+                            <Template Context="position">
+                                <RadzenButton Icon="visibility"
+                                            Size="ButtonSize.Small"
+                                            ButtonStyle="ButtonStyle.Info"
+                                            Click="@(() => ViewPositionDetails(position))"
+                                            Tooltip="View Details"
+                                            Style="margin-right: 5px;" />
+                                <RadzenButton Icon="swap_horiz"
+                                            Size="ButtonSize.Small"
+                                            ButtonStyle="ButtonStyle.Secondary"
+                                            Click="@(() => TransferPosition(position))"
+                                            Tooltip="Transfer Position" />
+                            </Template>
+                        </RadzenDataGridColumn>
+                    </Columns>
+                </RadzenDataGrid>
+            </RadzenCard>
+        </div>
+    </div>
+
+    <!-- P&L Chart Placeholder -->
+    <div class="row" style="margin-top: 20px;">
+        <div class="col-md-12">
+            <RadzenCard>
+                <h5><RadzenIcon Icon="analytics" /> P&L Summary by Instrument</h5>
+                <div class="row">
+                    @foreach (var position in positions)
+                    {
+                        <div class="col-md-4" style="margin-bottom: 15px;">
+                            <RadzenCard Style="@($"background-color: {(position.TotalPnL >= 0 ? "#e8f5e9" : "#ffebee")}")">
+                                <h6>@position.Instrument</h6>
+                                <RadzenText><strong>Quantity:</strong> @position.OpenQuantity.ToString("N0")</RadzenText>
+                                <RadzenText><strong>Total P&L:</strong> 
+                                    <span style="color: @(position.TotalPnL >= 0 ? "green" : "red"); font-weight: bold;">
+                                        @position.TotalPnL.ToString("N2")
+                                    </span>
+                                </RadzenText>
+                                <RadzenText><strong>Return %:</strong> 
+                                    @if (position.AveragePrice > 0)
+                                    {
+                                        var returnPct = ((position.CurrentPrice - position.AveragePrice) / position.AveragePrice) * 100;
+                                        <span style="color: @(returnPct >= 0 ? "green" : "red")">
+                                            @returnPct.ToString("N2")%
+                                        </span>
+                                    }
+                                </RadzenText>
+                            </RadzenCard>
+                        </div>
+                    }
+                </div>
+            </RadzenCard>
+        </div>
+    </div>
+}
+
+@if (!string.IsNullOrEmpty(message))
+{
+    <RadzenCard Style="margin-top: 20px; background-color: #d4edda; border-color: #c3e6cb;">
+        <RadzenText Style="color: #155724;">
+            <RadzenIcon Icon="check_circle" /> @message
+        </RadzenText>
+    </RadzenCard>
+}
+
+<!-- Position Details Dialog -->
+<RadzenDialog @bind-Visible="@showDetailsDialog" Style="width: 700px;">
+    @if (selectedPosition != null)
+    {
+        <RadzenCard>
+            <h4>Position Details - @selectedPosition.Instrument</h4>
+            <hr />
+            
+            <div class="row">
+                <div class="col-md-6">
+                    <RadzenText><strong>Mineral Type:</strong> @selectedPosition.MineralType</RadzenText>
+                    <RadzenText><strong>Account:</strong> @selectedPosition.Account</RadzenText>
+                    <RadzenText><strong>Open Quantity:</strong> @selectedPosition.OpenQuantity.ToString("N0")</RadzenText>
+                    <RadzenText><strong>Average Price:</strong> @selectedPosition.AveragePrice.ToString("N2")</RadzenText>
+                    <RadzenText><strong>Current Price:</strong> @selectedPosition.CurrentPrice.ToString("N2")</RadzenText>
+                    <RadzenText><strong>Market Value:</strong> @selectedPosition.MarkToMarket.ToString("N2")</RadzenText>
+                </div>
+                <div class="col-md-6">
+                    <RadzenText><strong>Unrealized P&L:</strong> 
+                        <span style="color: @(selectedPosition.UnrealizedPnL >= 0 ? "green" : "red")">
+                            @selectedPosition.UnrealizedPnL.ToString("N2")
+                        </span>
+                    </RadzenText>
+                    <RadzenText><strong>Realized P&L:</strong> 
+                        <span style="color: @(selectedPosition.RealizedPnL >= 0 ? "green" : "red")">
+                            @selectedPosition.RealizedPnL.ToString("N2")
+                        </span>
+                    </RadzenText>
+                    <RadzenText><strong>Total P&L:</strong> 
+                        <span style="color: @(selectedPosition.TotalPnL >= 0 ? "green" : "red"); font-weight: bold;">
+                            @selectedPosition.TotalPnL.ToString("N2")
+                        </span>
+                    </RadzenText>
+                    <RadzenText><strong>Required Margin:</strong> @selectedPosition.RequiredMargin.ToString("N2")</RadzenText>
+                    <RadzenText><strong>Collateral Posted:</strong> @selectedPosition.CollateralPosted.ToString("N2")</RadzenText>
+                    <RadzenText><strong>Last Updated:</strong> @selectedPosition.LastUpdated.ToString("yyyy-MM-dd HH:mm:ss")</RadzenText>
+                </div>
+            </div>
+            
+            <div style="margin-top: 20px;">
+                <RadzenButton Text="Close" 
+                            ButtonStyle="ButtonStyle.Secondary" 
+                            Click="@(() => showDetailsDialog = false)" />
+            </div>
+        </RadzenCard>
+    }
+</RadzenDialog>
+
+@code {
+    private bool loading = true;
+    private List<Position> positions = new();
+    private decimal totalPnL = 0;
+    private decimal unrealizedPnL = 0;
+    private decimal realizedPnL = 0;
+    private decimal totalMarginRequired = 0;
+    private string message = string.Empty;
+    private bool showDetailsDialog = false;
+    private Position? selectedPosition;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadPositions();
+    }
+
+    private async Task LoadPositions()
+    {
+        loading = true;
+        message = string.Empty;
+        
+        positions = await PositionService.GetPositionsAsync();
+        totalPnL = await PositionService.GetTotalPnLAsync();
+        unrealizedPnL = positions.Sum(p => p.UnrealizedPnL);
+        realizedPnL = positions.Sum(p => p.RealizedPnL);
+        totalMarginRequired = positions.Sum(p => p.RequiredMargin);
+        
+        loading = false;
+    }
+
+    private void ViewPositionDetails(Position position)
+    {
+        selectedPosition = position;
+        showDetailsDialog = true;
+    }
+
+    private void TransferPosition(Position position)
+    {
+        message = $"Transfer position for {position.Instrument} - Feature coming soon";
+    }
+}

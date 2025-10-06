@@ -1,0 +1,297 @@
+@page "/matching-engine-admin"
+@using Platform.Mining.Trading.Models
+@using Platform.Mining.Trading.Services
+@inject IMatchingEngineService MatchingEngineService
+
+<h3>Matching Engine Admin</h3>
+
+@if (loading)
+{
+    <RadzenProgressBar />
+}
+else
+{
+    <div class="row">
+        <div class="col-md-12">
+            <RadzenCard Style="@GetEngineStatusStyle()">
+                <h5><RadzenIcon Icon="settings" /> Engine Status</h5>
+                <div class="row">
+                    <div class="col-md-3">
+                        <RadzenText><strong>Status:</strong></RadzenText>
+                        <h4>@engineConfig.Status</h4>
+                    </div>
+                    <div class="col-md-3">
+                        <RadzenText><strong>Matching Rule:</strong> @engineConfig.MatchingRule</RadzenText>
+                        <RadzenText><strong>Tick Size:</strong> @engineConfig.TickSize.ToString("N2")</RadzenText>
+                    </div>
+                    <div class="col-md-3">
+                        <RadzenText><strong>Queue Depth:</strong> @engineConfig.CurrentQueueDepth</RadzenText>
+                        <RadzenText><strong>Orders/sec:</strong> @engineConfig.ProcessedOrdersPerSecond</RadzenText>
+                    </div>
+                    <div class="col-md-3">
+                        <RadzenText><strong>Last Restart:</strong> @engineConfig.LastRestart.ToString("yyyy-MM-dd HH:mm")</RadzenText>
+                    </div>
+                </div>
+                <div style="margin-top: 15px;">
+                    <RadzenButton Text="Restart Engine"
+                                 Icon="restart_alt"
+                                 ButtonStyle="ButtonStyle.Warning"
+                                 Click="@RestartEngine"
+                                 Style="margin-right: 10px;" />
+                    <RadzenButton Text="Emergency Stop"
+                                 Icon="stop_circle"
+                                 ButtonStyle="ButtonStyle.Danger"
+                                 Click="@(() => showStopDialog = true)"
+                                 Style="margin-right: 10px;" />
+                    <RadzenButton Text="Replay Trades"
+                                 Icon="replay"
+                                 ButtonStyle="ButtonStyle.Info"
+                                 Click="@(() => showReplayDialog = true)" />
+                </div>
+            </RadzenCard>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6">
+            <RadzenCard Style="margin-bottom: 20px;">
+                <h5><RadzenIcon Icon="queue" /> Match Queues</h5>
+                <RadzenDataGrid Data="@matchQueues" TItem="MatchQueue" AllowPaging="true" PageSize="5">
+                    <Columns>
+                        <RadzenDataGridColumn TItem="MatchQueue" Property="Instrument" Title="Instrument" />
+                        <RadzenDataGridColumn TItem="MatchQueue" Property="BuyOrderCount" Title="Buy Orders" />
+                        <RadzenDataGridColumn TItem="MatchQueue" Property="SellOrderCount" Title="Sell Orders" />
+                        <RadzenDataGridColumn TItem="MatchQueue" Property="UnmatchedOrderCount" Title="Unmatched">
+                            <Template Context="queue">
+                                <span style="color: @(queue.UnmatchedOrderCount > 10 ? "red" : "green")">
+                                    @queue.UnmatchedOrderCount
+                                </span>
+                            </Template>
+                        </RadzenDataGridColumn>
+                        <RadzenDataGridColumn TItem="MatchQueue" Property="AverageMatchLatency" Title="Avg Latency (ms)" FormatString="{0:N2}" />
+                    </Columns>
+                </RadzenDataGrid>
+            </RadzenCard>
+        </div>
+
+        <div class="col-md-6">
+            <RadzenCard Style="margin-bottom: 20px;">
+                <h5><RadzenIcon Icon="rule" /> Contract Specifications</h5>
+                <RadzenDataGrid Data="@contractSpecs" TItem="ContractSpec" AllowPaging="true" PageSize="5">
+                    <Columns>
+                        <RadzenDataGridColumn TItem="ContractSpec" Property="Instrument" Title="Instrument" />
+                        <RadzenDataGridColumn TItem="ContractSpec" Property="TickSize" Title="Tick Size" FormatString="{0:N2}" />
+                        <RadzenDataGridColumn TItem="ContractSpec" Property="MinQuantity" Title="Min Qty" FormatString="{0:N0}" />
+                        <RadzenDataGridColumn TItem="ContractSpec" Property="MaxQuantity" Title="Max Qty" FormatString="{0:N0}" />
+                        <RadzenDataGridColumn TItem="ContractSpec" Property="PricingUnit" Title="Pricing Unit" />
+                    </Columns>
+                </RadzenDataGrid>
+            </RadzenCard>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-12">
+            <RadzenCard Style="margin-bottom: 20px;">
+                <h5><RadzenIcon Icon="error_outline" /> Unmatched Orders</h5>
+                <RadzenDataGrid Data="@unmatchedOrders" TItem="UnmatchedOrder" AllowPaging="true" PageSize="10">
+                    <Columns>
+                        <RadzenDataGridColumn TItem="UnmatchedOrder" Property="OrderId" Title="Order ID" />
+                        <RadzenDataGridColumn TItem="UnmatchedOrder" Property="Instrument" Title="Instrument" />
+                        <RadzenDataGridColumn TItem="UnmatchedOrder" Property="Direction" Title="Direction" />
+                        <RadzenDataGridColumn TItem="UnmatchedOrder" Property="Quantity" Title="Quantity" FormatString="{0:N0}" />
+                        <RadzenDataGridColumn TItem="UnmatchedOrder" Property="Price" Title="Price" FormatString="{0:N2}" />
+                        <RadzenDataGridColumn TItem="UnmatchedOrder" Property="Reason" Title="Reason" />
+                        <RadzenDataGridColumn TItem="UnmatchedOrder" Property="SubmittedTime" Title="Submitted" FormatString="{0:yyyy-MM-dd HH:mm}" />
+                    </Columns>
+                </RadzenDataGrid>
+            </RadzenCard>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-12">
+            <RadzenCard>
+                <h5><RadzenIcon Icon="tune" /> Engine Parameters</h5>
+                <RadzenDataGrid Data="@engineParameters" TItem="EngineParameter" AllowPaging="true" PageSize="10">
+                    <Columns>
+                        <RadzenDataGridColumn TItem="EngineParameter" Property="ParameterName" Title="Parameter" />
+                        <RadzenDataGridColumn TItem="EngineParameter" Property="CurrentValue" Title="Current Value" />
+                        <RadzenDataGridColumn TItem="EngineParameter" Property="ProposedValue" Title="Proposed Value" />
+                        <RadzenDataGridColumn TItem="EngineParameter" Property="ApprovalStatus" Title="Status">
+                            <Template Context="param">
+                                @if (param.ApprovalStatus == "Approved")
+                                {
+                                    <RadzenBadge BadgeStyle="BadgeStyle.Success" Text="@param.ApprovalStatus" />
+                                }
+                                else if (param.ApprovalStatus == "Pending")
+                                {
+                                    <RadzenBadge BadgeStyle="BadgeStyle.Warning" Text="@param.ApprovalStatus" />
+                                }
+                                else
+                                {
+                                    <RadzenBadge BadgeStyle="BadgeStyle.Danger" Text="@param.ApprovalStatus" />
+                                }
+                            </Template>
+                        </RadzenDataGridColumn>
+                        <RadzenDataGridColumn TItem="EngineParameter" Property="ProposedBy" Title="Proposed By" />
+                        <RadzenDataGridColumn TItem="EngineParameter" Title="Actions">
+                            <Template Context="param">
+                                @if (param.ApprovalStatus == "Approved")
+                                {
+                                    <RadzenButton Icon="check"
+                                                Size="ButtonSize.Small"
+                                                ButtonStyle="ButtonStyle.Success"
+                                                Click="@(() => ApplyParameter(param.ParameterId, param.ProposedValue))"
+                                                Tooltip="Apply Update" />
+                                }
+                            </Template>
+                        </RadzenDataGridColumn>
+                    </Columns>
+                </RadzenDataGrid>
+            </RadzenCard>
+        </div>
+    </div>
+}
+
+@if (!string.IsNullOrEmpty(message))
+{
+    <RadzenCard Style="margin-top: 20px; background-color: #d4edda; border-color: #c3e6cb;">
+        <RadzenText Style="color: #155724;">
+            <RadzenIcon Icon="check_circle" /> @message
+        </RadzenText>
+    </RadzenCard>
+}
+
+<RadzenDialog @bind-Visible="@showStopDialog" Style="width: 500px;">
+    <RadzenCard>
+        <h4>Emergency Stop</h4>
+        <hr />
+        <RadzenAlert Text="This will immediately stop the matching engine!" Severity="AlertSeverity.Warning" />
+        <div style="margin-top: 15px;">
+            <RadzenLabel Text="Reason" />
+            <RadzenTextBox @bind-Value="@stopReason" Style="width: 100%;" />
+        </div>
+        <div style="margin-top: 20px;">
+            <RadzenButton Text="Confirm Stop"
+                         ButtonStyle="ButtonStyle.Danger"
+                         Click="@EmergencyStop"
+                         Style="margin-right: 10px;" />
+            <RadzenButton Text="Cancel"
+                         ButtonStyle="ButtonStyle.Secondary"
+                         Click="@(() => showStopDialog = false)" />
+        </div>
+    </RadzenCard>
+</RadzenDialog>
+
+<RadzenDialog @bind-Visible="@showReplayDialog" Style="width: 500px;">
+    <RadzenCard>
+        <h4>Replay Trades</h4>
+        <hr />
+        <div style="margin-bottom: 15px;">
+            <RadzenLabel Text="From Date" />
+            <RadzenDatePicker @bind-Value="@replayFromDate" Style="width: 100%;" />
+        </div>
+        <div style="margin-bottom: 15px;">
+            <RadzenLabel Text="To Date" />
+            <RadzenDatePicker @bind-Value="@replayToDate" Style="width: 100%;" />
+        </div>
+        <div style="margin-top: 20px;">
+            <RadzenButton Text="Start Replay"
+                         ButtonStyle="ButtonStyle.Info"
+                         Click="@ReplayTrades"
+                         Style="margin-right: 10px;" />
+            <RadzenButton Text="Cancel"
+                         ButtonStyle="ButtonStyle.Secondary"
+                         Click="@(() => showReplayDialog = false)" />
+        </div>
+    </RadzenCard>
+</RadzenDialog>
+
+@code {
+    private bool loading = true;
+    private MatchingEngineConfig engineConfig = new();
+    private List<MatchQueue> matchQueues = new();
+    private List<UnmatchedOrder> unmatchedOrders = new();
+    private List<EngineParameter> engineParameters = new();
+    private List<ContractSpec> contractSpecs = new();
+    private string message = string.Empty;
+    private bool showStopDialog = false;
+    private bool showReplayDialog = false;
+    private string stopReason = string.Empty;
+    private DateTime replayFromDate = DateTime.Now.AddDays(-7);
+    private DateTime replayToDate = DateTime.Now;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        loading = true;
+        message = string.Empty;
+        
+        engineConfig = await MatchingEngineService.GetEngineConfigAsync();
+        matchQueues = await MatchingEngineService.GetMatchQueuesAsync();
+        unmatchedOrders = await MatchingEngineService.GetUnmatchedOrdersAsync();
+        engineParameters = await MatchingEngineService.GetEngineParametersAsync();
+        contractSpecs = await MatchingEngineService.GetContractSpecsAsync();
+        
+        loading = false;
+    }
+
+    private async Task RestartEngine()
+    {
+        var result = await MatchingEngineService.RestartEngineAsync();
+        if (result)
+        {
+            message = "Matching engine restarted successfully";
+            await LoadData();
+        }
+    }
+
+    private async Task EmergencyStop()
+    {
+        var result = await MatchingEngineService.EmergencyStopAsync(stopReason);
+        if (result)
+        {
+            message = "Emergency stop executed";
+            showStopDialog = false;
+            stopReason = string.Empty;
+            await LoadData();
+        }
+    }
+
+    private async Task ReplayTrades()
+    {
+        var result = await MatchingEngineService.ReplayTradesAsync(replayFromDate, replayToDate);
+        if (result)
+        {
+            message = $"Trade replay initiated from {replayFromDate:yyyy-MM-dd} to {replayToDate:yyyy-MM-dd}";
+            showReplayDialog = false;
+        }
+    }
+
+    private async Task ApplyParameter(string parameterId, string newValue)
+    {
+        var result = await MatchingEngineService.ApplyParameterUpdateAsync(parameterId, newValue);
+        if (result)
+        {
+            message = $"Parameter {parameterId} updated successfully";
+            await LoadData();
+        }
+    }
+
+    private string GetEngineStatusStyle()
+    {
+        var color = engineConfig.Status switch
+        {
+            "Running" => "#e8f5e9",
+            "Stopped" => "#ffebee",
+            "Maintenance" => "#fff3e0",
+            _ => "#ffffff"
+        };
+        return $"margin-bottom: 20px; background-color: {color}";
+    }
+}

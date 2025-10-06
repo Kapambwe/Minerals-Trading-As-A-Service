@@ -1,0 +1,261 @@
+@page "/trade-blotter"
+@using Platform.Mining.Trading.Models
+@using Platform.Mining.Trading.Services
+@inject ITradeService TradeService
+
+<h3>Trade Blotter / Trade History</h3>
+
+<RadzenCard Style="margin-bottom: 20px;">
+    <div class="row">
+        <div class="col-md-4">
+            <RadzenLabel Text="From Date" />
+            <RadzenDatePicker @bind-Value="@fromDate" 
+                             Name="FromDate" 
+                             Style="width: 100%;" />
+        </div>
+        <div class="col-md-4">
+            <RadzenLabel Text="To Date" />
+            <RadzenDatePicker @bind-Value="@toDate" 
+                             Name="ToDate" 
+                             Style="width: 100%;" />
+        </div>
+        <div class="col-md-4" style="padding-top: 25px;">
+            <RadzenButton Text="Filter"
+                         Icon="search"
+                         ButtonStyle="ButtonStyle.Primary"
+                         Click="@LoadTrades"
+                         Style="margin-right: 10px;" />
+            <RadzenButton Text="Export CSV"
+                         Icon="download"
+                         ButtonStyle="ButtonStyle.Info"
+                         Click="@ExportToCsv"
+                         Style="margin-right: 10px;" />
+            <RadzenButton Text="Refresh"
+                         Icon="refresh"
+                         ButtonStyle="ButtonStyle.Secondary"
+                         Click="@LoadTrades" />
+        </div>
+    </div>
+</RadzenCard>
+
+@if (loading)
+{
+    <RadzenProgressBar />
+}
+else
+{
+    <!-- Summary Cards -->
+    <div class="row">
+        <div class="col-md-3">
+            <RadzenCard Style="margin-bottom: 20px; background-color: #e3f2fd;">
+                <RadzenText><strong>Total Trades</strong></RadzenText>
+                <h4>@trades.Count</h4>
+            </RadzenCard>
+        </div>
+        <div class="col-md-3">
+            <RadzenCard Style="margin-bottom: 20px; background-color: #e8f5e9;">
+                <RadzenText><strong>Total Volume</strong></RadzenText>
+                <h4>@trades.Sum(t => t.Quantity).ToString("N0")</h4>
+            </RadzenCard>
+        </div>
+        <div class="col-md-3">
+            <RadzenCard Style="margin-bottom: 20px; background-color: #fff3e0;">
+                <RadzenText><strong>Total Value</strong></RadzenText>
+                <h4>@trades.Sum(t => t.TotalValue).ToString("N2")</h4>
+            </RadzenCard>
+        </div>
+        <div class="col-md-3">
+            <RadzenCard Style="margin-bottom: 20px; background-color: #fce4ec;">
+                <RadzenText><strong>Total Fees</strong></RadzenText>
+                <h4>@trades.Sum(t => t.Fees).ToString("N2")</h4>
+            </RadzenCard>
+        </div>
+    </div>
+
+    <!-- Trades Grid -->
+    <div class="row">
+        <div class="col-md-12">
+            <RadzenCard>
+                <h5><RadzenIcon Icon="receipt_long" /> Trade Details</h5>
+                <RadzenDataGrid Data="@trades" 
+                               TItem="Trade" 
+                               AllowPaging="true" 
+                               PageSize="15"
+                               AllowSorting="true"
+                               AllowFiltering="true">
+                    <Columns>
+                        <RadzenDataGridColumn TItem="Trade" Property="TradeId" Title="Trade ID" />
+                        <RadzenDataGridColumn TItem="Trade" Property="OrderId" Title="Order ID" />
+                        <RadzenDataGridColumn TItem="Trade" Property="Instrument" Title="Instrument" />
+                        <RadzenDataGridColumn TItem="Trade" Property="Direction" Title="Side">
+                            <Template Context="trade">
+                                <RadzenBadge BadgeStyle="@(trade.Direction == "Buy" ? BadgeStyle.Success : BadgeStyle.Danger)" 
+                                           Text="@trade.Direction" />
+                            </Template>
+                        </RadzenDataGridColumn>
+                        <RadzenDataGridColumn TItem="Trade" Property="Quantity" Title="Quantity" FormatString="{0:N0}" />
+                        <RadzenDataGridColumn TItem="Trade" Property="Price" Title="Price" FormatString="{0:N2}" />
+                        <RadzenDataGridColumn TItem="Trade" Property="TotalValue" Title="Total Value" FormatString="{0:N2}" />
+                        <RadzenDataGridColumn TItem="Trade" Property="Fees" Title="Fees" FormatString="{0:N2}" />
+                        <RadzenDataGridColumn TItem="Trade" Property="NetValue" Title="Net Value" FormatString="{0:N2}" />
+                        <RadzenDataGridColumn TItem="Trade" Property="TradeTime" Title="Trade Time" FormatString="{0:yyyy-MM-dd HH:mm:ss}" />
+                        <RadzenDataGridColumn TItem="Trade" Property="Counterparty" Title="Counterparty" />
+                        <RadzenDataGridColumn TItem="Trade" Property="ClearingReference" Title="Clearing Ref" />
+                        <RadzenDataGridColumn TItem="Trade" Property="SettlementDate" Title="Settlement Date" FormatString="{0:yyyy-MM-dd}" />
+                        <RadzenDataGridColumn TItem="Trade" Property="Status" Title="Status">
+                            <Template Context="trade">
+                                @if (trade.Status == "Settled")
+                                {
+                                    <RadzenBadge BadgeStyle="BadgeStyle.Success" Text="@trade.Status" />
+                                }
+                                else if (trade.Status == "Executed")
+                                {
+                                    <RadzenBadge BadgeStyle="BadgeStyle.Info" Text="@trade.Status" />
+                                }
+                                else if (trade.Status == "Disputed")
+                                {
+                                    <RadzenBadge BadgeStyle="BadgeStyle.Danger" Text="@trade.Status" />
+                                }
+                                else
+                                {
+                                    <RadzenBadge BadgeStyle="BadgeStyle.Warning" Text="@trade.Status" />
+                                }
+                            </Template>
+                        </RadzenDataGridColumn>
+                        <RadzenDataGridColumn TItem="Trade" Property="Venue" Title="Venue" />
+                        <RadzenDataGridColumn TItem="Trade" Title="Actions">
+                            <Template Context="trade">
+                                <RadzenButton Icon="visibility"
+                                            Size="ButtonSize.Small"
+                                            ButtonStyle="ButtonStyle.Info"
+                                            Click="@(() => ViewTradeDetails(trade))"
+                                            Tooltip="View Details"
+                                            Style="margin-right: 5px;" />
+                                <RadzenButton Icon="picture_as_pdf"
+                                            Size="ButtonSize.Small"
+                                            ButtonStyle="ButtonStyle.Secondary"
+                                            Click="@(() => RequestConfirmation(trade.TradeId))"
+                                            Tooltip="Request Confirmation"
+                                            Style="margin-right: 5px;" />
+                                @if (trade.Status != "Disputed")
+                                {
+                                    <RadzenButton Icon="warning"
+                                                Size="ButtonSize.Small"
+                                                ButtonStyle="ButtonStyle.Danger"
+                                                Click="@(() => DisputeTrade(trade.TradeId))"
+                                                Tooltip="Dispute Trade" />
+                                }
+                            </Template>
+                        </RadzenDataGridColumn>
+                    </Columns>
+                </RadzenDataGrid>
+            </RadzenCard>
+        </div>
+    </div>
+}
+
+@if (!string.IsNullOrEmpty(message))
+{
+    <RadzenCard Style="margin-top: 20px; background-color: #d4edda; border-color: #c3e6cb;">
+        <RadzenText Style="color: #155724;">
+            <RadzenIcon Icon="check_circle" /> @message
+        </RadzenText>
+    </RadzenCard>
+}
+
+<!-- Trade Details Dialog -->
+<RadzenDialog @bind-Visible="@showDetailsDialog" Style="width: 800px;">
+    @if (selectedTrade != null)
+    {
+        <RadzenCard>
+            <h4>Trade Details - @selectedTrade.TradeId</h4>
+            <hr />
+            
+            <div class="row">
+                <div class="col-md-6">
+                    <RadzenText><strong>Instrument:</strong> @selectedTrade.Instrument</RadzenText>
+                    <RadzenText><strong>Direction:</strong> @selectedTrade.Direction</RadzenText>
+                    <RadzenText><strong>Quantity:</strong> @selectedTrade.Quantity.ToString("N0")</RadzenText>
+                    <RadzenText><strong>Price:</strong> @selectedTrade.Price.ToString("N2")</RadzenText>
+                    <RadzenText><strong>Total Value:</strong> @selectedTrade.TotalValue.ToString("N2")</RadzenText>
+                    <RadzenText><strong>Fees:</strong> @selectedTrade.Fees.ToString("N2")</RadzenText>
+                    <RadzenText><strong>Net Value:</strong> @selectedTrade.NetValue.ToString("N2")</RadzenText>
+                </div>
+                <div class="col-md-6">
+                    <RadzenText><strong>Trade Time:</strong> @selectedTrade.TradeTime.ToString("yyyy-MM-dd HH:mm:ss")</RadzenText>
+                    <RadzenText><strong>Counterparty:</strong> @selectedTrade.Counterparty</RadzenText>
+                    <RadzenText><strong>Clearing Reference:</strong> @selectedTrade.ClearingReference</RadzenText>
+                    <RadzenText><strong>Settlement Date:</strong> @selectedTrade.SettlementDate.ToString("yyyy-MM-dd")</RadzenText>
+                    <RadzenText><strong>Status:</strong> @selectedTrade.Status</RadzenText>
+                    <RadzenText><strong>Venue:</strong> @selectedTrade.Venue</RadzenText>
+                </div>
+            </div>
+            
+            <div style="margin-top: 20px;">
+                <RadzenButton Text="Close" 
+                            ButtonStyle="ButtonStyle.Secondary" 
+                            Click="@(() => showDetailsDialog = false)" />
+            </div>
+        </RadzenCard>
+    }
+</RadzenDialog>
+
+@code {
+    private bool loading = true;
+    private List<Trade> trades = new();
+    private DateTime? fromDate;
+    private DateTime? toDate;
+    private string message = string.Empty;
+    private bool showDetailsDialog = false;
+    private Trade? selectedTrade;
+
+    protected override async Task OnInitializedAsync()
+    {
+        toDate = DateTime.Now;
+        fromDate = DateTime.Now.AddDays(-30);
+        await LoadTrades();
+    }
+
+    private async Task LoadTrades()
+    {
+        loading = true;
+        message = string.Empty;
+        
+        trades = await TradeService.GetTradesAsync(fromDate, toDate);
+        
+        loading = false;
+    }
+
+    private async Task ExportToCsv()
+    {
+        var csvData = await TradeService.ExportTradesAsync(trades, "CSV");
+        message = $"Exported {trades.Count} trades to CSV";
+    }
+
+    private void ViewTradeDetails(Trade trade)
+    {
+        selectedTrade = trade;
+        showDetailsDialog = true;
+    }
+
+    private async Task RequestConfirmation(string tradeId)
+    {
+        var result = await TradeService.RequestConfirmationAsync(tradeId);
+        message = result ? $"Confirmation requested for trade {tradeId}" : "Failed to request confirmation";
+    }
+
+    private async Task DisputeTrade(string tradeId)
+    {
+        var result = await TradeService.DisputeTradeAsync(tradeId, "Quality concern");
+        
+        if (result)
+        {
+            message = $"Trade {tradeId} marked as disputed";
+            await LoadTrades();
+        }
+        else
+        {
+            message = "Failed to dispute trade";
+        }
+    }
+}

@@ -1,0 +1,249 @@
+@page "/warehouse-operations"
+@using Platform.Mining.Trading.Models
+@using Platform.Mining.Trading.Services
+@inject IWarehouseService WarehouseService
+
+<h3>Warehouse / Physical Operations Dashboard</h3>
+
+@if (loading)
+{
+    <RadzenProgressBar />
+}
+else
+{
+    <!-- Inventory Summary -->
+    <div class="row">
+        <div class="col-md-12">
+            <RadzenCard Style="margin-bottom: 20px;">
+                <h5><RadzenIcon Icon="inventory" /> Inventory Summary</h5>
+                <RadzenDataGrid Data="@inventorySummary" TItem="InventorySummary" AllowPaging="true" PageSize="10">
+                    <Columns>
+                        <RadzenDataGridColumn TItem="InventorySummary" Property="MineralType" Title="Mineral Type" />
+                        <RadzenDataGridColumn TItem="InventorySummary" Property="Grade" Title="Grade" />
+                        <RadzenDataGridColumn TItem="InventorySummary" Property="TotalQuantity" Title="Total Quantity" FormatString="{0:N0}" />
+                        <RadzenDataGridColumn TItem="InventorySummary" Property="ReceiptCount" Title="Receipt Count" />
+                        <RadzenDataGridColumn TItem="InventorySummary" Property="AverageAge" Title="Avg Age (days)" FormatString="{0:N1}" />
+                    </Columns>
+                </RadzenDataGrid>
+            </RadzenCard>
+        </div>
+    </div>
+
+    <!-- Warehouse Locations and Receipts -->
+    <div class="row">
+        <div class="col-md-5">
+            <RadzenCard Style="margin-bottom: 20px;">
+                <h5><RadzenIcon Icon="warehouse" /> Warehouse Locations</h5>
+                <RadzenDataGrid Data="@warehouseLocations" TItem="WarehouseLocation" AllowPaging="true" PageSize="5">
+                    <Columns>
+                        <RadzenDataGridColumn TItem="WarehouseLocation" Property="Name" Title="Name" />
+                        <RadzenDataGridColumn TItem="WarehouseLocation" Property="Status" Title="Status">
+                            <Template Context="wh">
+                                <RadzenBadge BadgeStyle="@(wh.Status == "Active" ? BadgeStyle.Success : BadgeStyle.Secondary)" Text="@wh.Status" />
+                            </Template>
+                        </RadzenDataGridColumn>
+                        <RadzenDataGridColumn TItem="WarehouseLocation" Title="Capacity">
+                            <Template Context="wh">
+                                <RadzenText>@wh.UsedCapacity.ToString("N0") / @wh.TotalCapacity.ToString("N0")</RadzenText>
+                                <RadzenProgressBar Value="@((double)(wh.UsedCapacity / wh.TotalCapacity * 100))" Max="100" Style="height: 10px;" />
+                            </Template>
+                        </RadzenDataGridColumn>
+                    </Columns>
+                </RadzenDataGrid>
+            </RadzenCard>
+        </div>
+
+        <div class="col-md-7">
+            <RadzenCard Style="margin-bottom: 20px;">
+                <div style="margin-bottom: 15px;">
+                    <RadzenButton Text="Create Receipt"
+                                 Icon="add"
+                                 ButtonStyle="ButtonStyle.Primary"
+                                 Click="@(() => showCreateReceiptDialog = true)" />
+                </div>
+
+                <h5><RadzenIcon Icon="receipt_long" /> Warehouse Receipts</h5>
+                <RadzenDataGrid Data="@warehouseReceipts" TItem="WarehouseReceipt" AllowPaging="true" PageSize="5">
+                    <Columns>
+                        <RadzenDataGridColumn TItem="WarehouseReceipt" Property="ReceiptId" Title="Receipt ID" />
+                        <RadzenDataGridColumn TItem="WarehouseReceipt" Property="MineralType" Title="Mineral" />
+                        <RadzenDataGridColumn TItem="WarehouseReceipt" Property="Grade" Title="Grade" />
+                        <RadzenDataGridColumn TItem="WarehouseReceipt" Property="Quantity" Title="Quantity" FormatString="{0:N0}" />
+                        <RadzenDataGridColumn TItem="WarehouseReceipt" Property="Owner" Title="Owner" />
+                        <RadzenDataGridColumn TItem="WarehouseReceipt" Property="Status" Title="Status">
+                            <Template Context="receipt">
+                                @if (receipt.Status == "Active")
+                                {
+                                    <RadzenBadge BadgeStyle="BadgeStyle.Success" Text="@receipt.Status" />
+                                }
+                                else
+                                {
+                                    <RadzenBadge BadgeStyle="BadgeStyle.Secondary" Text="@receipt.Status" />
+                                }
+                            </Template>
+                        </RadzenDataGridColumn>
+                        <RadzenDataGridColumn TItem="WarehouseReceipt" Title="QC">
+                            <Template Context="receipt">
+                                @if (!string.IsNullOrEmpty(receipt.QcCertificateId))
+                                {
+                                    <RadzenIcon Icon="check_circle" Style="color: green;" />
+                                }
+                                else
+                                {
+                                    <RadzenIcon Icon="pending" Style="color: orange;" />
+                                }
+                            </Template>
+                        </RadzenDataGridColumn>
+                        <RadzenDataGridColumn TItem="WarehouseReceipt" Title="Actions">
+                            <Template Context="receipt">
+                                @if (receipt.Status == "Active")
+                                {
+                                    <RadzenButton Icon="done"
+                                                Size="ButtonSize.Small"
+                                                ButtonStyle="ButtonStyle.Success"
+                                                Click="@(() => MarkDeliveryComplete(receipt.ReceiptId))"
+                                                Tooltip="Mark Delivery Complete" />
+                                }
+                            </Template>
+                        </RadzenDataGridColumn>
+                    </Columns>
+                </RadzenDataGrid>
+            </RadzenCard>
+        </div>
+    </div>
+
+    <!-- Quality Certificates -->
+    <div class="row">
+        <div class="col-md-12">
+            <RadzenCard>
+                <h5><RadzenIcon Icon="verified" /> Quality Certificates</h5>
+                <RadzenDataGrid Data="@qualityCertificates" TItem="QualityCertificate" AllowPaging="true" PageSize="5">
+                    <Columns>
+                        <RadzenDataGridColumn TItem="QualityCertificate" Property="CertificateId" Title="Certificate ID" />
+                        <RadzenDataGridColumn TItem="QualityCertificate" Property="ReceiptId" Title="Receipt ID" />
+                        <RadzenDataGridColumn TItem="QualityCertificate" Property="MineralType" Title="Mineral Type" />
+                        <RadzenDataGridColumn TItem="QualityCertificate" Property="Grade" Title="Grade" />
+                        <RadzenDataGridColumn TItem="QualityCertificate" Property="IssuedDate" Title="Issued" FormatString="{0:yyyy-MM-dd}" />
+                        <RadzenDataGridColumn TItem="QualityCertificate" Property="IssuedBy" Title="Issued By" />
+                        <RadzenDataGridColumn TItem="QualityCertificate" Property="Approved" Title="Approved">
+                            <Template Context="cert">
+                                @if (cert.Approved)
+                                {
+                                    <RadzenIcon Icon="check_circle" Style="color: green;" />
+                                }
+                                else
+                                {
+                                    <RadzenIcon Icon="cancel" Style="color: red;" />
+                                }
+                            </Template>
+                        </RadzenDataGridColumn>
+                    </Columns>
+                </RadzenDataGrid>
+            </RadzenCard>
+        </div>
+    </div>
+}
+
+@if (!string.IsNullOrEmpty(message))
+{
+    <RadzenCard Style="margin-top: 20px; background-color: #d4edda; border-color: #c3e6cb;">
+        <RadzenText Style="color: #155724;">
+            <RadzenIcon Icon="check_circle" /> @message
+        </RadzenText>
+    </RadzenCard>
+}
+
+<!-- Create Receipt Dialog -->
+<RadzenDialog @bind-Visible="@showCreateReceiptDialog" Style="width: 600px;">
+    <RadzenCard>
+        <h4>Create Warehouse Receipt</h4>
+        <hr />
+        <RadzenTemplateForm TItem="WarehouseReceipt" Data="@newReceipt" Submit="@CreateReceipt">
+            <div style="margin-bottom: 15px;">
+                <RadzenLabel Text="Warehouse Location" />
+                <RadzenTextBox @bind-Value="@newReceipt.WarehouseLocation" Name="WarehouseLocation" Style="width: 100%;" />
+                <RadzenRequiredValidator Component="WarehouseLocation" Text="Location is required" />
+            </div>
+            <div style="margin-bottom: 15px;">
+                <RadzenLabel Text="Mineral Type" />
+                <RadzenTextBox @bind-Value="@newReceipt.MineralType" Name="MineralType" Style="width: 100%;" />
+                <RadzenRequiredValidator Component="MineralType" Text="Mineral type is required" />
+            </div>
+            <div style="margin-bottom: 15px;">
+                <RadzenLabel Text="Grade" />
+                <RadzenTextBox @bind-Value="@newReceipt.Grade" Name="Grade" Style="width: 100%;" />
+            </div>
+            <div style="margin-bottom: 15px;">
+                <RadzenLabel Text="Quantity" />
+                <RadzenNumeric @bind-Value="@newReceipt.Quantity" Name="Quantity" Min="1" Style="width: 100%;" />
+                <RadzenRequiredValidator Component="Quantity" Text="Quantity is required" />
+            </div>
+            <div style="margin-bottom: 15px;">
+                <RadzenLabel Text="Owner" />
+                <RadzenTextBox @bind-Value="@newReceipt.Owner" Name="Owner" Style="width: 100%;" />
+                <RadzenRequiredValidator Component="Owner" Text="Owner is required" />
+            </div>
+            <div style="margin-top: 20px;">
+                <RadzenButton ButtonType="ButtonType.Submit"
+                             Text="Create Receipt"
+                             ButtonStyle="ButtonStyle.Primary"
+                             Style="margin-right: 10px;" />
+                <RadzenButton ButtonType="ButtonType.Button"
+                             Text="Cancel"
+                             ButtonStyle="ButtonStyle.Secondary"
+                             Click="@(() => showCreateReceiptDialog = false)" />
+            </div>
+        </RadzenTemplateForm>
+    </RadzenCard>
+</RadzenDialog>
+
+@code {
+    private bool loading = true;
+    private List<WarehouseLocation> warehouseLocations = new();
+    private List<WarehouseReceipt> warehouseReceipts = new();
+    private List<QualityCertificate> qualityCertificates = new();
+    private List<InventorySummary> inventorySummary = new();
+    private string message = string.Empty;
+    private bool showCreateReceiptDialog = false;
+    private WarehouseReceipt newReceipt = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        loading = true;
+        message = string.Empty;
+        
+        warehouseLocations = await WarehouseService.GetWarehouseLocationsAsync();
+        warehouseReceipts = await WarehouseService.GetWarehouseReceiptsAsync();
+        qualityCertificates = await WarehouseService.GetQualityCertificatesAsync();
+        inventorySummary = await WarehouseService.GetInventorySummaryAsync();
+        
+        loading = false;
+    }
+
+    private async Task CreateReceipt(WarehouseReceipt receipt)
+    {
+        var receiptId = await WarehouseService.CreateReceiptAsync(receipt);
+        if (!string.IsNullOrEmpty(receiptId))
+        {
+            message = $"Receipt created with ID: {receiptId}";
+            showCreateReceiptDialog = false;
+            newReceipt = new WarehouseReceipt();
+            await LoadData();
+        }
+    }
+
+    private async Task MarkDeliveryComplete(string receiptId)
+    {
+        var result = await WarehouseService.MarkDeliveryCompleteAsync(receiptId);
+        if (result)
+        {
+            message = $"Delivery marked complete for receipt {receiptId}";
+            await LoadData();
+        }
+    }
+}

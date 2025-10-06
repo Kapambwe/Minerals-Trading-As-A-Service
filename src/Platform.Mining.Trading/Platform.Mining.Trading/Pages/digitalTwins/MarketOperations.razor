@@ -1,0 +1,321 @@
+@page "/market-operations"
+@using Platform.Mining.Trading.Models
+@using Platform.Mining.Trading.Services
+@inject IMarketOperationsService MarketOpsService
+
+<h3>Market Operations Console</h3>
+
+@if (loading)
+{
+    <RadzenProgressBar />
+}
+else
+{
+    <!-- Current Market Status -->
+    <div class="row">
+        <div class="col-md-12">
+            <RadzenCard Style="@GetStatusCardStyle()">
+                <h5><RadzenIcon Icon="dashboard" /> Current Market Status</h5>
+                <div class="row">
+                    <div class="col-md-3">
+                        <RadzenText><strong>Market ID:</strong> @marketStatus.MarketId</RadzenText>
+                    </div>
+                    <div class="col-md-3">
+                        <RadzenText><strong>Status:</strong></RadzenText>
+                        <h4>@marketStatus.Status</h4>
+                    </div>
+                    <div class="col-md-3">
+                        <RadzenText><strong>Last Updated:</strong> @marketStatus.LastUpdated.ToString("yyyy-MM-dd HH:mm:ss")</RadzenText>
+                        <RadzenText><strong>Updated By:</strong> @marketStatus.UpdatedBy</RadzenText>
+                    </div>
+                    <div class="col-md-3">
+                        <RadzenText><strong>Reason:</strong> @marketStatus.Reason</RadzenText>
+                    </div>
+                </div>
+            </RadzenCard>
+        </div>
+    </div>
+
+    <!-- Market Control Actions -->
+    <div class="row">
+        <div class="col-md-12">
+            <RadzenCard Style="margin-bottom: 20px;">
+                <h5><RadzenIcon Icon="settings" /> Market Controls</h5>
+                <div style="margin-top: 15px;">
+                    <RadzenButton Text="Start Session"
+                                 Icon="play_arrow"
+                                 ButtonStyle="ButtonStyle.Success"
+                                 Click="@StartSession"
+                                 Disabled="@(marketStatus.Status == "Open")"
+                                 Style="margin-right: 10px;" />
+                    
+                    <RadzenButton Text="Stop Session"
+                                 Icon="stop"
+                                 ButtonStyle="ButtonStyle.Warning"
+                                 Click="@(() => showStopDialog = true)"
+                                 Disabled="@(marketStatus.Status == "Closed")"
+                                 Style="margin-right: 10px;" />
+                    
+                    <RadzenButton Text="Emergency Halt"
+                                 Icon="warning"
+                                 ButtonStyle="ButtonStyle.Danger"
+                                 Click="@(() => showHaltDialog = true)"
+                                 Disabled="@(marketStatus.Status == "Halted")"
+                                 Style="margin-right: 10px;" />
+                    
+                    <RadzenButton Text="Schedule Auction"
+                                 Icon="event"
+                                 ButtonStyle="ButtonStyle.Primary"
+                                 Click="@(() => showAuctionDialog = true)"
+                                 Style="margin-right: 10px;" />
+                    
+                    <RadzenButton Text="Refresh"
+                                 Icon="refresh"
+                                 ButtonStyle="ButtonStyle.Secondary"
+                                 Click="@LoadData" />
+                </div>
+            </RadzenCard>
+        </div>
+    </div>
+
+    <!-- Scheduled Events -->
+    <div class="row">
+        <div class="col-md-6">
+            <RadzenCard Style="margin-bottom: 20px;">
+                <h5><RadzenIcon Icon="schedule" /> Scheduled Events</h5>
+                <RadzenDataGrid Data="@scheduledEvents" TItem="ScheduledEvent" AllowPaging="true" PageSize="5">
+                    <Columns>
+                        <RadzenDataGridColumn TItem="ScheduledEvent" Property="EventId" Title="Event ID" />
+                        <RadzenDataGridColumn TItem="ScheduledEvent" Property="EventType" Title="Type" />
+                        <RadzenDataGridColumn TItem="ScheduledEvent" Property="Instrument" Title="Instrument" />
+                        <RadzenDataGridColumn TItem="ScheduledEvent" Property="ScheduledTime" Title="Scheduled Time" FormatString="{0:yyyy-MM-dd HH:mm}" />
+                        <RadzenDataGridColumn TItem="ScheduledEvent" Property="Status" Title="Status">
+                            <Template Context="evt">
+                                @if (evt.Status == "Pending")
+                                {
+                                    <RadzenBadge BadgeStyle="BadgeStyle.Warning" Text="@evt.Status" />
+                                }
+                                else if (evt.Status == "Active")
+                                {
+                                    <RadzenBadge BadgeStyle="BadgeStyle.Success" Text="@evt.Status" />
+                                }
+                                else
+                                {
+                                    <RadzenBadge BadgeStyle="BadgeStyle.Secondary" Text="@evt.Status" />
+                                }
+                            </Template>
+                        </RadzenDataGridColumn>
+                    </Columns>
+                </RadzenDataGrid>
+            </RadzenCard>
+        </div>
+
+        <!-- Circuit Breakers -->
+        <div class="col-md-6">
+            <RadzenCard Style="margin-bottom: 20px;">
+                <h5><RadzenIcon Icon="speed" /> Circuit Breakers</h5>
+                <RadzenDataGrid Data="@circuitBreakers" TItem="CircuitBreaker" AllowPaging="true" PageSize="5">
+                    <Columns>
+                        <RadzenDataGridColumn TItem="CircuitBreaker" Property="Instrument" Title="Instrument" />
+                        <RadzenDataGridColumn TItem="CircuitBreaker" Property="PriceThreshold" Title="Price Threshold" FormatString="{0:N2}" />
+                        <RadzenDataGridColumn TItem="CircuitBreaker" Property="PercentageThreshold" Title="% Threshold" FormatString="{0:N2}" />
+                        <RadzenDataGridColumn TItem="CircuitBreaker" Property="IsActive" Title="Active">
+                            <Template Context="cb">
+                                @if (cb.IsActive)
+                                {
+                                    <RadzenIcon Icon="check_circle" Style="color: green;" />
+                                }
+                                else
+                                {
+                                    <RadzenIcon Icon="cancel" Style="color: red;" />
+                                }
+                            </Template>
+                        </RadzenDataGridColumn>
+                    </Columns>
+                </RadzenDataGrid>
+            </RadzenCard>
+        </div>
+    </div>
+
+    <!-- Override Logs -->
+    <div class="row">
+        <div class="col-md-12">
+            <RadzenCard>
+                <h5><RadzenIcon Icon="history" /> Override Logs</h5>
+                <RadzenDataGrid Data="@overrideLogs" TItem="OverrideLog" AllowPaging="true" PageSize="10">
+                    <Columns>
+                        <RadzenDataGridColumn TItem="OverrideLog" Property="Timestamp" Title="Timestamp" FormatString="{0:yyyy-MM-dd HH:mm:ss}" />
+                        <RadzenDataGridColumn TItem="OverrideLog" Property="User" Title="User" />
+                        <RadzenDataGridColumn TItem="OverrideLog" Property="Action" Title="Action" />
+                        <RadzenDataGridColumn TItem="OverrideLog" Property="Details" Title="Details" />
+                        <RadzenDataGridColumn TItem="OverrideLog" Property="Justification" Title="Justification" />
+                    </Columns>
+                </RadzenDataGrid>
+            </RadzenCard>
+        </div>
+    </div>
+}
+
+@if (!string.IsNullOrEmpty(message))
+{
+    <RadzenCard Style="margin-top: 20px; background-color: #d4edda; border-color: #c3e6cb;">
+        <RadzenText Style="color: #155724;">
+            <RadzenIcon Icon="check_circle" /> @message
+        </RadzenText>
+    </RadzenCard>
+}
+
+<!-- Stop Session Dialog -->
+<RadzenDialog @bind-Visible="@showStopDialog" Style="width: 500px;">
+    <RadzenCard>
+        <h4>Stop Trading Session</h4>
+        <hr />
+        <RadzenText>Please provide a reason for stopping the trading session:</RadzenText>
+        <RadzenTextBox @bind-Value="@stopReason" Style="width: 100%; margin-top: 10px;" />
+        <div style="margin-top: 20px;">
+            <RadzenButton Text="Confirm Stop"
+                         ButtonStyle="ButtonStyle.Warning"
+                         Click="@StopSession"
+                         Style="margin-right: 10px;" />
+            <RadzenButton Text="Cancel"
+                         ButtonStyle="ButtonStyle.Secondary"
+                         Click="@(() => showStopDialog = false)" />
+        </div>
+    </RadzenCard>
+</RadzenDialog>
+
+<!-- Emergency Halt Dialog -->
+<RadzenDialog @bind-Visible="@showHaltDialog" Style="width: 500px;">
+    <RadzenCard>
+        <h4>Emergency Halt</h4>
+        <hr />
+        <RadzenAlert Text="This will immediately halt all trading. Please provide justification:" Severity="AlertSeverity.Warning" />
+        <RadzenTextBox @bind-Value="@haltReason" Style="width: 100%; margin-top: 10px;" />
+        <div style="margin-top: 20px;">
+            <RadzenButton Text="Confirm Halt"
+                         ButtonStyle="ButtonStyle.Danger"
+                         Click="@EmergencyHalt"
+                         Style="margin-right: 10px;" />
+            <RadzenButton Text="Cancel"
+                         ButtonStyle="ButtonStyle.Secondary"
+                         Click="@(() => showHaltDialog = false)" />
+        </div>
+    </RadzenCard>
+</RadzenDialog>
+
+<!-- Schedule Auction Dialog -->
+<RadzenDialog @bind-Visible="@showAuctionDialog" Style="width: 500px;">
+    <RadzenCard>
+        <h4>Schedule Auction</h4>
+        <hr />
+        <div style="margin-bottom: 15px;">
+            <RadzenLabel Text="Instrument" />
+            <RadzenTextBox @bind-Value="@newAuction.Instrument" Style="width: 100%;" />
+        </div>
+        <div style="margin-bottom: 15px;">
+            <RadzenLabel Text="Scheduled Time" />
+            <RadzenDatePicker @bind-Value="@newAuction.ScheduledTime" ShowTime="true" Style="width: 100%;" />
+        </div>
+        <div style="margin-top: 20px;">
+            <RadzenButton Text="Schedule"
+                         ButtonStyle="ButtonStyle.Primary"
+                         Click="@ScheduleAuction"
+                         Style="margin-right: 10px;" />
+            <RadzenButton Text="Cancel"
+                         ButtonStyle="ButtonStyle.Secondary"
+                         Click="@(() => showAuctionDialog = false)" />
+        </div>
+    </RadzenCard>
+</RadzenDialog>
+
+@code {
+    private bool loading = true;
+    private MarketStatus marketStatus = new();
+    private List<ScheduledEvent> scheduledEvents = new();
+    private List<CircuitBreaker> circuitBreakers = new();
+    private List<OverrideLog> overrideLogs = new();
+    private string message = string.Empty;
+    private bool showStopDialog = false;
+    private bool showHaltDialog = false;
+    private bool showAuctionDialog = false;
+    private string stopReason = string.Empty;
+    private string haltReason = string.Empty;
+    private ScheduledEvent newAuction = new ScheduledEvent { EventType = "Auction" };
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        loading = true;
+        message = string.Empty;
+        
+        marketStatus = await MarketOpsService.GetMarketStatusAsync();
+        scheduledEvents = await MarketOpsService.GetScheduledEventsAsync();
+        circuitBreakers = await MarketOpsService.GetCircuitBreakersAsync();
+        overrideLogs = await MarketOpsService.GetOverrideLogsAsync();
+        
+        loading = false;
+    }
+
+    private async Task StartSession()
+    {
+        var result = await MarketOpsService.StartSessionAsync(marketStatus.MarketId);
+        if (result)
+        {
+            message = "Trading session started successfully";
+            await LoadData();
+        }
+    }
+
+    private async Task StopSession()
+    {
+        var result = await MarketOpsService.StopSessionAsync(marketStatus.MarketId, stopReason);
+        if (result)
+        {
+            message = "Trading session stopped successfully";
+            showStopDialog = false;
+            stopReason = string.Empty;
+            await LoadData();
+        }
+    }
+
+    private async Task EmergencyHalt()
+    {
+        var result = await MarketOpsService.EmergencyHaltAsync(marketStatus.MarketId, haltReason);
+        if (result)
+        {
+            message = "Emergency halt executed";
+            showHaltDialog = false;
+            haltReason = string.Empty;
+            await LoadData();
+        }
+    }
+
+    private async Task ScheduleAuction()
+    {
+        var eventId = await MarketOpsService.ScheduleAuctionAsync(newAuction);
+        if (!string.IsNullOrEmpty(eventId))
+        {
+            message = $"Auction scheduled with ID: {eventId}";
+            showAuctionDialog = false;
+            newAuction = new ScheduledEvent { EventType = "Auction" };
+            await LoadData();
+        }
+    }
+
+    private string GetStatusCardStyle()
+    {
+        var color = marketStatus.Status switch
+        {
+            "Open" => "#e8f5e9",
+            "Closed" => "#f5f5f5",
+            "Halted" => "#ffebee",
+            "Auction" => "#fff3e0",
+            _ => "#ffffff"
+        };
+        return $"margin-bottom: 20px; background-color: {color}";
+    }
+}

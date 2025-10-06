@@ -1,0 +1,247 @@
+@page "/product-definition"
+@using Platform.Mining.Trading.Models
+@using Platform.Mining.Trading.Services
+@inject IProductDefinitionService ProductService
+
+<h3>Rule & Product Definition Editor</h3>
+
+@if (loading)
+{
+    <RadzenProgressBar />
+}
+else
+{
+    <div class="row">
+        <div class="col-md-12">
+            <RadzenCard Style="margin-bottom: 20px;">
+                <RadzenButton Text="Create New Product"
+                             Icon="add"
+                             ButtonStyle="ButtonStyle.Primary"
+                             Click="@(() => { newProduct = new Product(); showCreateDialog = true; })" />
+            </RadzenCard>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-12">
+            <RadzenCard>
+                <h5><RadzenIcon Icon="inventory_2" /> Products</h5>
+                <RadzenDataGrid Data="@products" TItem="Product" AllowPaging="true" PageSize="10">
+                    <Columns>
+                        <RadzenDataGridColumn TItem="Product" Property="ProductName" Title="Product Name" />
+                        <RadzenDataGridColumn TItem="Product" Property="CommodityType" Title="Commodity Type" />
+                        <RadzenDataGridColumn TItem="Product" Property="GradeSpec" Title="Grade" />
+                        <RadzenDataGridColumn TItem="Product" Property="ContractSize" Title="Contract Size" FormatString="{0:N0}" />
+                        <RadzenDataGridColumn TItem="Product" Property="PricingUnit" Title="Pricing Unit" />
+                        <RadzenDataGridColumn TItem="Product" Property="TickSize" Title="Tick Size" FormatString="{0:N2}" />
+                        <RadzenDataGridColumn TItem="Product" Property="Version" Title="Version" />
+                        <RadzenDataGridColumn TItem="Product" Property="Status" Title="Status">
+                            <Template Context="product">
+                                @if (product.Status == "Active")
+                                {
+                                    <RadzenBadge BadgeStyle="BadgeStyle.Success" Text="@product.Status" />
+                                }
+                                else if (product.Status == "Draft")
+                                {
+                                    <RadzenBadge BadgeStyle="BadgeStyle.Warning" Text="@product.Status" />
+                                }
+                                else
+                                {
+                                    <RadzenBadge BadgeStyle="BadgeStyle.Secondary" Text="@product.Status" />
+                                }
+                            </Template>
+                        </RadzenDataGridColumn>
+                        <RadzenDataGridColumn TItem="Product" Title="Actions">
+                            <Template Context="product">
+                                <RadzenButton Icon="visibility"
+                                            Size="ButtonSize.Small"
+                                            ButtonStyle="ButtonStyle.Info"
+                                            Click="@(() => ViewProductDetails(product))"
+                                            Tooltip="View Details"
+                                            Style="margin-right: 5px;" />
+                                <RadzenButton Icon="preview"
+                                            Size="ButtonSize.Small"
+                                            ButtonStyle="ButtonStyle.Warning"
+                                            Click="@(() => PreviewImpact(product.ProductId))"
+                                            Tooltip="Preview Impact"
+                                            Style="margin-right: 5px;" />
+                                @if (product.Status == "Active")
+                                {
+                                    <RadzenButton Icon="block"
+                                                Size="ButtonSize.Small"
+                                                ButtonStyle="ButtonStyle.Danger"
+                                                Click="@(() => DeprecateProduct(product.ProductId))"
+                                                Tooltip="Deprecate" />
+                                }
+                            </Template>
+                        </RadzenDataGridColumn>
+                    </Columns>
+                </RadzenDataGrid>
+            </RadzenCard>
+        </div>
+    </div>
+}
+
+@if (!string.IsNullOrEmpty(message))
+{
+    <RadzenCard Style="margin-top: 20px; background-color: #d4edda; border-color: #c3e6cb;">
+        <RadzenText Style="color: #155724;">
+            <RadzenIcon Icon="check_circle" /> @message
+        </RadzenText>
+    </RadzenCard>
+}
+
+<RadzenDialog @bind-Visible="@showCreateDialog" Style="width: 800px;">
+    <RadzenCard>
+        <h4>Create Product</h4>
+        <hr />
+        <RadzenTemplateForm TItem="Product" Data="@newProduct" Submit="@CreateProduct">
+            <div class="row">
+                <div class="col-md-6" style="margin-bottom: 15px;">
+                    <RadzenLabel Text="Product Name" />
+                    <RadzenTextBox @bind-Value="@newProduct.ProductName" Name="ProductName" Style="width: 100%;" />
+                    <RadzenRequiredValidator Component="ProductName" Text="Required" />
+                </div>
+                <div class="col-md-6" style="margin-bottom: 15px;">
+                    <RadzenLabel Text="Commodity Type" />
+                    <RadzenTextBox @bind-Value="@newProduct.CommodityType" Name="CommodityType" Style="width: 100%;" />
+                    <RadzenRequiredValidator Component="CommodityType" Text="Required" />
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-6" style="margin-bottom: 15px;">
+                    <RadzenLabel Text="Grade Specification" />
+                    <RadzenTextBox @bind-Value="@newProduct.GradeSpec" Style="width: 100%;" />
+                </div>
+                <div class="col-md-6" style="margin-bottom: 15px;">
+                    <RadzenLabel Text="Contract Size" />
+                    <RadzenNumeric @bind-Value="@newProduct.ContractSize" Name="ContractSize" Min="1" Style="width: 100%;" />
+                    <RadzenRequiredValidator Component="ContractSize" Text="Required" />
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-6" style="margin-bottom: 15px;">
+                    <RadzenLabel Text="Pricing Unit" />
+                    <RadzenTextBox @bind-Value="@newProduct.PricingUnit" Style="width: 100%;" />
+                </div>
+                <div class="col-md-6" style="margin-bottom: 15px;">
+                    <RadzenLabel Text="Tick Size" />
+                    <RadzenNumeric @bind-Value="@newProduct.TickSize" Name="TickSize" Style="width: 100%;" />
+                    <RadzenRequiredValidator Component="TickSize" Text="Required" />
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-12" style="margin-bottom: 15px;">
+                    <RadzenLabel Text="Delivery Rules" />
+                    <RadzenTextBox @bind-Value="@newProduct.DeliveryRules" Style="width: 100%;" />
+                </div>
+            </div>
+            <div style="margin-top: 20px;">
+                <RadzenButton ButtonType="ButtonType.Submit"
+                             Text="Create Product"
+                             ButtonStyle="ButtonStyle.Primary"
+                             Style="margin-right: 10px;" />
+                <RadzenButton ButtonType="ButtonType.Button"
+                             Text="Cancel"
+                             ButtonStyle="ButtonStyle.Secondary"
+                             Click="@(() => showCreateDialog = false)" />
+            </div>
+        </RadzenTemplateForm>
+    </RadzenCard>
+</RadzenDialog>
+
+<RadzenDialog @bind-Visible="@showImpactDialog" Style="width: 700px;">
+    @if (instrumentImpacts != null)
+    {
+        <RadzenCard>
+            <h4>Product Change Impact Preview</h4>
+            <hr />
+            <RadzenDataGrid Data="@instrumentImpacts" TItem="InstrumentImpact">
+                <Columns>
+                    <RadzenDataGridColumn TItem="InstrumentImpact" Property="InstrumentName" Title="Instrument" />
+                    <RadzenDataGridColumn TItem="InstrumentImpact" Property="OpenPositions" Title="Open Positions" />
+                    <RadzenDataGridColumn TItem="InstrumentImpact" Property="OpenOrders" Title="Open Orders" />
+                    <RadzenDataGridColumn TItem="InstrumentImpact" Property="ImpactLevel" Title="Impact">
+                        <Template Context="impact">
+                            @if (impact.ImpactLevel == "High")
+                            {
+                                <RadzenBadge BadgeStyle="BadgeStyle.Danger" Text="@impact.ImpactLevel" />
+                            }
+                            else if (impact.ImpactLevel == "Medium")
+                            {
+                                <RadzenBadge BadgeStyle="BadgeStyle.Warning" Text="@impact.ImpactLevel" />
+                            }
+                            else
+                            {
+                                <RadzenBadge BadgeStyle="BadgeStyle.Info" Text="@impact.ImpactLevel" />
+                            }
+                        </Template>
+                    </RadzenDataGridColumn>
+                    <RadzenDataGridColumn TItem="InstrumentImpact" Property="RequiredAction" Title="Required Action" />
+                </Columns>
+            </RadzenDataGrid>
+            <div style="margin-top: 20px;">
+                <RadzenButton Text="Close"
+                             ButtonStyle="ButtonStyle.Secondary"
+                             Click="@(() => showImpactDialog = false)" />
+            </div>
+        </RadzenCard>
+    }
+</RadzenDialog>
+
+@code {
+    private bool loading = true;
+    private List<Product> products = new();
+    private Product newProduct = new();
+    private List<InstrumentImpact>? instrumentImpacts;
+    private string message = string.Empty;
+    private bool showCreateDialog = false;
+    private bool showImpactDialog = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        loading = true;
+        message = string.Empty;
+        
+        products = await ProductService.GetProductsAsync();
+        
+        loading = false;
+    }
+
+    private async Task CreateProduct(Product product)
+    {
+        var productId = await ProductService.CreateProductAsync(product);
+        if (!string.IsNullOrEmpty(productId))
+        {
+            message = $"Product created with ID: {productId}";
+            showCreateDialog = false;
+            await LoadData();
+        }
+    }
+
+    private void ViewProductDetails(Product product)
+    {
+        message = $"Viewing details for {product.ProductName}";
+    }
+
+    private async Task PreviewImpact(string productId)
+    {
+        instrumentImpacts = await ProductService.PreviewProductImpactAsync(productId);
+        showImpactDialog = true;
+    }
+
+    private async Task DeprecateProduct(string productId)
+    {
+        var result = await ProductService.DeprecateProductAsync(productId);
+        if (result)
+        {
+            message = $"Product {productId} deprecated";
+            await LoadData();
+        }
+    }
+}

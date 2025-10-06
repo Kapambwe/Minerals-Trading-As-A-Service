@@ -1,0 +1,260 @@
+@page "/order-entry"
+@using Platform.Mining.Trading.Models
+@using Platform.Mining.Trading.Services
+@inject IOrderService OrderService
+@inject IMarketDataService MarketDataService
+
+<h3>Order Entry</h3>
+
+<RadzenCard Style="margin-bottom: 20px;">
+    <RadzenTemplateForm TItem="Order" Data="@newOrder" Submit="@PlaceOrder">
+        <div class="row">
+            <div class="col-md-6">
+                <h5><RadzenIcon Icon="add_shopping_cart" /> Order Details</h5>
+                
+                <div style="margin-bottom: 15px;">
+                    <RadzenLabel Text="Instrument" />
+                    <RadzenDropDown @bind-Value="@newOrder.Instrument"
+                                   Data="@instruments"
+                                   Placeholder="Select Instrument"
+                                   Style="width: 100%;"
+                                   Name="Instrument" />
+                    <RadzenRequiredValidator Component="Instrument" Text="Instrument is required" />
+                </div>
+
+                <div style="margin-bottom: 15px;">
+                    <RadzenLabel Text="Mineral Type" />
+                    <RadzenTextBox @bind-Value="@newOrder.MineralType" 
+                                  Name="MineralType" 
+                                  Style="width: 100%;" />
+                    <RadzenRequiredValidator Component="MineralType" Text="Mineral type is required" />
+                </div>
+
+                <div style="margin-bottom: 15px;">
+                    <RadzenLabel Text="Grade" />
+                    <RadzenTextBox @bind-Value="@newOrder.Grade" 
+                                  Name="Grade" 
+                                  Style="width: 100%;" />
+                </div>
+
+                <div style="margin-bottom: 15px;">
+                    <RadzenLabel Text="Contract Month" />
+                    <RadzenTextBox @bind-Value="@newOrder.ContractMonth" 
+                                  Name="ContractMonth" 
+                                  Style="width: 100%;" 
+                                  Placeholder="e.g., JAN24" />
+                </div>
+
+                <div style="margin-bottom: 15px;">
+                    <RadzenLabel Text="Direction" />
+                    <RadzenDropDown @bind-Value="@newOrder.Direction"
+                                   Data="@directions"
+                                   Placeholder="Select Direction"
+                                   Style="width: 100%;"
+                                   Name="Direction" />
+                    <RadzenRequiredValidator Component="Direction" Text="Direction is required" />
+                </div>
+
+                <div style="margin-bottom: 15px;">
+                    <RadzenLabel Text="Quantity (tonnes)" />
+                    <RadzenNumeric @bind-Value="@newOrder.Quantity"
+                                  Name="Quantity"
+                                  Min="1"
+                                  Step="1"
+                                  Style="width: 100%;" />
+                    <RadzenRequiredValidator Component="Quantity" Text="Quantity is required" />
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <h5><RadzenIcon Icon="attach_money" /> Pricing & Execution</h5>
+
+                <div style="margin-bottom: 15px;">
+                    <RadzenLabel Text="Order Type" />
+                    <RadzenDropDown @bind-Value="@newOrder.OrderType"
+                                   Data="@orderTypes"
+                                   Placeholder="Select Order Type"
+                                   Style="width: 100%;"
+                                   Name="OrderType"
+                                   Change="@OnOrderTypeChanged" />
+                    <RadzenRequiredValidator Component="OrderType" Text="Order type is required" />
+                </div>
+
+                <div style="margin-bottom: 15px;">
+                    <RadzenLabel Text="Price" />
+                    <RadzenNumeric @bind-Value="@newOrder.Price"
+                                  Name="Price"
+                                  Min="0"
+                                  Step="0.01"
+                                  FormatString="{0:N2}"
+                                  Style="width: 100%;"
+                                  Disabled="@(newOrder.OrderType == "Market")" />
+                    @if (newOrder.OrderType != "Market")
+                    {
+                        <RadzenRequiredValidator Component="Price" Text="Price is required for limit orders" />
+                    }
+                </div>
+
+                <div style="margin-bottom: 15px;">
+                    <RadzenLabel Text="Time in Force" />
+                    <RadzenDropDown @bind-Value="@newOrder.TimeInForce"
+                                   Data="@timeInForceOptions"
+                                   Placeholder="Select Time in Force"
+                                   Style="width: 100%;"
+                                   Name="TimeInForce" />
+                    <RadzenRequiredValidator Component="TimeInForce" Text="Time in force is required" />
+                </div>
+
+                <div style="margin-bottom: 15px;">
+                    <RadzenLabel Text="Delivery Option" />
+                    <RadzenRadioButtonList @bind-Value="@newOrder.DeliveryOption"
+                                          Data="@deliveryOptions"
+                                          Style="width: 100%;" />
+                </div>
+
+                <div style="margin-bottom: 15px;">
+                    <RadzenLabel Text="Account" />
+                    <RadzenTextBox @bind-Value="@newOrder.Account" 
+                                  Name="Account" 
+                                  Style="width: 100%;" 
+                                  Placeholder="ACC-001" />
+                    <RadzenRequiredValidator Component="Account" Text="Account is required" />
+                </div>
+
+                <div style="margin-bottom: 15px;">
+                    <RadzenLabel Text="Special Instructions (Optional)" />
+                    <RadzenTextBox @bind-Value="@newOrder.SpecialInstructions" 
+                                  Style="width: 100%;" />
+                </div>
+            </div>
+        </div>
+
+        @if (!string.IsNullOrEmpty(validationMessage))
+        {
+            <RadzenAlert Text="@validationMessage" Severity="AlertSeverity.Warning" Style="margin-top: 15px;" />
+        }
+
+        @if (estimatedFees > 0)
+        {
+            <div style="margin-top: 15px;">
+                <RadzenCard>
+                    <h6><RadzenIcon Icon="calculate" /> Order Summary</h6>
+                    <RadzenText><strong>Total Value:</strong> @((newOrder.Quantity * newOrder.Price).ToString("N2"))</RadzenText>
+                    <RadzenText><strong>Estimated Fees:</strong> @estimatedFees.ToString("N2")</RadzenText>
+                    <RadzenText><strong>Net Amount:</strong> @((newOrder.Quantity * newOrder.Price + estimatedFees).ToString("N2"))</RadzenText>
+                </RadzenCard>
+            </div>
+        }
+
+        <div style="margin-top: 20px;">
+            <RadzenButton ButtonType="ButtonType.Button"
+                         Text="Preview & Validate"
+                         Icon="visibility"
+                         ButtonStyle="ButtonStyle.Info"
+                         Click="@ValidateOrder"
+                         Style="margin-right: 10px;" />
+            
+            <RadzenButton ButtonType="ButtonType.Submit"
+                         Text="Place Order"
+                         Icon="send"
+                         ButtonStyle="ButtonStyle.Primary"
+                         Style="margin-right: 10px;" />
+            
+            <RadzenButton ButtonType="ButtonType.Button"
+                         Text="Reset"
+                         Icon="refresh"
+                         ButtonStyle="ButtonStyle.Secondary"
+                         Click="@ResetForm" />
+        </div>
+    </RadzenTemplateForm>
+</RadzenCard>
+
+@if (!string.IsNullOrEmpty(successMessage))
+{
+    <RadzenCard Style="background-color: #d4edda; border-color: #c3e6cb;">
+        <RadzenText Style="color: #155724;">
+            <RadzenIcon Icon="check_circle" /> @successMessage
+        </RadzenText>
+    </RadzenCard>
+}
+
+@code {
+    private Order newOrder = new Order();
+    private List<string> instruments = new();
+    private List<string> directions = new() { "Buy", "Sell" };
+    private List<string> orderTypes = new() { "Limit", "Market", "IOC", "FOK", "Iceberg", "Block", "Auction" };
+    private List<string> timeInForceOptions = new() { "GTC", "Day", "IOC", "FOK" };
+    private List<string> deliveryOptions = new() { "Cash", "Physical" };
+    private decimal estimatedFees = 0;
+    private string validationMessage = string.Empty;
+    private string successMessage = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        instruments = await MarketDataService.GetInstrumentsAsync();
+        newOrder.DeliveryOption = "Cash";
+        newOrder.Account = "ACC-001";
+        newOrder.Venue = "ZMX";
+    }
+
+    private void OnOrderTypeChanged()
+    {
+        if (newOrder.OrderType == "Market")
+        {
+            newOrder.Price = 0;
+        }
+    }
+
+    private async Task ValidateOrder()
+    {
+        validationMessage = string.Empty;
+        var isValid = await OrderService.ValidateOrderAsync(newOrder);
+        
+        if (isValid)
+        {
+            estimatedFees = await OrderService.CalculateFeesAsync(newOrder);
+            validationMessage = "Order validated successfully. Review the summary below.";
+        }
+        else
+        {
+            validationMessage = "Order validation failed. Please check all required fields.";
+        }
+    }
+
+    private async Task PlaceOrder(Order order)
+    {
+        successMessage = string.Empty;
+        validationMessage = string.Empty;
+
+        var isValid = await OrderService.ValidateOrderAsync(order);
+        
+        if (!isValid)
+        {
+            validationMessage = "Order validation failed. Please check all required fields.";
+            return;
+        }
+
+        try
+        {
+            var orderId = await OrderService.PlaceOrderAsync(order);
+            successMessage = $"Order placed successfully! Order ID: {orderId}";
+            ResetForm();
+        }
+        catch (Exception ex)
+        {
+            validationMessage = $"Error placing order: {ex.Message}";
+        }
+    }
+
+    private void ResetForm()
+    {
+        newOrder = new Order
+        {
+            DeliveryOption = "Cash",
+            Account = "ACC-001",
+            Venue = "ZMX"
+        };
+        estimatedFees = 0;
+        validationMessage = string.Empty;
+    }
+}

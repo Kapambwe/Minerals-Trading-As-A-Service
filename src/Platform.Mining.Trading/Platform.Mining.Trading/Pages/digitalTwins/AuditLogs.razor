@@ -1,0 +1,179 @@
+@page "/audit-logs"
+@using Platform.Mining.Trading.Models
+@using Platform.Mining.Trading.Services
+@inject IAuditService AuditService
+
+<h3>Audit Log & System Forensics</h3>
+
+@if (loading)
+{
+    <RadzenProgressBar />
+}
+else
+{
+    <!-- Search Filters -->
+    <div class="row">
+        <div class="col-md-12">
+            <RadzenCard Style="margin-bottom: 20px;">
+                <h5><RadzenIcon Icon="search" /> Search Filters</h5>
+                <div class="row">
+                    <div class="col-md-3">
+                        <RadzenLabel Text="From Date" />
+                        <RadzenDatePicker @bind-Value="@fromDate" Style="width: 100%;" />
+                    </div>
+                    <div class="col-md-3">
+                        <RadzenLabel Text="To Date" />
+                        <RadzenDatePicker @bind-Value="@toDate" Style="width: 100%;" />
+                    </div>
+                    <div class="col-md-3">
+                        <RadzenLabel Text="User ID" />
+                        <RadzenTextBox @bind-Value="@filterUserId" Style="width: 100%;" />
+                    </div>
+                    <div class="col-md-3" style="padding-top: 25px;">
+                        <RadzenButton Text="Search"
+                                     Icon="search"
+                                     ButtonStyle="ButtonStyle.Primary"
+                                     Click="@SearchLogs"
+                                     Style="margin-right: 10px;" />
+                        <RadzenButton Text="Export"
+                                     Icon="download"
+                                     ButtonStyle="ButtonStyle.Secondary"
+                                     Click="@ExportLogs" />
+                    </div>
+                </div>
+            </RadzenCard>
+        </div>
+    </div>
+
+    <!-- Audit Logs Grid -->
+    <div class="row">
+        <div class="col-md-12">
+            <RadzenCard>
+                <h5><RadzenIcon Icon="history" /> Audit Logs</h5>
+                <RadzenDataGrid Data="@auditLogs" TItem="AuditLogEntry" AllowPaging="true" PageSize="15">
+                    <Columns>
+                        <RadzenDataGridColumn TItem="AuditLogEntry" Property="Timestamp" Title="Timestamp" FormatString="{0:yyyy-MM-dd HH:mm:ss}" />
+                        <RadzenDataGridColumn TItem="AuditLogEntry" Property="Username" Title="User" />
+                        <RadzenDataGridColumn TItem="AuditLogEntry" Property="Action" Title="Action" />
+                        <RadzenDataGridColumn TItem="AuditLogEntry" Property="Resource" Title="Resource" />
+                        <RadzenDataGridColumn TItem="AuditLogEntry" Property="IpAddress" Title="IP Address" />
+                        <RadzenDataGridColumn TItem="AuditLogEntry" Property="Status" Title="Status">
+                            <Template Context="log">
+                                @if (log.Status == "Success")
+                                {
+                                    <RadzenBadge BadgeStyle="BadgeStyle.Success" Text="@log.Status" />
+                                }
+                                else
+                                {
+                                    <RadzenBadge BadgeStyle="BadgeStyle.Danger" Text="@log.Status" />
+                                }
+                            </Template>
+                        </RadzenDataGridColumn>
+                        <RadzenDataGridColumn TItem="AuditLogEntry" Title="Details">
+                            <Template Context="log">
+                                <RadzenButton Icon="visibility"
+                                            Size="ButtonSize.Small"
+                                            ButtonStyle="ButtonStyle.Info"
+                                            Click="@(() => ViewLogDetails(log))"
+                                            Tooltip="View Details" />
+                            </Template>
+                        </RadzenDataGridColumn>
+                    </Columns>
+                </RadzenDataGrid>
+            </RadzenCard>
+        </div>
+    </div>
+}
+
+@if (!string.IsNullOrEmpty(message))
+{
+    <RadzenCard Style="margin-top: 20px; background-color: #d4edda; border-color: #c3e6cb;">
+        <RadzenText Style="color: #155724;">
+            <RadzenIcon Icon="check_circle" /> @message
+        </RadzenText>
+    </RadzenCard>
+}
+
+<!-- Log Details Dialog -->
+<RadzenDialog @bind-Visible="@showDetailsDialog" Style="width: 800px;">
+    @if (selectedLog != null)
+    {
+        <RadzenCard>
+            <h4>Audit Log Details - @selectedLog.LogId</h4>
+            <hr />
+            <div class="row">
+                <div class="col-md-6">
+                    <RadzenText><strong>Timestamp:</strong> @selectedLog.Timestamp.ToString("yyyy-MM-dd HH:mm:ss")</RadzenText>
+                    <RadzenText><strong>User:</strong> @selectedLog.Username (@selectedLog.UserId)</RadzenText>
+                    <RadzenText><strong>Action:</strong> @selectedLog.Action</RadzenText>
+                    <RadzenText><strong>Resource:</strong> @selectedLog.Resource</RadzenText>
+                </div>
+                <div class="col-md-6">
+                    <RadzenText><strong>Session ID:</strong> @selectedLog.SessionId</RadzenText>
+                    <RadzenText><strong>IP Address:</strong> @selectedLog.IpAddress</RadzenText>
+                    <RadzenText><strong>Status:</strong> @selectedLog.Status</RadzenText>
+                </div>
+            </div>
+            @if (!string.IsNullOrEmpty(selectedLog.RequestPayload))
+            {
+                <div style="margin-top: 15px;">
+                    <RadzenText><strong>Request Payload:</strong></RadzenText>
+                    <pre style="background-color: #f5f5f5; padding: 10px;">@selectedLog.RequestPayload</pre>
+                </div>
+            }
+            @if (!string.IsNullOrEmpty(selectedLog.ResponsePayload))
+            {
+                <div style="margin-top: 15px;">
+                    <RadzenText><strong>Response Payload:</strong></RadzenText>
+                    <pre style="background-color: #f5f5f5; padding: 10px;">@selectedLog.ResponsePayload</pre>
+                </div>
+            }
+            <div style="margin-top: 20px;">
+                <RadzenButton Text="Close"
+                             ButtonStyle="ButtonStyle.Secondary"
+                             Click="@(() => showDetailsDialog = false)" />
+            </div>
+        </RadzenCard>
+    }
+</RadzenDialog>
+
+@code {
+    private bool loading = true;
+    private List<AuditLogEntry> auditLogs = new();
+    private DateTime? fromDate;
+    private DateTime? toDate;
+    private string filterUserId = string.Empty;
+    private string message = string.Empty;
+    private bool showDetailsDialog = false;
+    private AuditLogEntry? selectedLog;
+
+    protected override async Task OnInitializedAsync()
+    {
+        toDate = DateTime.Now;
+        fromDate = DateTime.Now.AddDays(-7);
+        await SearchLogs();
+    }
+
+    private async Task SearchLogs()
+    {
+        loading = true;
+        message = string.Empty;
+        
+        auditLogs = await AuditService.SearchLogsAsync(fromDate, toDate, 
+            string.IsNullOrEmpty(filterUserId) ? null : filterUserId, null);
+        
+        loading = false;
+    }
+
+    private async Task ExportLogs()
+    {
+        var exportData = await AuditService.ExportLogsAsync(auditLogs);
+        message = $"Exported {auditLogs.Count} audit log entries";
+    }
+
+    private void ViewLogDetails(AuditLogEntry log)
+    {
+        selectedLog = log;
+        showDetailsDialog = true;
+    }
+}

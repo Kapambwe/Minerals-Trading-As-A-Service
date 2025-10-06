@@ -1,0 +1,230 @@
+@page "/order-book"
+@using Platform.Mining.Trading.Models
+@using Platform.Mining.Trading.Services
+@inject IOrderService OrderService
+@inject IMarketDataService MarketDataService
+
+<h3>Order Book</h3>
+
+<div class="row">
+    <div class="col-md-12">
+        <RadzenCard Style="margin-bottom: 20px;">
+            <div class="row">
+                <div class="col-md-6">
+                    <RadzenLabel Text="Select Instrument" />
+                    <RadzenDropDown @bind-Value="@selectedInstrument"
+                                   Data="@instruments"
+                                   Placeholder="Select Instrument"
+                                   Style="width: 100%;"
+                                   Change="@OnInstrumentChanged" />
+                </div>
+                <div class="col-md-6" style="padding-top: 25px;">
+                    <RadzenButton Text="Refresh"
+                                 Icon="refresh"
+                                 ButtonStyle="ButtonStyle.Primary"
+                                 Click="@LoadData" />
+                </div>
+            </div>
+        </RadzenCard>
+    </div>
+</div>
+
+@if (loading)
+{
+    <RadzenProgressBar />
+}
+else
+{
+    <!-- Market Depth Ladder -->
+    <div class="row">
+        <div class="col-md-6">
+            <RadzenCard Style="margin-bottom: 20px;">
+                <h5><RadzenIcon Icon="arrow_downward" Style="color: red;" /> Ask Orders (Sell)</h5>
+                <RadzenDataGrid Data="@marketDepth?.Asks" TItem="PriceLevel" AllowPaging="false">
+                    <Columns>
+                        <RadzenDataGridColumn TItem="PriceLevel" Property="Price" Title="Price" FormatString="{0:N2}">
+                            <Template Context="level">
+                                <span style="color: red; font-weight: bold;">@level.Price.ToString("N2")</span>
+                            </Template>
+                        </RadzenDataGridColumn>
+                        <RadzenDataGridColumn TItem="PriceLevel" Property="Quantity" Title="Quantity" FormatString="{0:N0}" />
+                        <RadzenDataGridColumn TItem="PriceLevel" Property="OrderCount" Title="Orders" />
+                    </Columns>
+                </RadzenDataGrid>
+            </RadzenCard>
+        </div>
+
+        <div class="col-md-6">
+            <RadzenCard Style="margin-bottom: 20px;">
+                <h5><RadzenIcon Icon="arrow_upward" Style="color: green;" /> Bid Orders (Buy)</h5>
+                <RadzenDataGrid Data="@marketDepth?.Bids" TItem="PriceLevel" AllowPaging="false">
+                    <Columns>
+                        <RadzenDataGridColumn TItem="PriceLevel" Property="Price" Title="Price" FormatString="{0:N2}">
+                            <Template Context="level">
+                                <span style="color: green; font-weight: bold;">@level.Price.ToString("N2")</span>
+                            </Template>
+                        </RadzenDataGridColumn>
+                        <RadzenDataGridColumn TItem="PriceLevel" Property="Quantity" Title="Quantity" FormatString="{0:N0}" />
+                        <RadzenDataGridColumn TItem="PriceLevel" Property="OrderCount" Title="Orders" />
+                    </Columns>
+                </RadzenDataGrid>
+            </RadzenCard>
+        </div>
+    </div>
+
+    <!-- Last Trade Info -->
+    @if (marketDepth != null)
+    {
+        <div class="row">
+            <div class="col-md-12">
+                <RadzenCard Style="margin-bottom: 20px; background-color: #f8f9fa;">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <RadzenText><strong>Last Trade Price:</strong> @marketDepth.LastTradePrice.ToString("N2")</RadzenText>
+                        </div>
+                        <div class="col-md-4">
+                            <RadzenText><strong>Last Trade Quantity:</strong> @marketDepth.LastTradeQuantity.ToString("N0")</RadzenText>
+                        </div>
+                        <div class="col-md-4">
+                            <RadzenText><strong>Last Trade Time:</strong> @marketDepth.LastTradeTime.ToString("HH:mm:ss")</RadzenText>
+                        </div>
+                    </div>
+                </RadzenCard>
+            </div>
+        </div>
+    }
+
+    <!-- Personal Orders -->
+    <div class="row">
+        <div class="col-md-12">
+            <RadzenCard>
+                <h5><RadzenIcon Icon="assignment" /> My Orders</h5>
+                <RadzenDataGrid Data="@orders" TItem="Order" AllowPaging="true" PageSize="10">
+                    <Columns>
+                        <RadzenDataGridColumn TItem="Order" Property="OrderId" Title="Order ID" />
+                        <RadzenDataGridColumn TItem="Order" Property="Instrument" Title="Instrument" />
+                        <RadzenDataGridColumn TItem="Order" Property="Direction" Title="Side">
+                            <Template Context="order">
+                                <span style="color: @(order.Direction == "Buy" ? "green" : "red")">
+                                    @order.Direction
+                                </span>
+                            </Template>
+                        </RadzenDataGridColumn>
+                        <RadzenDataGridColumn TItem="Order" Property="OrderType" Title="Type" />
+                        <RadzenDataGridColumn TItem="Order" Property="Quantity" Title="Total Qty" FormatString="{0:N0}" />
+                        <RadzenDataGridColumn TItem="Order" Property="FilledQuantity" Title="Filled" FormatString="{0:N0}" />
+                        <RadzenDataGridColumn TItem="Order" Property="RemainingQuantity" Title="Remaining" FormatString="{0:N0}" />
+                        <RadzenDataGridColumn TItem="Order" Property="Price" Title="Price" FormatString="{0:N2}" />
+                        <RadzenDataGridColumn TItem="Order" Property="TimeInForce" Title="TIF" />
+                        <RadzenDataGridColumn TItem="Order" Property="Status" Title="Status">
+                            <Template Context="order">
+                                @if (order.Status == "Active")
+                                {
+                                    <RadzenBadge BadgeStyle="BadgeStyle.Success" Text="@order.Status" />
+                                }
+                                else if (order.Status == "Filled")
+                                {
+                                    <RadzenBadge BadgeStyle="BadgeStyle.Info" Text="@order.Status" />
+                                }
+                                else if (order.Status == "Cancelled")
+                                {
+                                    <RadzenBadge BadgeStyle="BadgeStyle.Danger" Text="@order.Status" />
+                                }
+                                else
+                                {
+                                    <RadzenBadge BadgeStyle="BadgeStyle.Warning" Text="@order.Status" />
+                                }
+                            </Template>
+                        </RadzenDataGridColumn>
+                        <RadzenDataGridColumn TItem="Order" Property="Timestamp" Title="Time" FormatString="{0:yyyy-MM-dd HH:mm}" />
+                        <RadzenDataGridColumn TItem="Order" Title="Actions">
+                            <Template Context="order">
+                                @if (order.Status == "Active")
+                                {
+                                    <RadzenButton Icon="edit"
+                                                Size="ButtonSize.Small"
+                                                ButtonStyle="ButtonStyle.Info"
+                                                Click="@(() => ModifyOrder(order))"
+                                                Style="margin-right: 5px;" />
+                                    <RadzenButton Icon="cancel"
+                                                Size="ButtonSize.Small"
+                                                ButtonStyle="ButtonStyle.Danger"
+                                                Click="@(() => CancelOrder(order.OrderId))" />
+                                }
+                            </Template>
+                        </RadzenDataGridColumn>
+                    </Columns>
+                </RadzenDataGrid>
+            </RadzenCard>
+        </div>
+    </div>
+}
+
+@if (!string.IsNullOrEmpty(message))
+{
+    <RadzenCard Style="margin-top: 20px; background-color: #d4edda; border-color: #c3e6cb;">
+        <RadzenText Style="color: #155724;">
+            <RadzenIcon Icon="check_circle" /> @message
+        </RadzenText>
+    </RadzenCard>
+}
+
+@code {
+    private bool loading = true;
+    private string selectedInstrument = string.Empty;
+    private List<string> instruments = new();
+    private MarketDepth? marketDepth;
+    private List<Order> orders = new();
+    private string message = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        instruments = await MarketDataService.GetInstrumentsAsync();
+        if (instruments.Any())
+        {
+            selectedInstrument = instruments.First();
+            await LoadData();
+        }
+    }
+
+    private async Task OnInstrumentChanged()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        loading = true;
+        message = string.Empty;
+
+        if (!string.IsNullOrEmpty(selectedInstrument))
+        {
+            marketDepth = await MarketDataService.GetMarketDepthAsync(selectedInstrument);
+        }
+
+        orders = await OrderService.GetOrdersAsync();
+        
+        loading = false;
+    }
+
+    private void ModifyOrder(Order order)
+    {
+        // Implement order modification logic
+        message = $"Modify order {order.OrderId} - Feature coming soon";
+    }
+
+    private async Task CancelOrder(string orderId)
+    {
+        var result = await OrderService.CancelOrderAsync(orderId);
+        
+        if (result)
+        {
+            message = $"Order {orderId} cancelled successfully";
+            await LoadData();
+        }
+        else
+        {
+            message = $"Failed to cancel order {orderId}";
+        }
+    }
+}

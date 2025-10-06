@@ -1,0 +1,163 @@
+@page "/kyc-compliance"
+@using Platform.Mining.Trading.Models
+@using Platform.Mining.Trading.Services
+@inject IComplianceService ComplianceService
+
+<h3>KYC / AML / User Onboarding</h3>
+
+@if (loading)
+{
+    <RadzenProgressBar />
+}
+else
+{
+    <!-- Summary Cards -->
+    <div class="row">
+        <div class="col-md-3">
+            <RadzenCard Style="margin-bottom: 20px; background-color: #fff3e0;">
+                <h6>Pending Approval</h6>
+                <h4>@participants.Count(p => p.OnboardingStatus == "Pending")</h4>
+            </RadzenCard>
+        </div>
+        <div class="col-md-3">
+            <RadzenCard Style="margin-bottom: 20px; background-color: #e8f5e9;">
+                <h6>Approved</h6>
+                <h4>@participants.Count(p => p.OnboardingStatus == "Approved")</h4>
+            </RadzenCard>
+        </div>
+        <div class="col-md-3">
+            <RadzenCard Style="margin-bottom: 20px; background-color: #ffebee;">
+                <h6>Rejected</h6>
+                <h4>@participants.Count(p => p.OnboardingStatus == "Rejected")</h4>
+            </RadzenCard>
+        </div>
+        <div class="col-md-3">
+            <RadzenCard Style="margin-bottom: 20px; background-color: #e3f2fd;">
+                <h6>High Risk</h6>
+                <h4>@participants.Count(p => p.RiskScore > 50)</h4>
+            </RadzenCard>
+        </div>
+    </div>
+
+    <!-- Participant Profiles -->
+    <div class="row">
+        <div class="col-md-12">
+            <RadzenCard>
+                <h5><RadzenIcon Icon="people" /> Participant Profiles</h5>
+                <RadzenDataGrid Data="@participants" TItem="ParticipantProfile" AllowPaging="true" PageSize="10">
+                    <Columns>
+                        <RadzenDataGridColumn TItem="ParticipantProfile" Property="ParticipantId" Title="Participant ID" />
+                        <RadzenDataGridColumn TItem="ParticipantProfile" Property="EntityName" Title="Entity Name" />
+                        <RadzenDataGridColumn TItem="ParticipantProfile" Property="EntityType" Title="Type" />
+                        <RadzenDataGridColumn TItem="ParticipantProfile" Property="Country" Title="Country" />
+                        <RadzenDataGridColumn TItem="ParticipantProfile" Property="RiskScore" Title="Risk Score">
+                            <Template Context="part">
+                                <span style="color: @(part.RiskScore > 50 ? "red" : part.RiskScore > 30 ? "orange" : "green")">
+                                    @part.RiskScore
+                                </span>
+                            </Template>
+                        </RadzenDataGridColumn>
+                        <RadzenDataGridColumn TItem="ParticipantProfile" Property="OnboardingStatus" Title="Status">
+                            <Template Context="part">
+                                @if (part.OnboardingStatus == "Approved")
+                                {
+                                    <RadzenBadge BadgeStyle="BadgeStyle.Success" Text="@part.OnboardingStatus" />
+                                }
+                                else if (part.OnboardingStatus == "Pending")
+                                {
+                                    <RadzenBadge BadgeStyle="BadgeStyle.Warning" Text="@part.OnboardingStatus" />
+                                }
+                                else if (part.OnboardingStatus == "Rejected")
+                                {
+                                    <RadzenBadge BadgeStyle="BadgeStyle.Danger" Text="@part.OnboardingStatus" />
+                                }
+                                else
+                                {
+                                    <RadzenBadge BadgeStyle="BadgeStyle.Secondary" Text="@part.OnboardingStatus" />
+                                }
+                            </Template>
+                        </RadzenDataGridColumn>
+                        <RadzenDataGridColumn TItem="ParticipantProfile" Title="Checks">
+                            <Template Context="part">
+                                <RadzenIcon Icon="@(part.SanctionsCheckPassed ? "check_circle" : "cancel")" 
+                                          Style="@($"color: {(part.SanctionsCheckPassed ? "green" : "red")};")" 
+                                          Tooltip="Sanctions Check" />
+                                <RadzenIcon Icon="@(part.PepCheckPassed ? "check_circle" : "cancel")" 
+                                          Style="@($"color: {(part.PepCheckPassed ? "green" : "red")}; margin-left: 5px;")" 
+                                          Tooltip="PEP Check" />
+                            </Template>
+                        </RadzenDataGridColumn>
+                        <RadzenDataGridColumn TItem="ParticipantProfile" Title="Actions">
+                            <Template Context="part">
+                                @if (part.OnboardingStatus == "Pending")
+                                {
+                                    <RadzenButton Icon="check"
+                                                Size="ButtonSize.Small"
+                                                ButtonStyle="ButtonStyle.Success"
+                                                Click="@(() => ApproveParticipant(part.ParticipantId))"
+                                                Tooltip="Approve"
+                                                Style="margin-right: 5px;" />
+                                    <RadzenButton Icon="close"
+                                                Size="ButtonSize.Small"
+                                                ButtonStyle="ButtonStyle.Danger"
+                                                Click="@(() => RejectParticipant(part.ParticipantId))"
+                                                Tooltip="Reject" />
+                                }
+                            </Template>
+                        </RadzenDataGridColumn>
+                    </Columns>
+                </RadzenDataGrid>
+            </RadzenCard>
+        </div>
+    </div>
+}
+
+@if (!string.IsNullOrEmpty(message))
+{
+    <RadzenCard Style="margin-top: 20px; background-color: #d4edda; border-color: #c3e6cb;">
+        <RadzenText Style="color: #155724;">
+            <RadzenIcon Icon="check_circle" /> @message
+        </RadzenText>
+    </RadzenCard>
+}
+
+@code {
+    private bool loading = true;
+    private List<ParticipantProfile> participants = new();
+    private string message = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        loading = true;
+        message = string.Empty;
+        
+        participants = await ComplianceService.GetParticipantProfilesAsync();
+        
+        loading = false;
+    }
+
+    private async Task ApproveParticipant(string participantId)
+    {
+        var result = await ComplianceService.ApproveParticipantAsync(participantId);
+        if (result)
+        {
+            message = $"Participant {participantId} approved successfully";
+            await LoadData();
+        }
+    }
+
+    private async Task RejectParticipant(string participantId)
+    {
+        var result = await ComplianceService.RejectParticipantAsync(participantId, "Failed compliance checks");
+        if (result)
+        {
+            message = $"Participant {participantId} rejected";
+            await LoadData();
+        }
+    }
+}

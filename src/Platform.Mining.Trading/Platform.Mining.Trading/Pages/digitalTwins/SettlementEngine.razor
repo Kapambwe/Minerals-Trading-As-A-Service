@@ -1,0 +1,241 @@
+@page "/settlement-engine"
+@using Platform.Mining.Trading.Models
+@using Platform.Mining.Trading.Services
+@inject ISettlementEngineService SettlementService
+
+<h3>Settlement Engine / Payment Gateway Integration</h3>
+
+@if (loading)
+{
+    <RadzenProgressBar />
+}
+else
+{
+    <div class="row">
+        <div class="col-md-12">
+            <RadzenCard Style="margin-bottom: 20px;">
+                <h5><RadzenIcon Icon="account_balance" /> Bank Endpoints</h5>
+                <RadzenDataGrid Data="@bankEndpoints" TItem="BankEndpoint" AllowPaging="true" PageSize="5">
+                    <Columns>
+                        <RadzenDataGridColumn TItem="BankEndpoint" Property="BankName" Title="Bank Name" />
+                        <RadzenDataGridColumn TItem="BankEndpoint" Property="EndpointType" Title="Type" />
+                        <RadzenDataGridColumn TItem="BankEndpoint" Property="IsActive" Title="Status">
+                            <Template Context="endpoint">
+                                @if (endpoint.IsActive)
+                                {
+                                    <RadzenBadge BadgeStyle="BadgeStyle.Success" Text="Active" />
+                                }
+                                else
+                                {
+                                    <RadzenBadge BadgeStyle="BadgeStyle.Danger" Text="Inactive" />
+                                }
+                            </Template>
+                        </RadzenDataGridColumn>
+                        <RadzenDataGridColumn TItem="BankEndpoint" Property="LastSuccessfulConnection" Title="Last Connection" FormatString="{0:yyyy-MM-dd HH:mm}" />
+                        <RadzenDataGridColumn TItem="BankEndpoint" Property="TimeoutSeconds" Title="Timeout (s)" />
+                        <RadzenDataGridColumn TItem="BankEndpoint" Property="MaxRetries" Title="Max Retries" />
+                    </Columns>
+                </RadzenDataGrid>
+            </RadzenCard>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-12">
+            <RadzenCard Style="margin-bottom: 20px;">
+                <div style="margin-bottom: 15px;">
+                    <RadzenButton Text="Trigger Settlement"
+                                 Icon="send"
+                                 ButtonStyle="ButtonStyle.Primary"
+                                 Click="@(() => showTriggerDialog = true)"
+                                 Style="margin-right: 10px;" />
+                </div>
+
+                <h5><RadzenIcon Icon="receipt" /> Settlement Batches</h5>
+                <RadzenDataGrid Data="@settlementBatches" TItem="SettlementBatch" AllowPaging="true" PageSize="10">
+                    <Columns>
+                        <RadzenDataGridColumn TItem="SettlementBatch" Property="BatchId" Title="Batch ID" />
+                        <RadzenDataGridColumn TItem="SettlementBatch" Property="SettlementDate" Title="Settlement Date" FormatString="{0:yyyy-MM-dd}" />
+                        <RadzenDataGridColumn TItem="SettlementBatch" Property="Currency" Title="Currency" />
+                        <RadzenDataGridColumn TItem="SettlementBatch" Property="TotalTransactions" Title="Transactions" />
+                        <RadzenDataGridColumn TItem="SettlementBatch" Property="TotalAmount" Title="Total Amount" FormatString="{0:N2}" />
+                        <RadzenDataGridColumn TItem="SettlementBatch" Property="Status" Title="Status">
+                            <Template Context="batch">
+                                @if (batch.Status == "Completed")
+                                {
+                                    <RadzenBadge BadgeStyle="BadgeStyle.Success" Text="@batch.Status" />
+                                }
+                                else if (batch.Status == "Failed" || batch.Status == "RolledBack")
+                                {
+                                    <RadzenBadge BadgeStyle="BadgeStyle.Danger" Text="@batch.Status" />
+                                }
+                                else if (batch.Status == "InProgress")
+                                {
+                                    <RadzenBadge BadgeStyle="BadgeStyle.Info" Text="@batch.Status" />
+                                }
+                                else
+                                {
+                                    <RadzenBadge BadgeStyle="BadgeStyle.Warning" Text="@batch.Status" />
+                                }
+                            </Template>
+                        </RadzenDataGridColumn>
+                        <RadzenDataGridColumn TItem="SettlementBatch" Title="Actions">
+                            <Template Context="batch">
+                                @if (batch.Status == "Completed" || batch.Status == "Failed")
+                                {
+                                    <RadzenButton Icon="undo"
+                                                Size="ButtonSize.Small"
+                                                ButtonStyle="ButtonStyle.Warning"
+                                                Click="@(() => RollbackSettlement(batch.BatchId))"
+                                                Tooltip="Rollback"
+                                                Style="margin-right: 5px;" />
+                                }
+                                @if (batch.Status == "Completed")
+                                {
+                                    <RadzenButton Icon="upload_file"
+                                                Size="ButtonSize.Small"
+                                                ButtonStyle="ButtonStyle.Info"
+                                                Click="@(() => PushSwiftFile(batch.BatchId))"
+                                                Tooltip="Push SWIFT File" />
+                                }
+                            </Template>
+                        </RadzenDataGridColumn>
+                    </Columns>
+                </RadzenDataGrid>
+            </RadzenCard>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-12">
+            <RadzenCard>
+                <h5><RadzenIcon Icon="currency_exchange" /> FX Conversion Rules</h5>
+                <RadzenDataGrid Data="@fxRules" TItem="FxConversionRule" AllowPaging="true" PageSize="10">
+                    <Columns>
+                        <RadzenDataGridColumn TItem="FxConversionRule" Property="FromCurrency" Title="From" />
+                        <RadzenDataGridColumn TItem="FxConversionRule" Property="ToCurrency" Title="To" />
+                        <RadzenDataGridColumn TItem="FxConversionRule" Property="ExchangeRate" Title="Exchange Rate" FormatString="{0:N4}" />
+                        <RadzenDataGridColumn TItem="FxConversionRule" Property="EffectiveDate" Title="Effective Date" FormatString="{0:yyyy-MM-dd}" />
+                        <RadzenDataGridColumn TItem="FxConversionRule" Property="Source" Title="Source" />
+                        <RadzenDataGridColumn TItem="FxConversionRule" Property="IsActive" Title="Active">
+                            <Template Context="rule">
+                                @if (rule.IsActive)
+                                {
+                                    <RadzenIcon Icon="check_circle" Style="color: green;" />
+                                }
+                                else
+                                {
+                                    <RadzenIcon Icon="cancel" Style="color: red;" />
+                                }
+                            </Template>
+                        </RadzenDataGridColumn>
+                    </Columns>
+                </RadzenDataGrid>
+            </RadzenCard>
+        </div>
+    </div>
+}
+
+@if (!string.IsNullOrEmpty(message))
+{
+    <RadzenCard Style="margin-top: 20px; background-color: #d4edda; border-color: #c3e6cb;">
+        <RadzenText Style="color: #155724;">
+            <RadzenIcon Icon="check_circle" /> @message
+        </RadzenText>
+    </RadzenCard>
+}
+
+<RadzenDialog @bind-Visible="@showTriggerDialog" Style="width: 600px;">
+    <RadzenCard>
+        <h4>Trigger Settlement</h4>
+        <hr />
+        <RadzenTemplateForm TItem="SettlementBatch" Data="@newBatch" Submit="@TriggerSettlement">
+            <div style="margin-bottom: 15px;">
+                <RadzenLabel Text="Settlement Date" />
+                <RadzenDatePicker @bind-Value="@newBatch.SettlementDate" Name="SettlementDate" Style="width: 100%;" />
+                <RadzenRequiredValidator Component="SettlementDate" Text="Required" />
+            </div>
+            <div style="margin-bottom: 15px;">
+                <RadzenLabel Text="Currency" />
+                <RadzenTextBox @bind-Value="@newBatch.Currency" Name="Currency" Style="width: 100%;" />
+                <RadzenRequiredValidator Component="Currency" Text="Required" />
+            </div>
+            <div style="margin-bottom: 15px;">
+                <RadzenLabel Text="Total Transactions" />
+                <RadzenNumeric @bind-Value="@newBatch.TotalTransactions" Style="width: 100%;" />
+            </div>
+            <div style="margin-bottom: 15px;">
+                <RadzenLabel Text="Total Amount" />
+                <RadzenNumeric @bind-Value="@newBatch.TotalAmount" Style="width: 100%;" />
+            </div>
+            <div style="margin-top: 20px;">
+                <RadzenButton ButtonType="ButtonType.Submit"
+                             Text="Trigger Settlement"
+                             ButtonStyle="ButtonStyle.Primary"
+                             Style="margin-right: 10px;" />
+                <RadzenButton ButtonType="ButtonType.Button"
+                             Text="Cancel"
+                             ButtonStyle="ButtonStyle.Secondary"
+                             Click="@(() => showTriggerDialog = false)" />
+            </div>
+        </RadzenTemplateForm>
+    </RadzenCard>
+</RadzenDialog>
+
+@code {
+    private bool loading = true;
+    private List<BankEndpoint> bankEndpoints = new();
+    private List<SettlementBatch> settlementBatches = new();
+    private List<FxConversionRule> fxRules = new();
+    private SettlementBatch newBatch = new SettlementBatch { SettlementDate = DateTime.Today, Currency = "ZMW" };
+    private string message = string.Empty;
+    private bool showTriggerDialog = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        loading = true;
+        message = string.Empty;
+        
+        bankEndpoints = await SettlementService.GetBankEndpointsAsync();
+        settlementBatches = await SettlementService.GetSettlementBatchesAsync();
+        fxRules = await SettlementService.GetFxRulesAsync();
+        
+        loading = false;
+    }
+
+    private async Task TriggerSettlement(SettlementBatch batch)
+    {
+        var batchId = await SettlementService.TriggerSettlementAsync(batch);
+        if (!string.IsNullOrEmpty(batchId))
+        {
+            message = $"Settlement triggered with Batch ID: {batchId}";
+            showTriggerDialog = false;
+            newBatch = new SettlementBatch { SettlementDate = DateTime.Today, Currency = "ZMW" };
+            await LoadData();
+        }
+    }
+
+    private async Task RollbackSettlement(string batchId)
+    {
+        var result = await SettlementService.RollbackSettlementAsync(batchId);
+        if (result)
+        {
+            message = $"Settlement batch {batchId} rolled back successfully";
+            await LoadData();
+        }
+    }
+
+    private async Task PushSwiftFile(string batchId)
+    {
+        var result = await SettlementService.PushSwiftFileAsync(batchId);
+        if (result)
+        {
+            message = $"SWIFT file pushed for batch {batchId}";
+        }
+    }
+}

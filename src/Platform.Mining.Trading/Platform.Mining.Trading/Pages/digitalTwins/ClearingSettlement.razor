@@ -1,0 +1,223 @@
+@page "/clearing-settlement"
+@using Platform.Mining.Trading.Models
+@using Platform.Mining.Trading.Services
+@inject IClearingService ClearingService
+
+<h3>Clearing & Settlement Dashboard</h3>
+
+@if (loading)
+{
+    <RadzenProgressBar />
+}
+else
+{
+    <!-- Clearing Members -->
+    <div class="row">
+        <div class="col-md-12">
+            <RadzenCard Style="margin-bottom: 20px;">
+                <h5><RadzenIcon Icon="account_balance" /> Clearing Members</h5>
+                <RadzenDataGrid Data="@clearingMembers" TItem="ClearingMember" AllowPaging="true" PageSize="10">
+                    <Columns>
+                        <RadzenDataGridColumn TItem="ClearingMember" Property="MemberId" Title="Member ID" />
+                        <RadzenDataGridColumn TItem="ClearingMember" Property="Name" Title="Name" />
+                        <RadzenDataGridColumn TItem="ClearingMember" Property="Status" Title="Status">
+                            <Template Context="member">
+                                @if (member.Status == "Active")
+                                {
+                                    <RadzenBadge BadgeStyle="BadgeStyle.Success" Text="@member.Status" />
+                                }
+                                else if (member.Status == "Suspended")
+                                {
+                                    <RadzenBadge BadgeStyle="BadgeStyle.Warning" Text="@member.Status" />
+                                }
+                                else
+                                {
+                                    <RadzenBadge BadgeStyle="BadgeStyle.Danger" Text="@member.Status" />
+                                }
+                            </Template>
+                        </RadzenDataGridColumn>
+                        <RadzenDataGridColumn TItem="ClearingMember" Property="MarginPosted" Title="Margin Posted" FormatString="{0:N2}" />
+                        <RadzenDataGridColumn TItem="ClearingMember" Property="MarginRequired" Title="Margin Required" FormatString="{0:N2}" />
+                        <RadzenDataGridColumn TItem="ClearingMember" Property="ExcessMargin" Title="Excess Margin" FormatString="{0:N2}">
+                            <Template Context="member">
+                                <span style="color: @(member.ExcessMargin >= 0 ? "green" : "red"); font-weight: bold;">
+                                    @member.ExcessMargin.ToString("N2")
+                                </span>
+                            </Template>
+                        </RadzenDataGridColumn>
+                        <RadzenDataGridColumn TItem="ClearingMember" Title="Actions">
+                            <Template Context="member">
+                                @if (member.ExcessMargin < 0)
+                                {
+                                    <RadzenButton Icon="warning"
+                                                Size="ButtonSize.Small"
+                                                ButtonStyle="ButtonStyle.Danger"
+                                                Click="@(() => IssueMarginCallFor(member))"
+                                                Tooltip="Issue Margin Call" />
+                                }
+                            </Template>
+                        </RadzenDataGridColumn>
+                    </Columns>
+                </RadzenDataGrid>
+            </RadzenCard>
+        </div>
+    </div>
+
+    <!-- Netting Results and Settlement Obligations -->
+    <div class="row">
+        <div class="col-md-6">
+            <RadzenCard Style="margin-bottom: 20px;">
+                <h5><RadzenIcon Icon="calculate" /> Netting Results</h5>
+                <RadzenDataGrid Data="@nettingResults" TItem="NettingResult" AllowPaging="true" PageSize="5">
+                    <Columns>
+                        <RadzenDataGridColumn TItem="NettingResult" Property="NettingDate" Title="Date" FormatString="{0:yyyy-MM-dd}" />
+                        <RadzenDataGridColumn TItem="NettingResult" Property="Currency" Title="Currency" />
+                        <RadzenDataGridColumn TItem="NettingResult" Property="GrossPayments" Title="Gross Payments" FormatString="{0:N2}" />
+                        <RadzenDataGridColumn TItem="NettingResult" Property="GrossReceipts" Title="Gross Receipts" FormatString="{0:N2}" />
+                        <RadzenDataGridColumn TItem="NettingResult" Property="NetPosition" Title="Net Position" FormatString="{0:N2}" />
+                    </Columns>
+                </RadzenDataGrid>
+            </RadzenCard>
+        </div>
+
+        <div class="col-md-6">
+            <RadzenCard Style="margin-bottom: 20px;">
+                <h5><RadzenIcon Icon="payments" /> Settlement Obligations</h5>
+                <RadzenDataGrid Data="@settlementObligations" TItem="SettlementObligation" AllowPaging="true" PageSize="5">
+                    <Columns>
+                        <RadzenDataGridColumn TItem="SettlementObligation" Property="Member" Title="Member" />
+                        <RadzenDataGridColumn TItem="SettlementObligation" Property="SettlementDate" Title="Settlement Date" FormatString="{0:yyyy-MM-dd}" />
+                        <RadzenDataGridColumn TItem="SettlementObligation" Property="Currency" Title="Currency" />
+                        <RadzenDataGridColumn TItem="SettlementObligation" Property="Amount" Title="Amount" FormatString="{0:N2}" />
+                        <RadzenDataGridColumn TItem="SettlementObligation" Property="Direction" Title="Direction" />
+                        <RadzenDataGridColumn TItem="SettlementObligation" Property="Status" Title="Status">
+                            <Template Context="obl">
+                                @if (obl.Status == "Settled")
+                                {
+                                    <RadzenBadge BadgeStyle="BadgeStyle.Success" Text="@obl.Status" />
+                                }
+                                else if (obl.Status == "Failed")
+                                {
+                                    <RadzenBadge BadgeStyle="BadgeStyle.Danger" Text="@obl.Status" />
+                                }
+                                else
+                                {
+                                    <RadzenBadge BadgeStyle="BadgeStyle.Warning" Text="@obl.Status" />
+                                }
+                            </Template>
+                        </RadzenDataGridColumn>
+                        <RadzenDataGridColumn TItem="SettlementObligation" Title="Actions">
+                            <Template Context="obl">
+                                @if (obl.Status == "Pending")
+                                {
+                                    <RadzenButton Icon="send"
+                                                Size="ButtonSize.Small"
+                                                ButtonStyle="ButtonStyle.Primary"
+                                                Click="@(() => InitiateSettlement(obl.ObligationId))"
+                                                Tooltip="Initiate Settlement" />
+                                }
+                            </Template>
+                        </RadzenDataGridColumn>
+                    </Columns>
+                </RadzenDataGrid>
+            </RadzenCard>
+        </div>
+    </div>
+
+    <!-- Margin Calls -->
+    <div class="row">
+        <div class="col-md-12">
+            <RadzenCard>
+                <h5><RadzenIcon Icon="notification_important" /> Margin Calls</h5>
+                <RadzenDataGrid Data="@marginCalls" TItem="MarginCall" AllowPaging="true" PageSize="5">
+                    <Columns>
+                        <RadzenDataGridColumn TItem="MarginCall" Property="CallId" Title="Call ID" />
+                        <RadzenDataGridColumn TItem="MarginCall" Property="Member" Title="Member" />
+                        <RadzenDataGridColumn TItem="MarginCall" Property="IssueTime" Title="Issued" FormatString="{0:yyyy-MM-dd HH:mm}" />
+                        <RadzenDataGridColumn TItem="MarginCall" Property="Amount" Title="Amount" FormatString="{0:N2}" />
+                        <RadzenDataGridColumn TItem="MarginCall" Property="DueTime" Title="Due" FormatString="{0:yyyy-MM-dd HH:mm}" />
+                        <RadzenDataGridColumn TItem="MarginCall" Property="Status" Title="Status">
+                            <Template Context="call">
+                                @if (call.Status == "Met")
+                                {
+                                    <RadzenBadge BadgeStyle="BadgeStyle.Success" Text="@call.Status" />
+                                }
+                                else if (call.Status == "Overdue")
+                                {
+                                    <RadzenBadge BadgeStyle="BadgeStyle.Danger" Text="@call.Status" />
+                                }
+                                else
+                                {
+                                    <RadzenBadge BadgeStyle="BadgeStyle.Warning" Text="@call.Status" />
+                                }
+                            </Template>
+                        </RadzenDataGridColumn>
+                    </Columns>
+                </RadzenDataGrid>
+            </RadzenCard>
+        </div>
+    </div>
+}
+
+@if (!string.IsNullOrEmpty(message))
+{
+    <RadzenCard Style="margin-top: 20px; background-color: #d4edda; border-color: #c3e6cb;">
+        <RadzenText Style="color: #155724;">
+            <RadzenIcon Icon="check_circle" /> @message
+        </RadzenText>
+    </RadzenCard>
+}
+
+@code {
+    private bool loading = true;
+    private List<ClearingMember> clearingMembers = new();
+    private List<NettingResult> nettingResults = new();
+    private List<SettlementObligation> settlementObligations = new();
+    private List<MarginCall> marginCalls = new();
+    private string message = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        loading = true;
+        message = string.Empty;
+        
+        clearingMembers = await ClearingService.GetClearingMembersAsync();
+        nettingResults = await ClearingService.GetNettingResultsAsync();
+        settlementObligations = await ClearingService.GetSettlementObligationsAsync();
+        marginCalls = await ClearingService.GetMarginCallsAsync();
+        
+        loading = false;
+    }
+
+    private async Task InitiateSettlement(string obligationId)
+    {
+        var result = await ClearingService.InitiateSettlementAsync(obligationId);
+        if (result)
+        {
+            message = $"Settlement initiated for obligation {obligationId}";
+            await LoadData();
+        }
+    }
+
+    private async Task IssueMarginCallFor(ClearingMember member)
+    {
+        var call = new MarginCall
+        {
+            Member = member.MemberId,
+            Amount = Math.Abs(member.ExcessMargin),
+            DueTime = DateTime.Now.AddHours(4)
+        };
+        
+        var callId = await ClearingService.IssueMarginCallAsync(call);
+        if (!string.IsNullOrEmpty(callId))
+        {
+            message = $"Margin call {callId} issued to {member.Name}";
+            await LoadData();
+        }
+    }
+}

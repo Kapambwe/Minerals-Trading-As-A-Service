@@ -1,0 +1,331 @@
+@page "/margin-collateral"
+@using Platform.Mining.Trading.Models
+@using Platform.Mining.Trading.Services
+@inject IMarginService MarginService
+
+<h3>Margin & Collateral Management</h3>
+
+@if (loading)
+{
+    <RadzenProgressBar />
+}
+else
+{
+    <!-- Margin Summary Cards -->
+    <div class="row">
+        <div class="col-md-3">
+            <RadzenCard Style="margin-bottom: 20px; background-color: #e3f2fd;">
+                <h6><RadzenIcon Icon="account_balance" /> Initial Margin</h6>
+                <h4>@marginSummary.InitialMargin.ToString("N2")</h4>
+            </RadzenCard>
+        </div>
+        <div class="col-md-3">
+            <RadzenCard Style="margin-bottom: 20px; background-color: #fff3e0;">
+                <h6><RadzenIcon Icon="account_balance_wallet" /> Maintenance Margin</h6>
+                <h4>@marginSummary.MaintenanceMargin.ToString("N2")</h4>
+            </RadzenCard>
+        </div>
+        <div class="col-md-3">
+            <RadzenCard Style="margin-bottom: 20px; background-color: #e8f5e9;">
+                <h6><RadzenIcon Icon="savings" /> Current Collateral</h6>
+                <h4>@marginSummary.CurrentCollateral.ToString("N2")</h4>
+            </RadzenCard>
+        </div>
+        <div class="col-md-3">
+            <RadzenCard Style="@($"margin-bottom: 20px; background-color: {(marginSummary.ExcessMargin >= 0 ? "#e8f5e9" : "#ffebee")}")">
+                <h6><RadzenIcon Icon="trending_up" /> Excess Margin</h6>
+                <h4 style="color: @(marginSummary.ExcessMargin >= 0 ? "green" : "red")">
+                    @marginSummary.ExcessMargin.ToString("N2")
+                </h4>
+            </RadzenCard>
+        </div>
+    </div>
+
+    <!-- Margin Details -->
+    <div class="row">
+        <div class="col-md-12">
+            <RadzenCard Style="margin-bottom: 20px;">
+                <h5><RadzenIcon Icon="analytics" /> Margin Requirements</h5>
+                <div class="row">
+                    <div class="col-md-4">
+                        <RadzenText><strong>Total Margin Required:</strong> @marginSummary.TotalMarginRequired.ToString("N2")</RadzenText>
+                        <RadzenText><strong>Variation Margin:</strong> @marginSummary.VariationMargin.ToString("N2")</RadzenText>
+                    </div>
+                    <div class="col-md-4">
+                        <RadzenText><strong>Margin Utilization:</strong> @marginSummary.MarginUtilization.ToString("N2")%</RadzenText>
+                        <div style="margin-top: 10px;">
+                            <RadzenProgressBar Value="@((double)marginSummary.MarginUtilization)" 
+                                             Max="100" 
+                                             Style="height: 20px;" />
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        @if (marginSummary.MarginUtilization > 90)
+                        {
+                            <RadzenAlert Text="Warning: Margin utilization is very high. Consider posting additional collateral." 
+                                       Severity="AlertSeverity.Warning" />
+                        }
+                        else if (marginSummary.ExcessMargin < 0)
+                        {
+                            <RadzenAlert Text="Margin Call: Please post additional collateral immediately." 
+                                       Severity="AlertSeverity.Warning" />
+                        }
+                    </div>
+                </div>
+            </RadzenCard>
+        </div>
+    </div>
+
+    <!-- Collateral Grid -->
+    <div class="row">
+        <div class="col-md-12">
+            <RadzenCard Style="margin-bottom: 20px;">
+                <div style="margin-bottom: 15px;">
+                    <RadzenButton Text="Post Collateral"
+                                 Icon="add_circle"
+                                 ButtonStyle="ButtonStyle.Primary"
+                                 Click="@OpenPostCollateralDialog"
+                                 Style="margin-right: 10px;" />
+                    <RadzenButton Text="Refresh"
+                                 Icon="refresh"
+                                 ButtonStyle="ButtonStyle.Secondary"
+                                 Click="@LoadData" />
+                </div>
+
+                <h5><RadzenIcon Icon="account_balance_wallet" /> Posted Collateral</h5>
+                <RadzenDataGrid Data="@collaterals" 
+                               TItem="Collateral" 
+                               AllowPaging="true" 
+                               PageSize="10">
+                    <Columns>
+                        <RadzenDataGridColumn TItem="Collateral" Property="CollateralId" Title="Collateral ID" />
+                        <RadzenDataGridColumn TItem="Collateral" Property="CollateralType" Title="Type" />
+                        <RadzenDataGridColumn TItem="Collateral" Property="Asset" Title="Asset" />
+                        <RadzenDataGridColumn TItem="Collateral" Property="Quantity" Title="Quantity" FormatString="{0:N2}" />
+                        <RadzenDataGridColumn TItem="Collateral" Property="MarketValue" Title="Market Value" FormatString="{0:N2}" />
+                        <RadzenDataGridColumn TItem="Collateral" Property="HaircutPercentage" Title="Haircut %" FormatString="{0:N2}" />
+                        <RadzenDataGridColumn TItem="Collateral" Property="EligibleValue" Title="Eligible Value" FormatString="{0:N2}" />
+                        <RadzenDataGridColumn TItem="Collateral" Property="Status" Title="Status">
+                            <Template Context="collateral">
+                                @if (collateral.Status == "Posted")
+                                {
+                                    <RadzenBadge BadgeStyle="BadgeStyle.Success" Text="@collateral.Status" />
+                                }
+                                else if (collateral.Status == "Withdrawn")
+                                {
+                                    <RadzenBadge BadgeStyle="BadgeStyle.Secondary" Text="@collateral.Status" />
+                                }
+                                else
+                                {
+                                    <RadzenBadge BadgeStyle="BadgeStyle.Info" Text="@collateral.Status" />
+                                }
+                            </Template>
+                        </RadzenDataGridColumn>
+                        <RadzenDataGridColumn TItem="Collateral" Property="PostedDate" Title="Posted Date" FormatString="{0:yyyy-MM-dd}" />
+                        <RadzenDataGridColumn TItem="Collateral" Title="Actions">
+                            <Template Context="collateral">
+                                @if (collateral.Status == "Posted")
+                                {
+                                    <RadzenButton Icon="remove_circle"
+                                                Size="ButtonSize.Small"
+                                                ButtonStyle="ButtonStyle.Danger"
+                                                Click="@(() => WithdrawCollateral(collateral.CollateralId))"
+                                                Tooltip="Withdraw Collateral" />
+                                }
+                            </Template>
+                        </RadzenDataGridColumn>
+                    </Columns>
+                </RadzenDataGrid>
+            </RadzenCard>
+        </div>
+    </div>
+
+    <!-- Collateral Summary -->
+    <div class="row">
+        <div class="col-md-12">
+            <RadzenCard>
+                <h5><RadzenIcon Icon="pie_chart" /> Collateral Composition</h5>
+                <div class="row">
+                    @{
+                        var collateralByType = collaterals.Where(c => c.Status == "Posted")
+                                                         .GroupBy(c => c.CollateralType)
+                                                         .Select(g => new { Type = g.Key, Value = g.Sum(c => c.EligibleValue) });
+                    }
+                    @foreach (var item in collateralByType)
+                    {
+                        <div class="col-md-4">
+                            <RadzenCard Style="background-color: #f5f5f5;">
+                                <h6>@item.Type</h6>
+                                <h4>@item.Value.ToString("N2")</h4>
+                                <RadzenText>
+                                    @((item.Value / marginSummary.CurrentCollateral * 100).ToString("N2"))% of total
+                                </RadzenText>
+                            </RadzenCard>
+                        </div>
+                    }
+                </div>
+            </RadzenCard>
+        </div>
+    </div>
+}
+
+@if (!string.IsNullOrEmpty(message))
+{
+    <RadzenCard Style="margin-top: 20px; background-color: #d4edda; border-color: #c3e6cb;">
+        <RadzenText Style="color: #155724;">
+            <RadzenIcon Icon="check_circle" /> @message
+        </RadzenText>
+    </RadzenCard>
+}
+
+<!-- Post Collateral Dialog -->
+<RadzenDialog @bind-Visible="@showPostCollateralDialog" Style="width: 600px;">
+    <RadzenCard>
+        <h4>Post Collateral</h4>
+        <hr />
+        
+        <RadzenTemplateForm TItem="Collateral" Data="@newCollateral" Submit="@PostCollateral">
+            <div style="margin-bottom: 15px;">
+                <RadzenLabel Text="Collateral Type" />
+                <RadzenDropDown @bind-Value="@newCollateral.CollateralType"
+                               Data="@eligibleCollateralTypes"
+                               Placeholder="Select Collateral Type"
+                               Style="width: 100%;"
+                               Name="CollateralType" />
+                <RadzenRequiredValidator Component="CollateralType" Text="Collateral type is required" />
+            </div>
+
+            <div style="margin-bottom: 15px;">
+                <RadzenLabel Text="Asset" />
+                <RadzenTextBox @bind-Value="@newCollateral.Asset" 
+                              Name="Asset" 
+                              Style="width: 100%;"
+                              Placeholder="e.g., ZMW, USD, Bond Name" />
+                <RadzenRequiredValidator Component="Asset" Text="Asset is required" />
+            </div>
+
+            <div style="margin-bottom: 15px;">
+                <RadzenLabel Text="Quantity" />
+                <RadzenNumeric @bind-Value="@newCollateral.Quantity"
+                              Name="Quantity"
+                              Min="0"
+                              Step="1"
+                              Style="width: 100%;" />
+                <RadzenRequiredValidator Component="Quantity" Text="Quantity is required" />
+            </div>
+
+            <div style="margin-bottom: 15px;">
+                <RadzenLabel Text="Market Value" />
+                <RadzenNumeric @bind-Value="@newCollateral.MarketValue"
+                              Name="MarketValue"
+                              Min="0"
+                              Step="0.01"
+                              FormatString="{0:N2}"
+                              Style="width: 100%;" />
+                <RadzenRequiredValidator Component="MarketValue" Text="Market value is required" />
+            </div>
+
+            <div style="margin-bottom: 15px;">
+                <RadzenLabel Text="Haircut Percentage (%)" />
+                <RadzenNumeric @bind-Value="@newCollateral.HaircutPercentage"
+                              Name="HaircutPercentage"
+                              Min="0"
+                              Max="100"
+                              Step="0.1"
+                              FormatString="{0:N2}"
+                              Style="width: 100%;" />
+            </div>
+
+            @if (newCollateral.MarketValue > 0)
+            {
+                <div style="margin-bottom: 15px;">
+                    <RadzenCard Style="background-color: #f5f5f5;">
+                        <RadzenText><strong>Eligible Value:</strong> 
+                            @((newCollateral.MarketValue * (1 - newCollateral.HaircutPercentage / 100)).ToString("N2"))
+                        </RadzenText>
+                    </RadzenCard>
+                </div>
+            }
+
+            <div style="margin-top: 20px;">
+                <RadzenButton ButtonType="ButtonType.Submit"
+                             Text="Post Collateral"
+                             Icon="add_circle"
+                             ButtonStyle="ButtonStyle.Primary"
+                             Style="margin-right: 10px;" />
+                
+                <RadzenButton ButtonType="ButtonType.Button"
+                             Text="Cancel"
+                             ButtonStyle="ButtonStyle.Secondary"
+                             Click="@(() => showPostCollateralDialog = false)" />
+            </div>
+        </RadzenTemplateForm>
+    </RadzenCard>
+</RadzenDialog>
+
+@code {
+    private bool loading = true;
+    private MarginSummary marginSummary = new();
+    private List<Collateral> collaterals = new();
+    private List<string> eligibleCollateralTypes = new();
+    private string message = string.Empty;
+    private bool showPostCollateralDialog = false;
+    private Collateral newCollateral = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        loading = true;
+        message = string.Empty;
+        
+        marginSummary = await MarginService.GetMarginSummaryAsync();
+        collaterals = await MarginService.GetCollateralAsync();
+        eligibleCollateralTypes = await MarginService.GetEligibleCollateralTypesAsync();
+        
+        loading = false;
+    }
+
+    private void OpenPostCollateralDialog()
+    {
+        newCollateral = new Collateral
+        {
+            HaircutPercentage = 0
+        };
+        showPostCollateralDialog = true;
+    }
+
+    private async Task PostCollateral(Collateral collateral)
+    {
+        var result = await MarginService.PostCollateralAsync(collateral);
+        
+        if (result)
+        {
+            message = "Collateral posted successfully";
+            showPostCollateralDialog = false;
+            await LoadData();
+        }
+        else
+        {
+            message = "Failed to post collateral";
+        }
+    }
+
+    private async Task WithdrawCollateral(string collateralId)
+    {
+        var result = await MarginService.WithdrawCollateralAsync(collateralId);
+        
+        if (result)
+        {
+            message = $"Collateral {collateralId} withdrawn successfully";
+            await LoadData();
+        }
+        else
+        {
+            message = "Failed to withdraw collateral";
+        }
+    }
+}

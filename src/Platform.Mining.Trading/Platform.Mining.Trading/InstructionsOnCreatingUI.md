@@ -1,0 +1,3 @@
+ create comprehesive seven radzen components  based on this file TradingMiningUI.md and make sure that you use valid Radzen component from
+  ValidRadzen.md. Put blazor radzen component in digitalTwins of Pages folder of the current directory. Create models and services in Models folder and Services folder.
+  the services should have interfaces and MockServices which should implement those interfaces with enough sample data in c#. 

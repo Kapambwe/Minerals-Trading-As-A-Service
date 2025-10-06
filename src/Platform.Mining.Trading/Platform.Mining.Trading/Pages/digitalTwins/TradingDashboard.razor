@@ -1,0 +1,235 @@
+@page "/trading-dashboard"
+@using Platform.Mining.Trading.Models
+@using Platform.Mining.Trading.Services
+@inject ITradingDashboardService DashboardService
+
+<h3>Trading Dashboard</h3>
+
+@if (loading)
+{
+    <RadzenProgressBar />
+}
+else
+{
+    <div class="row">
+        <!-- Account Balances -->
+        <div class="col-md-4">
+            <RadzenCard Style="margin-bottom: 20px;">
+                <h5><RadzenIcon Icon="account_balance_wallet" /> Account Balances</h5>
+                <RadzenDataGrid Data="@accountBalances" TItem="AccountBalance" AllowPaging="false">
+                    <Columns>
+                        <RadzenDataGridColumn TItem="AccountBalance" Property="Currency" Title="Currency" />
+                        <RadzenDataGridColumn TItem="AccountBalance" Property="Balance" Title="Balance" FormatString="{0:N2}" />
+                        <RadzenDataGridColumn TItem="AccountBalance" Property="AvailableBalance" Title="Available" FormatString="{0:N2}" />
+                    </Columns>
+                </RadzenDataGrid>
+            </RadzenCard>
+        </div>
+
+        <!-- Margin Summary -->
+        <div class="col-md-4">
+            <RadzenCard Style="margin-bottom: 20px;">
+                <h5><RadzenIcon Icon="account_balance" /> Margin Summary</h5>
+                @if (marginSummary != null)
+                {
+                    <div>
+                        <RadzenText><strong>Total Margin Required:</strong> @marginSummary.TotalMarginRequired.ToString("N2")</RadzenText>
+                        <RadzenText><strong>Current Collateral:</strong> @marginSummary.CurrentCollateral.ToString("N2")</RadzenText>
+                        <RadzenText><strong>Margin Utilization:</strong> @marginSummary.MarginUtilization.ToString("N2")%</RadzenText>
+                        <RadzenText><strong>Excess Margin:</strong> @marginSummary.ExcessMargin.ToString("N2")</RadzenText>
+                    </div>
+                }
+            </RadzenCard>
+        </div>
+
+        <!-- Total P&L -->
+        <div class="col-md-4">
+            <RadzenCard Style="margin-bottom: 20px;">
+                <h5><RadzenIcon Icon="show_chart" /> Portfolio P&L</h5>
+                @if (positions != null && positions.Any())
+                {
+                    var totalPnL = positions.Sum(p => p.TotalPnL);
+                    var unrealizedPnL = positions.Sum(p => p.UnrealizedPnL);
+                    var realizedPnL = positions.Sum(p => p.RealizedPnL);
+                    
+                    <div>
+                        <RadzenText><strong>Total P&L:</strong> 
+                            <span style="color: @(totalPnL >= 0 ? "green" : "red")">
+                                @totalPnL.ToString("N2")
+                            </span>
+                        </RadzenText>
+                        <RadzenText><strong>Unrealized P&L:</strong> @unrealizedPnL.ToString("N2")</RadzenText>
+                        <RadzenText><strong>Realized P&L:</strong> @realizedPnL.ToString("N2")</RadzenText>
+                    </div>
+                }
+            </RadzenCard>
+        </div>
+    </div>
+
+    <!-- Alerts -->
+    <div class="row">
+        <div class="col-md-12">
+            <RadzenCard Style="margin-bottom: 20px;">
+                <h5><RadzenIcon Icon="notifications" /> Alerts</h5>
+                <RadzenDataGrid Data="@alerts" TItem="Alert" AllowPaging="true" PageSize="5">
+                    <Columns>
+                        <RadzenDataGridColumn TItem="Alert" Property="Severity" Title="Severity">
+                            <Template Context="alert">
+                                @if (alert.Severity == "Critical")
+                                {
+                                    <RadzenBadge BadgeStyle="BadgeStyle.Danger" Text="@alert.Severity" />
+                                }
+                                else if (alert.Severity == "Warning")
+                                {
+                                    <RadzenBadge BadgeStyle="BadgeStyle.Warning" Text="@alert.Severity" />
+                                }
+                                else
+                                {
+                                    <RadzenBadge BadgeStyle="BadgeStyle.Info" Text="@alert.Severity" />
+                                }
+                            </Template>
+                        </RadzenDataGridColumn>
+                        <RadzenDataGridColumn TItem="Alert" Property="Message" Title="Message" />
+                        <RadzenDataGridColumn TItem="Alert" Property="Timestamp" Title="Time" FormatString="{0:yyyy-MM-dd HH:mm}" />
+                    </Columns>
+                </RadzenDataGrid>
+            </RadzenCard>
+        </div>
+    </div>
+
+    <!-- Open Orders and Positions -->
+    <div class="row">
+        <div class="col-md-6">
+            <RadzenCard Style="margin-bottom: 20px;">
+                <h5><RadzenIcon Icon="assignment" /> Open Orders</h5>
+                <RadzenDataGrid Data="@orders" TItem="Order" AllowPaging="true" PageSize="5">
+                    <Columns>
+                        <RadzenDataGridColumn TItem="Order" Property="OrderId" Title="Order ID" />
+                        <RadzenDataGridColumn TItem="Order" Property="Instrument" Title="Instrument" />
+                        <RadzenDataGridColumn TItem="Order" Property="Direction" Title="Side">
+                            <Template Context="order">
+                                <span style="color: @(order.Direction == "Buy" ? "green" : "red")">
+                                    @order.Direction
+                                </span>
+                            </Template>
+                        </RadzenDataGridColumn>
+                        <RadzenDataGridColumn TItem="Order" Property="RemainingQuantity" Title="Qty" FormatString="{0:N0}" />
+                        <RadzenDataGridColumn TItem="Order" Property="Price" Title="Price" FormatString="{0:N2}" />
+                        <RadzenDataGridColumn TItem="Order" Property="Status" Title="Status">
+                            <Template Context="order">
+                                @if (order.Status == "Active")
+                                {
+                                    <RadzenBadge BadgeStyle="BadgeStyle.Success" Text="@order.Status" />
+                                }
+                                else
+                                {
+                                    <RadzenBadge BadgeStyle="BadgeStyle.Warning" Text="@order.Status" />
+                                }
+                            </Template>
+                        </RadzenDataGridColumn>
+                    </Columns>
+                </RadzenDataGrid>
+            </RadzenCard>
+        </div>
+
+        <div class="col-md-6">
+            <RadzenCard Style="margin-bottom: 20px;">
+                <h5><RadzenIcon Icon="inventory_2" /> Open Positions</h5>
+                <RadzenDataGrid Data="@positions" TItem="Position" AllowPaging="true" PageSize="5">
+                    <Columns>
+                        <RadzenDataGridColumn TItem="Position" Property="Instrument" Title="Instrument" />
+                        <RadzenDataGridColumn TItem="Position" Property="OpenQuantity" Title="Quantity" FormatString="{0:N0}" />
+                        <RadzenDataGridColumn TItem="Position" Property="CurrentPrice" Title="Current Price" FormatString="{0:N2}" />
+                        <RadzenDataGridColumn TItem="Position" Property="UnrealizedPnL" Title="Unrealized P&L" FormatString="{0:N2}">
+                            <Template Context="position">
+                                <span style="color: @(position.UnrealizedPnL >= 0 ? "green" : "red")">
+                                    @position.UnrealizedPnL.ToString("N2")
+                                </span>
+                            </Template>
+                        </RadzenDataGridColumn>
+                    </Columns>
+                </RadzenDataGrid>
+            </RadzenCard>
+        </div>
+    </div>
+
+    <!-- Recent Trades -->
+    <div class="row">
+        <div class="col-md-12">
+            <RadzenCard Style="margin-bottom: 20px;">
+                <h5><RadzenIcon Icon="receipt_long" /> Recent Trades</h5>
+                <RadzenDataGrid Data="@recentTrades" TItem="Trade" AllowPaging="true" PageSize="5">
+                    <Columns>
+                        <RadzenDataGridColumn TItem="Trade" Property="TradeId" Title="Trade ID" />
+                        <RadzenDataGridColumn TItem="Trade" Property="Instrument" Title="Instrument" />
+                        <RadzenDataGridColumn TItem="Trade" Property="Direction" Title="Side" />
+                        <RadzenDataGridColumn TItem="Trade" Property="Quantity" Title="Quantity" FormatString="{0:N0}" />
+                        <RadzenDataGridColumn TItem="Trade" Property="Price" Title="Price" FormatString="{0:N2}" />
+                        <RadzenDataGridColumn TItem="Trade" Property="NetValue" Title="Net Value" FormatString="{0:N2}" />
+                        <RadzenDataGridColumn TItem="Trade" Property="TradeTime" Title="Time" FormatString="{0:yyyy-MM-dd HH:mm}" />
+                        <RadzenDataGridColumn TItem="Trade" Property="Status" Title="Status">
+                            <Template Context="trade">
+                                @if (trade.Status == "Settled")
+                                {
+                                    <RadzenBadge BadgeStyle="BadgeStyle.Success" Text="@trade.Status" />
+                                }
+                                else
+                                {
+                                    <RadzenBadge BadgeStyle="BadgeStyle.Info" Text="@trade.Status" />
+                                }
+                            </Template>
+                        </RadzenDataGridColumn>
+                    </Columns>
+                </RadzenDataGrid>
+            </RadzenCard>
+        </div>
+    </div>
+
+    <!-- Market News -->
+    <div class="row">
+        <div class="col-md-12">
+            <RadzenCard>
+                <h5><RadzenIcon Icon="article" /> Market News</h5>
+                <RadzenDataGrid Data="@news" TItem="NewsItem" AllowPaging="true" PageSize="5">
+                    <Columns>
+                        <RadzenDataGridColumn TItem="NewsItem" Property="Headline" Title="Headline" />
+                        <RadzenDataGridColumn TItem="NewsItem" Property="Source" Title="Source" />
+                        <RadzenDataGridColumn TItem="NewsItem" Property="Category" Title="Category" />
+                        <RadzenDataGridColumn TItem="NewsItem" Property="PublishedTime" Title="Published" FormatString="{0:yyyy-MM-dd HH:mm}" />
+                    </Columns>
+                </RadzenDataGrid>
+            </RadzenCard>
+        </div>
+    </div>
+}
+
+@code {
+    private bool loading = true;
+    private List<AccountBalance> accountBalances = new();
+    private MarginSummary? marginSummary;
+    private List<Order> orders = new();
+    private List<Position> positions = new();
+    private List<Alert> alerts = new();
+    private List<Trade> recentTrades = new();
+    private List<NewsItem> news = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadDashboardData();
+    }
+
+    private async Task LoadDashboardData()
+    {
+        loading = true;
+        
+        accountBalances = await DashboardService.GetAccountBalancesAsync();
+        marginSummary = await DashboardService.GetMarginSummaryAsync();
+        orders = await DashboardService.GetOpenOrdersAsync();
+        positions = await DashboardService.GetOpenPositionsAsync();
+        alerts = await DashboardService.GetAlertsAsync();
+        recentTrades = await DashboardService.GetRecentTradesAsync();
+        news = await DashboardService.GetNewsAsync();
+        
+        loading = false;
+    }
+}

@@ -1,0 +1,227 @@
+@page "/market-data"
+@using Platform.Mining.Trading.Models
+@using Platform.Mining.Trading.Services
+@inject IMarketDataService MarketDataService
+
+<h3>Market Data & Price Ladder</h3>
+
+<div class="row">
+    <div class="col-md-12">
+        <RadzenCard Style="margin-bottom: 20px;">
+            <div class="row">
+                <div class="col-md-8">
+                    <RadzenLabel Text="Select Instrument" />
+                    <RadzenDropDown @bind-Value="@selectedInstrument"
+                                   Data="@instruments"
+                                   Placeholder="Select Instrument"
+                                   Style="width: 100%;"
+                                   Change="@OnInstrumentChanged" />
+                </div>
+                <div class="col-md-4" style="padding-top: 25px;">
+                    <RadzenButton Text="Refresh"
+                                 Icon="refresh"
+                                 ButtonStyle="ButtonStyle.Primary"
+                                 Click="@LoadMarketData"
+                                 Style="margin-right: 10px;" />
+                    <RadzenButton Text="Export"
+                                 Icon="download"
+                                 ButtonStyle="ButtonStyle.Secondary"
+                                 Click="@ExportData" />
+                </div>
+            </div>
+        </RadzenCard>
+    </div>
+</div>
+
+@if (loading)
+{
+    <RadzenProgressBar />
+}
+else
+{
+    <!-- Current Price Summary -->
+    <div class="row">
+        <div class="col-md-12">
+            <RadzenCard Style="margin-bottom: 20px; background-color: #e3f2fd;">
+                <div class="row">
+                    <div class="col-md-3">
+                        <h6>Current Price</h6>
+                        <h4 style="color: #1976d2;">@currentPrice.ToString("N2")</h4>
+                    </div>
+                    @if (marketDepth != null)
+                    {
+                        <div class="col-md-3">
+                            <h6>Best Bid</h6>
+                            <h5 style="color: green;">
+                                @(marketDepth.Bids.Any() ? marketDepth.Bids.First().Price.ToString("N2") : "N/A")
+                            </h5>
+                        </div>
+                        <div class="col-md-3">
+                            <h6>Best Ask</h6>
+                            <h5 style="color: red;">
+                                @(marketDepth.Asks.Any() ? marketDepth.Asks.First().Price.ToString("N2") : "N/A")
+                            </h5>
+                        </div>
+                        <div class="col-md-3">
+                            <h6>Spread</h6>
+                            <h5>
+                                @if (marketDepth.Bids.Any() && marketDepth.Asks.Any())
+                                {
+                                    var spread = marketDepth.Asks.First().Price - marketDepth.Bids.First().Price;
+                                    @spread.ToString("N2")
+                                }
+                                else
+                                {
+                                    <text>N/A</text>
+                                }
+                            </h5>
+                        </div>
+                    }
+                </div>
+            </RadzenCard>
+        </div>
+    </div>
+
+    <!-- Market Depth / Order Book Ladder -->
+    <div class="row">
+        <div class="col-md-12">
+            <RadzenCard Style="margin-bottom: 20px;">
+                <h5><RadzenIcon Icon="bar_chart" /> Order Book Depth</h5>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6 style="color: red;"><RadzenIcon Icon="arrow_downward" /> ASKS (Sellers)</h6>
+                        <RadzenDataGrid Data="@marketDepth?.Asks" TItem="PriceLevel" AllowPaging="false" Style="height: 300px;">
+                            <Columns>
+                                <RadzenDataGridColumn TItem="PriceLevel" Property="Price" Title="Price" FormatString="{0:N2}">
+                                    <Template Context="level">
+                                        <span style="color: red; font-weight: bold;">@level.Price.ToString("N2")</span>
+                                    </Template>
+                                </RadzenDataGridColumn>
+                                <RadzenDataGridColumn TItem="PriceLevel" Property="Quantity" Title="Size" FormatString="{0:N0}" />
+                                <RadzenDataGridColumn TItem="PriceLevel" Property="OrderCount" Title="Orders" />
+                                <RadzenDataGridColumn TItem="PriceLevel" Title="Total">
+                                    <Template Context="level">
+                                        @((level.Price * level.Quantity).ToString("N2"))
+                                    </Template>
+                                </RadzenDataGridColumn>
+                            </Columns>
+                        </RadzenDataGrid>
+                    </div>
+
+                    <div class="col-md-6">
+                        <h6 style="color: green;"><RadzenIcon Icon="arrow_upward" /> BIDS (Buyers)</h6>
+                        <RadzenDataGrid Data="@marketDepth?.Bids" TItem="PriceLevel" AllowPaging="false" Style="height: 300px;">
+                            <Columns>
+                                <RadzenDataGridColumn TItem="PriceLevel" Property="Price" Title="Price" FormatString="{0:N2}">
+                                    <Template Context="level">
+                                        <span style="color: green; font-weight: bold;">@level.Price.ToString("N2")</span>
+                                    </Template>
+                                </RadzenDataGridColumn>
+                                <RadzenDataGridColumn TItem="PriceLevel" Property="Quantity" Title="Size" FormatString="{0:N0}" />
+                                <RadzenDataGridColumn TItem="PriceLevel" Property="OrderCount" Title="Orders" />
+                                <RadzenDataGridColumn TItem="PriceLevel" Title="Total">
+                                    <Template Context="level">
+                                        @((level.Price * level.Quantity).ToString("N2"))
+                                    </Template>
+                                </RadzenDataGridColumn>
+                            </Columns>
+                        </RadzenDataGrid>
+                    </div>
+                </div>
+            </RadzenCard>
+        </div>
+    </div>
+
+    <!-- Last Trades Tape -->
+    <div class="row">
+        <div class="col-md-12">
+            <RadzenCard>
+                <h5><RadzenIcon Icon="receipt_long" /> Last Trades</h5>
+                <RadzenDataGrid Data="@lastTrades" TItem="Trade" AllowPaging="true" PageSize="15">
+                    <Columns>
+                        <RadzenDataGridColumn TItem="Trade" Property="TradeTime" Title="Time" FormatString="{0:HH:mm:ss}">
+                            <Template Context="trade">
+                                @trade.TradeTime.ToString("HH:mm:ss")
+                            </Template>
+                        </RadzenDataGridColumn>
+                        <RadzenDataGridColumn TItem="Trade" Property="Direction" Title="Side">
+                            <Template Context="trade">
+                                <RadzenBadge BadgeStyle="@(trade.Direction == "Buy" ? BadgeStyle.Success : BadgeStyle.Danger)" 
+                                           Text="@trade.Direction" />
+                            </Template>
+                        </RadzenDataGridColumn>
+                        <RadzenDataGridColumn TItem="Trade" Property="Price" Title="Price" FormatString="{0:N2}">
+                            <Template Context="trade">
+                                <span style="color: @(trade.Direction == "Buy" ? "green" : "red"); font-weight: bold;">
+                                    @trade.Price.ToString("N2")
+                                </span>
+                            </Template>
+                        </RadzenDataGridColumn>
+                        <RadzenDataGridColumn TItem="Trade" Property="Quantity" Title="Quantity" FormatString="{0:N0}" />
+                        <RadzenDataGridColumn TItem="Trade" Title="Total Value">
+                            <Template Context="trade">
+                                @trade.TotalValue.ToString("N2")
+                            </Template>
+                        </RadzenDataGridColumn>
+                        <RadzenDataGridColumn TItem="Trade" Property="Counterparty" Title="Counterparty" />
+                    </Columns>
+                </RadzenDataGrid>
+            </RadzenCard>
+        </div>
+    </div>
+}
+
+@if (!string.IsNullOrEmpty(message))
+{
+    <RadzenCard Style="margin-top: 20px; background-color: #d4edda; border-color: #c3e6cb;">
+        <RadzenText Style="color: #155724;">
+            <RadzenIcon Icon="check_circle" /> @message
+        </RadzenText>
+    </RadzenCard>
+}
+
+@code {
+    private bool loading = true;
+    private string selectedInstrument = string.Empty;
+    private List<string> instruments = new();
+    private MarketDepth? marketDepth;
+    private List<Trade> lastTrades = new();
+    private decimal currentPrice = 0;
+    private string message = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        instruments = await MarketDataService.GetInstrumentsAsync();
+        if (instruments.Any())
+        {
+            selectedInstrument = instruments.First();
+            await LoadMarketData();
+        }
+    }
+
+    private async Task OnInstrumentChanged()
+    {
+        await LoadMarketData();
+    }
+
+    private async Task LoadMarketData()
+    {
+        loading = true;
+        message = string.Empty;
+
+        if (!string.IsNullOrEmpty(selectedInstrument))
+        {
+            marketDepth = await MarketDataService.GetMarketDepthAsync(selectedInstrument);
+            lastTrades = await MarketDataService.GetLastTradesAsync(selectedInstrument, 50);
+            currentPrice = await MarketDataService.GetCurrentPriceAsync(selectedInstrument);
+        }
+
+        loading = false;
+    }
+
+    private void ExportData()
+    {
+        message = "Market data export feature - Coming soon";
+    }
+}

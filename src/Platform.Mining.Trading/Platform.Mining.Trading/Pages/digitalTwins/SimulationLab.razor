@@ -1,0 +1,304 @@
+@page "/simulation-lab"
+@using Platform.Mining.Trading.Models
+@using Platform.Mining.Trading.Services
+@inject ISimulationService SimulationService
+
+<h3>Backtesting / Simulation Lab</h3>
+
+@if (loading)
+{
+    <RadzenProgressBar />
+}
+else
+{
+    <div class="row">
+        <div class="col-md-12">
+            <RadzenCard Style="margin-bottom: 20px;">
+                <RadzenButton Text="Create Scenario"
+                             Icon="add"
+                             ButtonStyle="ButtonStyle.Primary"
+                             Click="@(() => { newScenario = new SimulationScenario(); showCreateDialog = true; })" />
+            </RadzenCard>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-12">
+            <RadzenCard Style="margin-bottom: 20px;">
+                <h5><RadzenIcon Icon="science" /> Simulation Scenarios</h5>
+                <RadzenDataGrid Data="@scenarios" TItem="SimulationScenario" AllowPaging="true" PageSize="10">
+                    <Columns>
+                        <RadzenDataGridColumn TItem="SimulationScenario" Property="ScenarioName" Title="Scenario Name" />
+                        <RadzenDataGridColumn TItem="SimulationScenario" Property="ScenarioType" Title="Type" />
+                        <RadzenDataGridColumn TItem="SimulationScenario" Property="StartDate" Title="Start Date" FormatString="{0:yyyy-MM-dd}" />
+                        <RadzenDataGridColumn TItem="SimulationScenario" Property="EndDate" Title="End Date" FormatString="{0:yyyy-MM-dd}" />
+                        <RadzenDataGridColumn TItem="SimulationScenario" Property="Status" Title="Status">
+                            <Template Context="scenario">
+                                @if (scenario.Status == "Completed")
+                                {
+                                    <RadzenBadge BadgeStyle="BadgeStyle.Success" Text="@scenario.Status" />
+                                }
+                                else if (scenario.Status == "Running")
+                                {
+                                    <RadzenBadge BadgeStyle="BadgeStyle.Info" Text="@scenario.Status" />
+                                }
+                                else if (scenario.Status == "Failed")
+                                {
+                                    <RadzenBadge BadgeStyle="BadgeStyle.Danger" Text="@scenario.Status" />
+                                }
+                                else
+                                {
+                                    <RadzenBadge BadgeStyle="BadgeStyle.Warning" Text="@scenario.Status" />
+                                }
+                            </Template>
+                        </RadzenDataGridColumn>
+                        <RadzenDataGridColumn TItem="SimulationScenario" Property="ExecutedBy" Title="Executed By" />
+                        <RadzenDataGridColumn TItem="SimulationScenario" Title="Actions">
+                            <Template Context="scenario">
+                                @if (scenario.Status == "Draft")
+                                {
+                                    <RadzenButton Icon="play_arrow"
+                                                Size="ButtonSize.Small"
+                                                ButtonStyle="ButtonStyle.Success"
+                                                Click="@(() => RunSimulation(scenario.ScenarioId))"
+                                                Tooltip="Run Simulation"
+                                                Style="margin-right: 5px;" />
+                                }
+                                @if (scenario.Status == "Completed")
+                                {
+                                    <RadzenButton Icon="analytics"
+                                                Size="ButtonSize.Small"
+                                                ButtonStyle="ButtonStyle.Info"
+                                                Click="@(() => ViewResults(scenario.ScenarioId))"
+                                                Tooltip="View Results"
+                                                Style="margin-right: 5px;" />
+                                    <RadzenButton Icon="download"
+                                                Size="ButtonSize.Small"
+                                                ButtonStyle="ButtonStyle.Secondary"
+                                                Click="@(() => ExportResults(scenario.ScenarioId))"
+                                                Tooltip="Export Results" />
+                                }
+                            </Template>
+                        </RadzenDataGridColumn>
+                    </Columns>
+                </RadzenDataGrid>
+            </RadzenCard>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-12">
+            <RadzenCard>
+                <h5><RadzenIcon Icon="storage" /> Market Data Snapshots</h5>
+                <RadzenDataGrid Data="@marketSnapshots" TItem="MarketDataSnapshot" AllowPaging="true" PageSize="5">
+                    <Columns>
+                        <RadzenDataGridColumn TItem="MarketDataSnapshot" Property="SnapshotDate" Title="Date" FormatString="{0:yyyy-MM-dd}" />
+                        <RadzenDataGridColumn TItem="MarketDataSnapshot" Property="Description" Title="Description" />
+                        <RadzenDataGridColumn TItem="MarketDataSnapshot" Property="TotalRecords" Title="Records" FormatString="{0:N0}" />
+                        <RadzenDataGridColumn TItem="MarketDataSnapshot" Title="File Size">
+                            <Template Context="snapshot">
+                                @((snapshot.FileSizeBytes / 1024 / 1024).ToString("N2")) MB
+                            </Template>
+                        </RadzenDataGridColumn>
+                        <RadzenDataGridColumn TItem="MarketDataSnapshot" Title="Instruments">
+                            <Template Context="snapshot">
+                                @string.Join(", ", snapshot.Instruments.Take(3))
+                                @if (snapshot.Instruments.Count > 3)
+                                {
+                                    <text>...</text>
+                                }
+                            </Template>
+                        </RadzenDataGridColumn>
+                    </Columns>
+                </RadzenDataGrid>
+            </RadzenCard>
+        </div>
+    </div>
+}
+
+@if (!string.IsNullOrEmpty(message))
+{
+    <RadzenCard Style="margin-top: 20px; background-color: #d4edda; border-color: #c3e6cb;">
+        <RadzenText Style="color: #155724;">
+            <RadzenIcon Icon="check_circle" /> @message
+        </RadzenText>
+    </RadzenCard>
+}
+
+<RadzenDialog @bind-Visible="@showCreateDialog" Style="width: 700px;">
+    <RadzenCard>
+        <h4>Create Simulation Scenario</h4>
+        <hr />
+        <RadzenTemplateForm TItem="SimulationScenario" Data="@newScenario" Submit="@CreateScenario">
+            <div style="margin-bottom: 15px;">
+                <RadzenLabel Text="Scenario Name" />
+                <RadzenTextBox @bind-Value="@newScenario.ScenarioName" Name="ScenarioName" Style="width: 100%;" />
+                <RadzenRequiredValidator Component="ScenarioName" Text="Required" />
+            </div>
+            <div style="margin-bottom: 15px;">
+                <RadzenLabel Text="Scenario Type" />
+                <RadzenDropDown @bind-Value="@newScenario.ScenarioType" 
+                               Data="@(new[] { "StressTest", "RuleTesting", "MarketReplay" })" 
+                               Style="width: 100%;" />
+            </div>
+            <div class="row">
+                <div class="col-md-6" style="margin-bottom: 15px;">
+                    <RadzenLabel Text="Start Date" />
+                    <RadzenDatePicker @bind-Value="@newScenario.StartDate" Style="width: 100%;" />
+                </div>
+                <div class="col-md-6" style="margin-bottom: 15px;">
+                    <RadzenLabel Text="End Date" />
+                    <RadzenDatePicker @bind-Value="@newScenario.EndDate" Style="width: 100%;" />
+                </div>
+            </div>
+            <div style="margin-top: 20px;">
+                <RadzenButton ButtonType="ButtonType.Submit"
+                             Text="Create Scenario"
+                             ButtonStyle="ButtonStyle.Primary"
+                             Style="margin-right: 10px;" />
+                <RadzenButton ButtonType="ButtonType.Button"
+                             Text="Cancel"
+                             ButtonStyle="ButtonStyle.Secondary"
+                             Click="@(() => showCreateDialog = false)" />
+            </div>
+        </RadzenTemplateForm>
+    </RadzenCard>
+</RadzenDialog>
+
+<RadzenDialog @bind-Visible="@showResultsDialog" Style="width: 900px;">
+    @if (currentResult != null)
+    {
+        <RadzenCard>
+            <h4>Simulation Results - @currentResult.ScenarioId</h4>
+            <hr />
+            <div class="row">
+                <div class="col-md-3">
+                    <RadzenCard Style="margin-bottom: 15px; background-color: #e3f2fd;">
+                        <h6>Total Orders</h6>
+                        <h4>@currentResult.TotalOrders.ToString("N0")</h4>
+                    </RadzenCard>
+                </div>
+                <div class="col-md-3">
+                    <RadzenCard Style="margin-bottom: 15px; background-color: #e8f5e9;">
+                        <h6>Matched Orders</h6>
+                        <h4>@currentResult.MatchedOrders.ToString("N0")</h4>
+                    </RadzenCard>
+                </div>
+                <div class="col-md-3">
+                    <RadzenCard Style="margin-bottom: 15px; background-color: #fff3e0;">
+                        <h6>Avg Latency</h6>
+                        <h4>@currentResult.AverageLatency.ToString("N2") ms</h4>
+                    </RadzenCard>
+                </div>
+                <div class="col-md-3">
+                    <RadzenCard Style="margin-bottom: 15px; background-color: #fce4ec;">
+                        <h6>Errors</h6>
+                        <h4>@currentResult.ErrorCount</h4>
+                    </RadzenCard>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-6">
+                    <RadzenText><strong>Peak Memory:</strong> @currentResult.PeakMemoryUsageMB.ToString("N0") MB</RadzenText>
+                    <RadzenText><strong>Peak CPU:</strong> @currentResult.PeakCpuUsagePercent.ToString("N2")%</RadzenText>
+                </div>
+                <div class="col-md-6">
+                    <RadzenText><strong>Total Volume:</strong> @currentResult.TotalVolume.ToString("N2")</RadzenText>
+                    <RadzenText><strong>Completed:</strong> @currentResult.CompletedTime.ToString("yyyy-MM-dd HH:mm:ss")</RadzenText>
+                </div>
+            </div>
+            @if (backtestMetrics != null && backtestMetrics.Any())
+            {
+                <h5 style="margin-top: 20px;"><RadzenIcon Icon="insights" /> Metrics</h5>
+                <RadzenDataGrid Data="@backtestMetrics" TItem="BacktestMetric">
+                    <Columns>
+                        <RadzenDataGridColumn TItem="BacktestMetric" Property="MetricName" Title="Metric" />
+                        <RadzenDataGridColumn TItem="BacktestMetric" Property="Value" Title="Value" FormatString="{0:N2}" />
+                        <RadzenDataGridColumn TItem="BacktestMetric" Property="Unit" Title="Unit" />
+                        <RadzenDataGridColumn TItem="BacktestMetric" Property="Threshold" Title="Threshold" />
+                        <RadzenDataGridColumn TItem="BacktestMetric" Property="PassedThreshold" Title="Passed">
+                            <Template Context="metric">
+                                @if (metric.PassedThreshold)
+                                {
+                                    <RadzenIcon Icon="check_circle" Style="color: green;" />
+                                }
+                                else
+                                {
+                                    <RadzenIcon Icon="cancel" Style="color: red;" />
+                                }
+                            </Template>
+                        </RadzenDataGridColumn>
+                    </Columns>
+                </RadzenDataGrid>
+            }
+            <div style="margin-top: 20px;">
+                <RadzenButton Text="Close"
+                             ButtonStyle="ButtonStyle.Secondary"
+                             Click="@(() => showResultsDialog = false)" />
+            </div>
+        </RadzenCard>
+    }
+</RadzenDialog>
+
+@code {
+    private bool loading = true;
+    private List<SimulationScenario> scenarios = new();
+    private List<MarketDataSnapshot> marketSnapshots = new();
+    private SimulationScenario newScenario = new SimulationScenario { StartDate = DateTime.Now.AddDays(-7), EndDate = DateTime.Now };
+    private SimulationResult? currentResult;
+    private List<BacktestMetric>? backtestMetrics;
+    private string message = string.Empty;
+    private bool showCreateDialog = false;
+    private bool showResultsDialog = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        loading = true;
+        message = string.Empty;
+        
+        scenarios = await SimulationService.GetScenariosAsync();
+        marketSnapshots = await SimulationService.GetMarketDataSnapshotsAsync();
+        
+        loading = false;
+    }
+
+    private async Task CreateScenario(SimulationScenario scenario)
+    {
+        var scenarioId = await SimulationService.CreateScenarioAsync(scenario);
+        if (!string.IsNullOrEmpty(scenarioId))
+        {
+            message = $"Scenario created with ID: {scenarioId}";
+            showCreateDialog = false;
+            await LoadData();
+        }
+    }
+
+    private async Task RunSimulation(string scenarioId)
+    {
+        message = "Starting simulation...";
+        var result = await SimulationService.RunSimulationAsync(scenarioId);
+        if (result)
+        {
+            message = $"Simulation {scenarioId} completed successfully";
+            await LoadData();
+        }
+    }
+
+    private async Task ViewResults(string scenarioId)
+    {
+        currentResult = await SimulationService.GetSimulationResultAsync(scenarioId);
+        backtestMetrics = await SimulationService.GetBacktestMetricsAsync(scenarioId);
+        showResultsDialog = true;
+    }
+
+    private async Task ExportResults(string scenarioId)
+    {
+        var data = await SimulationService.ExportResultsAsync(scenarioId);
+        message = $"Results exported for scenario {scenarioId}";
+    }
+}

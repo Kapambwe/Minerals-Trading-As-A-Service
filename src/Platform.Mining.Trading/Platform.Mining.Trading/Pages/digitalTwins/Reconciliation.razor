@@ -1,0 +1,188 @@
+@page "/reconciliation"
+@using Platform.Mining.Trading.Models
+@using Platform.Mining.Trading.Services
+@inject IReconciliationService ReconService
+
+<h3>Reconciliation & Finance</h3>
+
+@if (loading)
+{
+    <RadzenProgressBar />
+}
+else
+{
+    <!-- Reconciliation Reports -->
+    <div class="row">
+        <div class="col-md-12">
+            <RadzenCard Style="margin-bottom: 20px;">
+                <div style="margin-bottom: 15px;">
+                    <RadzenButton Text="Run New Reconciliation"
+                                 Icon="play_arrow"
+                                 ButtonStyle="ButtonStyle.Primary"
+                                 Click="@(() => showRunReconDialog = true)" />
+                </div>
+
+                <h5><RadzenIcon Icon="receipt" /> Reconciliation Reports</h5>
+                <RadzenDataGrid Data="@reports" TItem="ReconciliationReport" AllowPaging="true" PageSize="10">
+                    <Columns>
+                        <RadzenDataGridColumn TItem="ReconciliationReport" Property="ReportId" Title="Report ID" />
+                        <RadzenDataGridColumn TItem="ReconciliationReport" Property="ReportDate" Title="Date" FormatString="{0:yyyy-MM-dd}" />
+                        <RadzenDataGridColumn TItem="ReconciliationReport" Property="ReportType" Title="Type" />
+                        <RadzenDataGridColumn TItem="ReconciliationReport" Property="TotalRecords" Title="Total Records" />
+                        <RadzenDataGridColumn TItem="ReconciliationReport" Property="MatchedRecords" Title="Matched" />
+                        <RadzenDataGridColumn TItem="ReconciliationReport" Property="UnmatchedRecords" Title="Unmatched">
+                            <Template Context="report">
+                                <span style="color: @(report.UnmatchedRecords > 0 ? "red" : "green"); font-weight: bold;">
+                                    @report.UnmatchedRecords
+                                </span>
+                            </Template>
+                        </RadzenDataGridColumn>
+                        <RadzenDataGridColumn TItem="ReconciliationReport" Property="Status" Title="Status">
+                            <Template Context="report">
+                                @if (report.Status == "Completed")
+                                {
+                                    <RadzenBadge BadgeStyle="BadgeStyle.Success" Text="@report.Status" />
+                                }
+                                else if (report.Status == "Failed")
+                                {
+                                    <RadzenBadge BadgeStyle="BadgeStyle.Danger" Text="@report.Status" />
+                                }
+                                else
+                                {
+                                    <RadzenBadge BadgeStyle="BadgeStyle.Warning" Text="@report.Status" />
+                                }
+                            </Template>
+                        </RadzenDataGridColumn>
+                        <RadzenDataGridColumn TItem="ReconciliationReport" Title="Actions">
+                            <Template Context="report">
+                                @if (report.UnmatchedRecords > 0)
+                                {
+                                    <RadzenButton Icon="visibility"
+                                                Size="ButtonSize.Small"
+                                                ButtonStyle="ButtonStyle.Info"
+                                                Click="@(() => ViewMismatches(report.ReportId))"
+                                                Tooltip="View Mismatches" />
+                                }
+                            </Template>
+                        </RadzenDataGridColumn>
+                    </Columns>
+                </RadzenDataGrid>
+            </RadzenCard>
+        </div>
+    </div>
+
+    <!-- Invoices -->
+    <div class="row">
+        <div class="col-md-12">
+            <RadzenCard>
+                <h5><RadzenIcon Icon="receipt_long" /> Invoices</h5>
+                <RadzenDataGrid Data="@invoices" TItem="Invoice" AllowPaging="true" PageSize="10">
+                    <Columns>
+                        <RadzenDataGridColumn TItem="Invoice" Property="InvoiceId" Title="Invoice ID" />
+                        <RadzenDataGridColumn TItem="Invoice" Property="ParticipantId" Title="Participant" />
+                        <RadzenDataGridColumn TItem="Invoice" Property="InvoiceDate" Title="Invoice Date" FormatString="{0:yyyy-MM-dd}" />
+                        <RadzenDataGridColumn TItem="Invoice" Property="DueDate" Title="Due Date" FormatString="{0:yyyy-MM-dd}" />
+                        <RadzenDataGridColumn TItem="Invoice" Property="TotalAmount" Title="Amount" FormatString="{0:N2}" />
+                        <RadzenDataGridColumn TItem="Invoice" Property="Currency" Title="Currency" />
+                        <RadzenDataGridColumn TItem="Invoice" Property="Status" Title="Status">
+                            <Template Context="invoice">
+                                @if (invoice.Status == "Paid")
+                                {
+                                    <RadzenBadge BadgeStyle="BadgeStyle.Success" Text="@invoice.Status" />
+                                }
+                                else if (invoice.Status == "Overdue")
+                                {
+                                    <RadzenBadge BadgeStyle="BadgeStyle.Danger" Text="@invoice.Status" />
+                                }
+                                else if (invoice.Status == "Sent")
+                                {
+                                    <RadzenBadge BadgeStyle="BadgeStyle.Warning" Text="@invoice.Status" />
+                                }
+                                else
+                                {
+                                    <RadzenBadge BadgeStyle="BadgeStyle.Secondary" Text="@invoice.Status" />
+                                }
+                            </Template>
+                        </RadzenDataGridColumn>
+                    </Columns>
+                </RadzenDataGrid>
+            </RadzenCard>
+        </div>
+    </div>
+}
+
+@if (!string.IsNullOrEmpty(message))
+{
+    <RadzenCard Style="margin-top: 20px; background-color: #d4edda; border-color: #c3e6cb;">
+        <RadzenText Style="color: #155734;">
+            <RadzenIcon Icon="check_circle" /> @message
+        </RadzenText>
+    </RadzenCard>
+}
+
+<!-- Run Reconciliation Dialog -->
+<RadzenDialog @bind-Visible="@showRunReconDialog" Style="width: 500px;">
+    <RadzenCard>
+        <h4>Run Reconciliation</h4>
+        <hr />
+        <div style="margin-bottom: 15px;">
+            <RadzenLabel Text="Report Type" />
+            <RadzenTextBox @bind-Value="@reconType" Style="width: 100%;" />
+        </div>
+        <div style="margin-bottom: 15px;">
+            <RadzenLabel Text="Date" />
+            <RadzenDatePicker @bind-Value="@reconDate" Style="width: 100%;" />
+        </div>
+        <div style="margin-top: 20px;">
+            <RadzenButton Text="Run"
+                         ButtonStyle="ButtonStyle.Primary"
+                         Click="@RunReconciliation"
+                         Style="margin-right: 10px;" />
+            <RadzenButton Text="Cancel"
+                         ButtonStyle="ButtonStyle.Secondary"
+                         Click="@(() => showRunReconDialog = false)" />
+        </div>
+    </RadzenCard>
+</RadzenDialog>
+
+@code {
+    private bool loading = true;
+    private List<ReconciliationReport> reports = new();
+    private List<Invoice> invoices = new();
+    private string message = string.Empty;
+    private bool showRunReconDialog = false;
+    private string reconType = "TradeToClear";
+    private DateTime reconDate = DateTime.Today;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        loading = true;
+        message = string.Empty;
+        
+        reports = await ReconService.GetReportsAsync();
+        invoices = await ReconService.GetInvoicesAsync();
+        
+        loading = false;
+    }
+
+    private async Task RunReconciliation()
+    {
+        var reportId = await ReconService.RunReconciliationAsync(reconType, reconDate);
+        if (!string.IsNullOrEmpty(reportId))
+        {
+            message = $"Reconciliation completed: {reportId}";
+            showRunReconDialog = false;
+            await LoadData();
+        }
+    }
+
+    private void ViewMismatches(string reportId)
+    {
+        message = $"Viewing mismatches for report {reportId} - Feature coming soon";
+    }
+}

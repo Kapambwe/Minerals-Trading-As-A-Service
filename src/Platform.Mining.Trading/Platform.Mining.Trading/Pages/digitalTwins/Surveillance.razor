@@ -1,0 +1,108 @@
+@page "/surveillance"
+@using Platform.Mining.Trading.Models
+@using Platform.Mining.Trading.Services
+@inject ISurveillanceService SurveillanceService
+
+<h3>Surveillance / Market Abuse Monitoring</h3>
+
+@if (loading)
+{
+    <RadzenProgressBar />
+}
+else
+{
+    <div class="row">
+        <div class="col-md-3">
+            <RadzenCard Style="margin-bottom: 20px; background-color: #ffebee;">
+                <h6><RadzenIcon Icon="warning" /> Critical Alerts</h6>
+                <h4>@alerts.Count(a => a.Severity == "Critical")</h4>
+            </RadzenCard>
+        </div>
+        <div class="col-md-3">
+            <RadzenCard Style="margin-bottom: 20px; background-color: #fff3e0;">
+                <h6><RadzenIcon Icon="notifications" /> High Priority</h6>
+                <h4>@alerts.Count(a => a.Severity == "High")</h4>
+            </RadzenCard>
+        </div>
+        <div class="col-md-3">
+            <RadzenCard Style="margin-bottom: 20px; background-color: #e8f5e9;">
+                <h6><RadzenIcon Icon="folder" /> Open Cases</h6>
+                <h4>@cases.Count(c => c.Status == "Open" || c.Status == "Investigating")</h4>
+            </RadzenCard>
+        </div>
+        <div class="col-md-3">
+            <RadzenCard Style="margin-bottom: 20px; background-color: #e3f2fd;">
+                <h6><RadzenIcon Icon="analytics" /> Pattern Detections</h6>
+                <h4>@patternResults.Count</h4>
+            </RadzenCard>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-12">
+            <RadzenCard Style="margin-bottom: 20px;">
+                <h5><RadzenIcon Icon="notifications_active" /> Surveillance Alerts</h5>
+                <RadzenDataGrid Data="@alerts" TItem="SurveillanceAlert" AllowPaging="true" PageSize="10">
+                    <Columns>
+                        <RadzenDataGridColumn TItem="SurveillanceAlert" Property="AlertId" Title="Alert ID" />
+                        <RadzenDataGridColumn TItem="SurveillanceAlert" Property="DetectedTime" Title="Detected" FormatString="{0:yyyy-MM-dd HH:mm}" />
+                        <RadzenDataGridColumn TItem="SurveillanceAlert" Property="AlertType" Title="Type" />
+                        <RadzenDataGridColumn TItem="SurveillanceAlert" Property="Account" Title="Account" />
+                        <RadzenDataGridColumn TItem="SurveillanceAlert" Property="Instrument" Title="Instrument" />
+                        <RadzenDataGridColumn TItem="SurveillanceAlert" Property="Description" Title="Description" />
+                    </Columns>
+                </RadzenDataGrid>
+            </RadzenCard>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-12">
+            <RadzenCard Style="margin-bottom: 20px;">
+                <h5><RadzenIcon Icon="folder_open" /> Investigation Cases</h5>
+                <RadzenDataGrid Data="@cases" TItem="SurveillanceCase" AllowPaging="true" PageSize="10">
+                    <Columns>
+                        <RadzenDataGridColumn TItem="SurveillanceCase" Property="CaseId" Title="Case ID" />
+                        <RadzenDataGridColumn TItem="SurveillanceCase" Property="CaseType" Title="Type" />
+                        <RadzenDataGridColumn TItem="SurveillanceCase" Property="Account" Title="Account" />
+                        <RadzenDataGridColumn TItem="SurveillanceCase" Property="Investigator" Title="Investigator" />
+                    </Columns>
+                </RadzenDataGrid>
+            </RadzenCard>
+        </div>
+    </div>
+}
+
+@if (!string.IsNullOrEmpty(message))
+{
+    <RadzenCard Style="margin-top: 20px; background-color: #d4edda; border-color: #c3e6cb;">
+        <RadzenText Style="color: #155724;">
+            <RadzenIcon Icon="check_circle" /> @message
+        </RadzenText>
+    </RadzenCard>
+}
+
+@code {
+    private bool loading = true;
+    private List<SurveillanceAlert> alerts = new();
+    private List<SurveillanceCase> cases = new();
+    private List<PatternDetectionResult> patternResults = new();
+    private string message = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        loading = true;
+        message = string.Empty;
+        
+        alerts = await SurveillanceService.GetAlertsAsync();
+        cases = await SurveillanceService.GetCasesAsync();
+        patternResults = await SurveillanceService.GetPatternDetectionResultsAsync();
+        
+        loading = false;
+    }
+}

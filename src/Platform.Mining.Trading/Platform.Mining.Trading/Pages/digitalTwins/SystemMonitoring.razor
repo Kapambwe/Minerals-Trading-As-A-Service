@@ -1,0 +1,132 @@
+@page "/system-monitoring"
+@using Platform.Mining.Trading.Models
+@using Platform.Mining.Trading.Services
+@inject ISystemMonitoringService MonitoringService
+
+<h3>System Health / Monitoring</h3>
+
+@if (loading)
+{
+    <RadzenProgressBar />
+}
+else
+{
+    <!-- System Metrics -->
+    <div class="row">
+        <div class="col-md-12">
+            <RadzenCard Style="margin-bottom: 20px;">
+                <h5><RadzenIcon Icon="monitor_heart" /> System Metrics</h5>
+                <RadzenDataGrid Data="@systemMetrics" TItem="SystemMetric" AllowPaging="true" PageSize="10">
+                    <Columns>
+                        <RadzenDataGridColumn TItem="SystemMetric" Property="Component" Title="Component" />
+                        <RadzenDataGridColumn TItem="SystemMetric" Property="MetricName" Title="Metric" />
+                        <RadzenDataGridColumn TItem="SystemMetric" Property="Value" Title="Value" FormatString="{0:N2}" />
+                        <RadzenDataGridColumn TItem="SystemMetric" Property="Unit" Title="Unit" />
+                        <RadzenDataGridColumn TItem="SystemMetric" Property="Timestamp" Title="Timestamp" FormatString="{0:HH:mm:ss}" />
+                    </Columns>
+                </RadzenDataGrid>
+            </RadzenCard>
+        </div>
+    </div>
+
+    <!-- FIX Sessions and API Endpoints -->
+    <div class="row">
+        <div class="col-md-6">
+            <RadzenCard Style="margin-bottom: 20px;">
+                <h5><RadzenIcon Icon="swap_horiz" /> FIX Sessions</h5>
+                <RadzenDataGrid Data="@fixSessions" TItem="FixSession" AllowPaging="true" PageSize="5">
+                    <Columns>
+                        <RadzenDataGridColumn TItem="FixSession" Property="CounterpartyId" Title="Counterparty" />
+                        <RadzenDataGridColumn TItem="FixSession" Property="Status" Title="Status">
+                            <Template Context="session">
+                                @if (session.Status == "LoggedOn")
+                                {
+                                    <RadzenBadge BadgeStyle="BadgeStyle.Success" Text="@session.Status" />
+                                }
+                                else
+                                {
+                                    <RadzenBadge BadgeStyle="BadgeStyle.Secondary" Text="@session.Status" />
+                                }
+                            </Template>
+                        </RadzenDataGridColumn>
+                        <RadzenDataGridColumn TItem="FixSession" Property="LatencyMs" Title="Latency (ms)" FormatString="{0:N2}" />
+                        <RadzenDataGridColumn TItem="FixSession" Title="Actions">
+                            <Template Context="session">
+                                <RadzenButton Icon="refresh"
+                                            Size="ButtonSize.Small"
+                                            ButtonStyle="ButtonStyle.Warning"
+                                            Click="@(() => ResetSequence(session.SessionId))"
+                                            Tooltip="Reset Sequence" />
+                            </Template>
+                        </RadzenDataGridColumn>
+                    </Columns>
+                </RadzenDataGrid>
+            </RadzenCard>
+        </div>
+
+        <div class="col-md-6">
+            <RadzenCard Style="margin-bottom: 20px;">
+                <h5><RadzenIcon Icon="api" /> API Endpoints</h5>
+                <RadzenDataGrid Data="@apiEndpoints" TItem="ApiEndpoint" AllowPaging="true" PageSize="5">
+                    <Columns>
+                        <RadzenDataGridColumn TItem="ApiEndpoint" Property="Path" Title="Path" />
+                        <RadzenDataGridColumn TItem="ApiEndpoint" Property="Method" Title="Method" />
+                        <RadzenDataGridColumn TItem="ApiEndpoint" Property="RequestCount" Title="Requests" />
+                        <RadzenDataGridColumn TItem="ApiEndpoint" Property="AvgLatencyMs" Title="Avg Latency" FormatString="{0:N2}" />
+                        <RadzenDataGridColumn TItem="ApiEndpoint" Property="ErrorCount" Title="Errors">
+                            <Template Context="ep">
+                                <span style="color: @(ep.ErrorCount > 10 ? "red" : "green")">
+                                    @ep.ErrorCount
+                                </span>
+                            </Template>
+                        </RadzenDataGridColumn>
+                    </Columns>
+                </RadzenDataGrid>
+            </RadzenCard>
+        </div>
+    </div>
+}
+
+@if (!string.IsNullOrEmpty(message))
+{
+    <RadzenCard Style="margin-top: 20px; background-color: #d4edda; border-color: #c3e6cb;">
+        <RadzenText Style="color: #155724;">
+            <RadzenIcon Icon="check_circle" /> @message
+        </RadzenText>
+    </RadzenCard>
+}
+
+@code {
+    private bool loading = true;
+    private List<SystemMetric> systemMetrics = new();
+    private List<FixSession> fixSessions = new();
+    private List<ApiEndpoint> apiEndpoints = new();
+    private string message = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        loading = true;
+        message = string.Empty;
+        
+        systemMetrics = await MonitoringService.GetSystemMetricsAsync();
+        fixSessions = await MonitoringService.GetFixSessionsAsync();
+        apiEndpoints = await MonitoringService.GetApiEndpointsAsync();
+        
+        loading = false;
+    }
+
+    private async Task ResetSequence(string sessionId)
+    {
+        var result = await MonitoringService.ResetSequenceAsync(sessionId);
+        if (result)
+        {
+            message = $"Sequence reset for session {sessionId}";
+            await LoadData();
+        }
+    }
+}

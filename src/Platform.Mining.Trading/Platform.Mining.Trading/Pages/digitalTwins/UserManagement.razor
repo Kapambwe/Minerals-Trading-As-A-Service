@@ -1,0 +1,185 @@
+@page "/user-management"
+@using Platform.Mining.Trading.Models
+@using Platform.Mining.Trading.Services
+@inject IUserManagementService UserService
+
+<h3>User Management & Permissions</h3>
+
+@if (loading)
+{
+    <RadzenProgressBar />
+}
+else
+{
+    <div class="row">
+        <div class="col-md-12">
+            <RadzenCard Style="margin-bottom: 20px;">
+                <RadzenButton Text="Create User"
+                             Icon="add"
+                             ButtonStyle="ButtonStyle.Primary"
+                             Click="@(() => showCreateUserDialog = true)" />
+            </RadzenCard>
+        </div>
+    </div>
+
+    <!-- Users Grid -->
+    <div class="row">
+        <div class="col-md-12">
+            <RadzenCard>
+                <h5><RadzenIcon Icon="people" /> Users</h5>
+                <RadzenDataGrid Data="@users" TItem="UserAccount" AllowPaging="true" PageSize="10">
+                    <Columns>
+                        <RadzenDataGridColumn TItem="UserAccount" Property="Username" Title="Username" />
+                        <RadzenDataGridColumn TItem="UserAccount" Property="Email" Title="Email" />
+                        <RadzenDataGridColumn TItem="UserAccount" Property="Role" Title="Role" />
+                        <RadzenDataGridColumn TItem="UserAccount" Property="LastLogin" Title="Last Login" FormatString="{0:yyyy-MM-dd HH:mm}" />
+                        <RadzenDataGridColumn TItem="UserAccount" Property="MfaEnabled" Title="MFA">
+                            <Template Context="user">
+                                @if (user.MfaEnabled)
+                                {
+                                    <RadzenIcon Icon="check_circle" Style="color: green;" />
+                                }
+                                else
+                                {
+                                    <RadzenIcon Icon="cancel" Style="color: red;" />
+                                }
+                            </Template>
+                        </RadzenDataGridColumn>
+                        <RadzenDataGridColumn TItem="UserAccount" Property="IsActive" Title="Status">
+                            <Template Context="user">
+                                @if (user.IsActive)
+                                {
+                                    <RadzenBadge BadgeStyle="BadgeStyle.Success" Text="Active" />
+                                }
+                                else
+                                {
+                                    <RadzenBadge BadgeStyle="BadgeStyle.Danger" Text="Disabled" />
+                                }
+                            </Template>
+                        </RadzenDataGridColumn>
+                        <RadzenDataGridColumn TItem="UserAccount" Title="Actions">
+                            <Template Context="user">
+                                @if (user.IsActive)
+                                {
+                                    <RadzenButton Icon="block"
+                                                Size="ButtonSize.Small"
+                                                ButtonStyle="ButtonStyle.Danger"
+                                                Click="@(() => DisableUser(user.UserId))"
+                                                Tooltip="Disable User"
+                                                Style="margin-right: 5px;" />
+                                }
+                                <RadzenButton Icon="lock_reset"
+                                            Size="ButtonSize.Small"
+                                            ButtonStyle="ButtonStyle.Warning"
+                                            Click="@(() => ResetPassword(user.UserId))"
+                                            Tooltip="Reset Password" />
+                            </Template>
+                        </RadzenDataGridColumn>
+                    </Columns>
+                </RadzenDataGrid>
+            </RadzenCard>
+        </div>
+    </div>
+}
+
+@if (!string.IsNullOrEmpty(message))
+{
+    <RadzenCard Style="margin-top: 20px; background-color: #d4edda; border-color: #c3e6cb;">
+        <RadzenText Style="color: #155724;">
+            <RadzenIcon Icon="check_circle" /> @message
+        </RadzenText>
+    </RadzenCard>
+}
+
+<!-- Create User Dialog -->
+<RadzenDialog @bind-Visible="@showCreateUserDialog" Style="width: 600px;">
+    <RadzenCard>
+        <h4>Create User</h4>
+        <hr />
+        <RadzenTemplateForm TItem="UserAccount" Data="@newUser" Submit="@CreateUser">
+            <div style="margin-bottom: 15px;">
+                <RadzenLabel Text="Username" />
+                <RadzenTextBox @bind-Value="@newUser.Username" Name="Username" Style="width: 100%;" />
+                <RadzenRequiredValidator Component="Username" Text="Username is required" />
+            </div>
+            <div style="margin-bottom: 15px;">
+                <RadzenLabel Text="Email" />
+                <RadzenTextBox @bind-Value="@newUser.Email" Name="Email" Style="width: 100%;" />
+                <RadzenRequiredValidator Component="Email" Text="Email is required" />
+            </div>
+            <div style="margin-bottom: 15px;">
+                <RadzenLabel Text="Role" />
+                <RadzenTextBox @bind-Value="@newUser.Role" Name="Role" Style="width: 100%;" />
+                <RadzenRequiredValidator Component="Role" Text="Role is required" />
+            </div>
+            <div style="margin-bottom: 15px;">
+                <RadzenLabel Text="Enable MFA" />
+                <RadzenCheckBox @bind-Value="@newUser.MfaEnabled" />
+            </div>
+            <div style="margin-top: 20px;">
+                <RadzenButton ButtonType="ButtonType.Submit"
+                             Text="Create User"
+                             ButtonStyle="ButtonStyle.Primary"
+                             Style="margin-right: 10px;" />
+                <RadzenButton ButtonType="ButtonType.Button"
+                             Text="Cancel"
+                             ButtonStyle="ButtonStyle.Secondary"
+                             Click="@(() => showCreateUserDialog = false)" />
+            </div>
+        </RadzenTemplateForm>
+    </RadzenCard>
+</RadzenDialog>
+
+@code {
+    private bool loading = true;
+    private List<UserAccount> users = new();
+    private string message = string.Empty;
+    private bool showCreateUserDialog = false;
+    private UserAccount newUser = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        loading = true;
+        message = string.Empty;
+        
+        users = await UserService.GetUsersAsync();
+        
+        loading = false;
+    }
+
+    private async Task CreateUser(UserAccount user)
+    {
+        var userId = await UserService.CreateUserAsync(user);
+        if (!string.IsNullOrEmpty(userId))
+        {
+            message = $"User created with ID: {userId}";
+            showCreateUserDialog = false;
+            newUser = new UserAccount();
+            await LoadData();
+        }
+    }
+
+    private async Task DisableUser(string userId)
+    {
+        var result = await UserService.DisableUserAsync(userId);
+        if (result)
+        {
+            message = $"User {userId} disabled successfully";
+            await LoadData();
+        }
+    }
+
+    private async Task ResetPassword(string userId)
+    {
+        var result = await UserService.ResetPasswordAsync(userId);
+        if (result)
+        {
+            message = $"Password reset for user {userId}";
+        }
+    }
+}
