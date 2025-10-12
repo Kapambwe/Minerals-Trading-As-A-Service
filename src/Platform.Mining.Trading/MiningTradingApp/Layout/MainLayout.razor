@@ -1,16 +1,98 @@
-﻿@inherits LayoutComponentBase
-<div class="page">
-    <div class="sidebar">
-        <NavMenu />
-    </div>
+﻿@using Microsoft.AspNetCore.Components
+@using Radzen
+@using Radzen.Blazor
+@* @attribute [Authorize] *@
+@inherits LayoutComponentBase
 
-    <main>
-        <div class="top-row px-4">
-            <a href="https://learn.microsoft.com/aspnet/core/" target="_blank">About</a>
+<RadzenDialog />
+<RadzenLayout>
+    <RadzenHeader>
+        <ChildContent>
+            <RadzenRow AlignItems="AlignItems.Center" JustifyContent="JustifyContent.Start" Gap="0px">
+                <RadzenColumn Size="5">
+                    <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center">
+                        <RadzenSidebarToggle Click="@(args => { sidebarExpanded = !sidebarExpanded; bodyExpanded = !bodyExpanded; })">
+                        </RadzenSidebarToggle>
+                        <RadzenLabel Text="Crime Management System" style="overflow: hidden; white-space: nowrap; text-overflow: ellipsis;">
+                        </RadzenLabel>
+                    </RadzenStack>
+                </RadzenColumn>
+                <RadzenColumn Size="7">
+                    <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.End">
+                        <LoginDisplay />
+                    </RadzenStack>
+                </RadzenColumn>
+            </RadzenRow>
+        </ChildContent>
+    </RadzenHeader>
+    <RadzenBody @ref="@body0" @bind-Expanded="@bodyExpanded">
+        <ChildContent>
+            <RadzenContentContainer Name="main">
+                @Body
+            </RadzenContentContainer>
+        </ChildContent>
+    </RadzenBody>
+    <RadzenSidebar @ref="@sidebar0" @bind-Expanded="@sidebarExpanded" Class="demos-sidebar" style="display: flex; flex-direction: column">
+        <div style="padding: 1rem">
+            <RadzenTextBox Placeholder="Find page ..." type="search" @oninput="@FilterPanelMenu" style="width: 100%" Class="rz-search-input" />
         </div>
+        <RadzenPanelMenu Style="height: 100%;">
+            <RadzenPanelMenuItem Text="Dashboards" Icon="dashboard" Expanded="true">
+                <RadzenPanelMenuItem Text="Case Investigation" Path="/case-dashboard" />
+                <RadzenPanelMenuItem Text="Community Engagement" Path="/community-dashboard" />
+                <RadzenPanelMenuItem Text="Crime" Path="/crime-dashboard" />
+                <RadzenPanelMenuItem Text="Crime Risk" Path="/crime-risk-dashboard" />
+                <RadzenPanelMenuItem Text="Financial Logistics" Path="/financial-dashboard" />
+                @* <RadzenPanelMenuItem Text="GIS Crime" Path="/gis-crime-dashboard" />
+                <RadzenPanelMenuItem Text="GIS Crime Patrol" Path="/gis-crime-patrol-dashboard" /> *@
+                <RadzenPanelMenuItem Text="Resource Personnel" Path="/resource-dashboard" />
+                <RadzenPanelMenuItem Text="Traffic Safety" Path="/traffic-dashboard" />
+            </RadzenPanelMenuItem>
 
-        <article class="content px-4">
-            @Body
-        </article>
-    </main>
-</div>
+            <RadzenPanelMenuItem Text="Case Management" Icon="folder" Expanded="true">
+                <RadzenPanelMenuItem Text="All Cases" Path="/cases" />
+                <RadzenPanelMenuItem Text="Case Management" Path="/case-management" />
+                <RadzenPanelMenuItem Text="Case Assessment" Path="/case-assessment" />
+                <RadzenPanelMenuItem Text="Case File Compilation" Path="/case-files" />
+            </RadzenPanelMenuItem>
+
+            <RadzenPanelMenuItem Text="Arrest & Prosecution" Icon="gavel" Expanded="true">
+                <RadzenPanelMenuItem Text="Arrest Management" Path="/arrests" />
+                <RadzenPanelMenuItem Text="Arraignment List" Path="/arraignments" />
+            </RadzenPanelMenuItem>
+
+            <RadzenPanelMenuItem Text="Evidence & Crime Scenes" Icon="fingerprint" Expanded="true">
+                <RadzenPanelMenuItem Text="Evidence Management" Path="/evidence" />
+                <RadzenPanelMenuItem Text="Crime Scene Management" Path="/crime-scenes" />
+                <RadzenPanelMenuItem Text="Reconstructions" Path="/reconstructions" />
+                <RadzenPanelMenuItem Text="Statements" Path="/statements" />
+            </RadzenPanelMenuItem>
+
+            <RadzenPanelMenuItem Text="Personnel & Resources" Icon="people" Expanded="true">
+                <RadzenPanelMenuItem Text="Suspects" Path="/suspects" />
+                <RadzenPanelMenuItem Text="Police Docket Receipt" Path="/police-docket-receipt" />
+            </RadzenPanelMenuItem>
+
+            <RadzenPanelMenuItem Text="Analytics & Reports" Icon="analytics" Path="/analytics" />
+            <RadzenPanelMenuItem Text="Settings" Icon="settings" Path="/settings" />
+        </RadzenPanelMenu>
+    </RadzenSidebar>
+</RadzenLayout>
+
+@code {
+    RadzenSidebar sidebar0;
+    RadzenBody body0;
+    bool sidebar2Expanded = true;
+    bool sidebarExpanded = true;
+    bool bodyExpanded = false;
+    bool rendered;
+
+    void FilterPanelMenu(ChangeEventArgs args)
+    {
+        var term = args.Value.ToString();
+
+      //  Func<string, bool> contains = value => value.Contains(term, StringComparison.OrdinalIgnoreCase);
+
+        
+    }
+}

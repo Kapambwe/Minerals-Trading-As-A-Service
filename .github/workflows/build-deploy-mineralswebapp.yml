@@ -1,0 +1,62 @@
+name: Build and Deploy PoliceWebApp
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'src/CompanyApp.Client.LawOrder/**'
+      - 'src/Components/CompanyApp.Components.Police/**'
+      - 'src/Components/CompanyApp.Components.Dashboard.Police/**'
+      - 'src/Components/CompanyApp.Components.Violents.Crimes/**'
+      - '.github/workflows/build-deploy-policewebapp.yml'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'src/CompanyApp.Client.LawOrder/**'
+      - 'src/Components/CompanyApp.Components.Police/**'
+      - 'src/Components/CompanyApp.Components.Dashboard.Police/**'
+      - 'src/Components/CompanyApp.Components.Violents.Crimes/**'
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '9.0.x'
+        
+    - name: Restore dependencies
+      run: dotnet restore src/CompanyApp.Client.LawOrder/CompanyApp.Client.LawOrder.csproj
+      
+    - name: Build PoliceWebApp
+      run: dotnet build src/CompanyApp.Client.LawOrder/CompanyApp.Client.LawOrder.csproj --configuration Release --no-restore
+      
+    - name: Publish PoliceWebApp
+      run: dotnet publish src/CompanyApp.Client.LawOrder/CompanyApp.Client.LawOrder.csproj --configuration Release --output ./publish --no-build
+      
+    - name: Add .nojekyll file
+      run: touch ./publish/wwwroot/.nojekyll
+    
+    # Deploy to external repository - requires POLICEWEBAPP_DEPLOY_TOKEN secret
+    # To set up: Create a Personal Access Token with 'repo' scope and add it as a repository secret
+    # See DEPLOYMENT_INSTRUCTIONS.md for detailed setup steps
+    - name: Deploy to PoliceWebApp repository
+      if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
+      uses: peaceiris/actions-gh-pages@v4
+      with:
+        personal_token: ${{ secrets.POLICEWEBAPP_DEPLOY_TOKEN }}
+        external_repository: Kapambwe/PoliceWebApp
+        publish_branch: main
+        publish_dir: ./publish/wwwroot
+        force_orphan: true
+        user_name: 'github-actions[bot]'
+        user_email: 'github-actions[bot]@users.noreply.github.com'
+        commit_message: 'Deploy PoliceWebApp from Accounting-As-A-Service'
