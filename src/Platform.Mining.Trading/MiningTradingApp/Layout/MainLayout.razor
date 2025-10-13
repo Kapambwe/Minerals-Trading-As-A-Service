@@ -4,6 +4,14 @@
 @* @attribute [Authorize] *@
 @inherits LayoutComponentBase
 
+@* PSEUDOCODE:
+- Inject NavigationManager as NavManager.
+- Replace all RadzenPanelMenuItem Path attributes from literal routes (e.g., "/settings")
+  to NavManager.WithBase("<route>") to respect app base path.
+- Use single quotes around attribute values to avoid Razor quote conflicts.
+- Leave other component structure unchanged.
+*@
+
 <RadzenDialog />
 <RadzenLayout>
     <RadzenHeader>
@@ -13,7 +21,7 @@
                     <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center">
                         <RadzenSidebarToggle Click="@(args => { sidebarExpanded = !sidebarExpanded; bodyExpanded = !bodyExpanded; })">
                         </RadzenSidebarToggle>
-                        <RadzenLabel Text="Crime Management System" style="overflow: hidden; white-space: nowrap; text-overflow: ellipsis;">
+                        <RadzenLabel Text="Minerals Trading Platform" style="overflow: hidden; white-space: nowrap; text-overflow: ellipsis;">
                         </RadzenLabel>
                     </RadzenStack>
                 </RadzenColumn>
@@ -37,49 +45,50 @@
             <RadzenTextBox Placeholder="Find page ..." type="search" @oninput="@FilterPanelMenu" style="width: 100%" Class="rz-search-input" />
         </div>
         <RadzenPanelMenu Style="height: 100%;">
-            <RadzenPanelMenuItem Text="Dashboards" Icon="dashboard" Expanded="true">
-                <RadzenPanelMenuItem Text="Case Investigation" Path="/case-dashboard" />
-                <RadzenPanelMenuItem Text="Community Engagement" Path="/community-dashboard" />
-                <RadzenPanelMenuItem Text="Crime" Path="/crime-dashboard" />
-                <RadzenPanelMenuItem Text="Crime Risk" Path="/crime-risk-dashboard" />
-                <RadzenPanelMenuItem Text="Financial Logistics" Path="/financial-dashboard" />
-                @* <RadzenPanelMenuItem Text="GIS Crime" Path="/gis-crime-dashboard" />
-                <RadzenPanelMenuItem Text="GIS Crime Patrol" Path="/gis-crime-patrol-dashboard" /> *@
-                <RadzenPanelMenuItem Text="Resource Personnel" Path="/resource-dashboard" />
-                <RadzenPanelMenuItem Text="Traffic Safety" Path="/traffic-dashboard" />
+            <RadzenPanelMenuItem Text="Dashboard" Icon="dashboard" Expanded="true">
+                <RadzenPanelMenuItem Text="Trading Dashboard" Path='@NavManager.WithBase("trading-dashboard")' />
+                <RadzenPanelMenuItem Text="System Monitoring" Path='@NavManager.WithBase("system-monitoring")' />
             </RadzenPanelMenuItem>
 
-            <RadzenPanelMenuItem Text="Case Management" Icon="folder" Expanded="true">
-                <RadzenPanelMenuItem Text="All Cases" Path="/cases" />
-                <RadzenPanelMenuItem Text="Case Management" Path="/case-management" />
-                <RadzenPanelMenuItem Text="Case Assessment" Path="/case-assessment" />
-                <RadzenPanelMenuItem Text="Case File Compilation" Path="/case-files" />
+            <RadzenPanelMenuItem Text="Trading" Icon="trending_up" Expanded="true">
+                <RadzenPanelMenuItem Text="Order Entry" Path='@NavManager.WithBase("order-entry")' />
+                <RadzenPanelMenuItem Text="Order Book" Path='@NavManager.WithBase("order-book")' />
+                <RadzenPanelMenuItem Text="Market Data" Path='@NavManager.WithBase("market-data")' />
+                <RadzenPanelMenuItem Text="Trade Blotter" Path='@NavManager.WithBase("trade-blotter")' />
+                <RadzenPanelMenuItem Text="Positions & Portfolio" Path='@NavManager.WithBase("positions-portfolio")' />
             </RadzenPanelMenuItem>
 
-            <RadzenPanelMenuItem Text="Arrest & Prosecution" Icon="gavel" Expanded="true">
-                <RadzenPanelMenuItem Text="Arrest Management" Path="/arrests" />
-                <RadzenPanelMenuItem Text="Arraignment List" Path="/arraignments" />
+            <RadzenPanelMenuItem Text="Risk & Margin" Icon="account_balance" Expanded="true">
+                <RadzenPanelMenuItem Text="Margin & Collateral" Path='@NavManager.WithBase("margin-collateral")' />
+                <RadzenPanelMenuItem Text="Surveillance" Path='@NavManager.WithBase("surveillance")' />
             </RadzenPanelMenuItem>
 
-            <RadzenPanelMenuItem Text="Evidence & Crime Scenes" Icon="fingerprint" Expanded="true">
-                <RadzenPanelMenuItem Text="Evidence Management" Path="/evidence" />
-                <RadzenPanelMenuItem Text="Crime Scene Management" Path="/crime-scenes" />
-                <RadzenPanelMenuItem Text="Reconstructions" Path="/reconstructions" />
-                <RadzenPanelMenuItem Text="Statements" Path="/statements" />
+            <RadzenPanelMenuItem Text="Operations" Icon="business" Expanded="true">
+                <RadzenPanelMenuItem Text="Warehouse Operations" Path='@NavManager.WithBase("warehouse-operations")' />
+                <RadzenPanelMenuItem Text="Clearing & Settlement" Path='@NavManager.WithBase("clearing-settlement")' />
+                <RadzenPanelMenuItem Text="Settlement Engine" Path='@NavManager.WithBase("settlement-engine")' />
+                <RadzenPanelMenuItem Text="Reconciliation" Path='@NavManager.WithBase("reconciliation")' />
             </RadzenPanelMenuItem>
 
-            <RadzenPanelMenuItem Text="Personnel & Resources" Icon="people" Expanded="true">
-                <RadzenPanelMenuItem Text="Suspects" Path="/suspects" />
-                <RadzenPanelMenuItem Text="Police Docket Receipt" Path="/police-docket-receipt" />
+            <RadzenPanelMenuItem Text="Market Administration" Icon="admin_panel_settings" Expanded="true">
+                <RadzenPanelMenuItem Text="Market Operations" Path='@NavManager.WithBase("market-operations")' />
+                <RadzenPanelMenuItem Text="Matching Engine Admin" Path='@NavManager.WithBase("matching-engine-admin")' />
+                <RadzenPanelMenuItem Text="Product Definition" Path='@NavManager.WithBase("product-definition")' />
+                <RadzenPanelMenuItem Text="Simulation Lab" Path='@NavManager.WithBase("simulation-lab")' />
             </RadzenPanelMenuItem>
 
-            <RadzenPanelMenuItem Text="Analytics & Reports" Icon="analytics" Path="/analytics" />
-            <RadzenPanelMenuItem Text="Settings" Icon="settings" Path="/settings" />
+            <RadzenPanelMenuItem Text="Compliance & Users" Icon="security" Expanded="true">
+                <RadzenPanelMenuItem Text="KYC & Compliance" Path='@NavManager.WithBase("kyc-compliance")' />
+                <RadzenPanelMenuItem Text="User Management" Path='@NavManager.WithBase("user-management")' />
+                <RadzenPanelMenuItem Text="Audit Logs" Path='@NavManager.WithBase("audit-logs")' />
+            </RadzenPanelMenuItem>
         </RadzenPanelMenu>
     </RadzenSidebar>
 </RadzenLayout>
 
 @code {
+    [Inject] NavigationManager NavManager { get; set; } = default!;
+
     RadzenSidebar sidebar0;
     RadzenBody body0;
     bool sidebar2Expanded = true;
@@ -89,10 +98,8 @@
 
     void FilterPanelMenu(ChangeEventArgs args)
     {
-        var term = args.Value.ToString();
+        var term = args.Value?.ToString();
 
-      //  Func<string, bool> contains = value => value.Contains(term, StringComparison.OrdinalIgnoreCase);
-
-        
+        // Func<string, bool> contains = value => value.Contains(term, StringComparison.OrdinalIgnoreCase);
     }
 }

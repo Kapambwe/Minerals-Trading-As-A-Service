@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//c/Dev/Minerals-Trading-As-A-Service/src/Platform.Mining.Trading/Platform.Mining.Trading/Pages/digitalTwins/**)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
