@@ -1,0 +1,193 @@
+@using Platform.Trading.Management.Models
+@using Platform.Trading.Management.Services.Interfaces
+@inject DialogService DialogService
+@inject IWarehouseService WarehouseService // To get list of warehouses
+
+<RadzenStack Gap="1rem">
+    <RadzenTabs SelectedIndex="0">
+        <Tabs>
+            <RadzenTabsItem Text="General Information">
+                <RadzenFieldset Text="General Record Information">
+                    <RadzenStack Gap="1rem">
+                        <RadzenRow>
+                            <RadzenColumn Size="12" SizeMD="6">
+                                <RadzenFormField Text="Warehouse" Variant="Variant.Outlined">
+                                    <RadzenDropDown TValue="string" @bind-Value="MonitoringRecord.WarehouseId" Data="@warehouses" TextProperty="WarehouseCode" ValueProperty="Id" Style="width: 100%;" Change="@OnWarehouseSelected" />
+                                </RadzenFormField>
+                            </RadzenColumn>
+                            <RadzenColumn Size="12" SizeMD="6">
+                                <RadzenFormField Text="Record Date" Variant="Variant.Outlined">
+                                    <RadzenDatePicker @bind-Value="MonitoringRecord.RecordDate" Style="width: 100%;" ShowTime="false" />
+                                </RadzenFormField>
+                            </RadzenColumn>
+                        </RadzenRow>
+                        <RadzenRow>
+                            <RadzenColumn Size="12" SizeMD="6">
+                                <RadzenFormField Text="Record Type" Variant="Variant.Outlined">
+                                    <RadzenDropDown @bind-Value="MonitoringRecord.RecordType" Data="@recordTypes" Style="width: 100%;" />
+                                </RadzenFormField>
+                            </RadzenColumn>
+                            <RadzenColumn Size="12" SizeMD="6">
+                                <RadzenFormField Text="Reported By" Variant="Variant.Outlined">
+                                    <RadzenTextBox @bind-Value="MonitoringRecord.ReportedBy" Style="width: 100%;" />
+                                </RadzenFormField>
+                            </RadzenColumn>
+                        </RadzenRow>
+                        <RadzenRow>
+                            <RadzenColumn Size="12">
+                                <RadzenFormField Text="Overall Status" Variant="Variant.Outlined">
+                                    <RadzenDropDown @bind-Value="MonitoringRecord.OverallStatus" Data="@overallStatusOptions" Style="width: 100%;" />
+                                </RadzenFormField>
+                            </RadzenColumn>
+                        </RadzenRow>
+                        <RadzenRow>
+                            <RadzenColumn Size="12">
+                                <RadzenFormField Text="Notes" Variant="Variant.Outlined">
+                                    <RadzenTextArea @bind-Value="MonitoringRecord.Notes" Style="width: 100%;" Rows="3" />
+                                </RadzenFormField>
+                            </RadzenColumn>
+                        </RadzenRow>
+                    </RadzenStack>
+                </RadzenFieldset>
+            </RadzenTabsItem>
+
+            <RadzenTabsItem Text="Stock Report Details" Visible="@(MonitoringRecord.RecordType == "Daily Stock Report")">
+                <RadzenFieldset Text="Stock Report Information">
+                    <RadzenStack Gap="1rem">
+                        <RadzenRow>
+                            <RadzenColumn Size="12" SizeMD="6">
+                                <RadzenFormField Text="Reported Stock (MT)" Variant="Variant.Outlined">
+                                    <RadzenNumeric @bind-Value="MonitoringRecord.ReportedStock" Style="width: 100%;" />
+                                </RadzenFormField>
+                            </RadzenColumn>
+                            <RadzenColumn Size="12" SizeMD="6">
+                                <RadzenFormField Text="Actual Stock (MT)" Variant="Variant.Outlined">
+                                    <RadzenNumeric @bind-Value="MonitoringRecord.ActualStock" Style="width: 100%;" />
+                                </RadzenFormField>
+                            </RadzenColumn>
+                        </RadzenRow>
+                        <RadzenRow>
+                            <RadzenColumn Size="12" SizeMD="6">
+                                <RadzenFormField Text="Stock Discrepancy (MT)" Variant="Variant.Outlined">
+                                    <RadzenNumeric @bind-Value="MonitoringRecord.StockDiscrepancy" Style="width: 100%;" Disabled="true" />
+                                </RadzenFormField>
+                            </RadzenColumn>
+                            <RadzenColumn Size="12" SizeMD="6">
+                                <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.5rem">
+                                    <RadzenCheckBox @bind-Value="MonitoringRecord.StockReportSubmitted" Name="stockSubmitted" />
+                                    <RadzenLabel Text="Stock Report Submitted" Component="stockSubmitted" />
+                                </RadzenStack>
+                            </RadzenColumn>
+                        </RadzenRow>
+                    </RadzenStack>
+                </RadzenFieldset>
+            </RadzenTabsItem>
+
+            <RadzenTabsItem Text="Audit Information" Visible="@(MonitoringRecord.RecordType == "Audit Report")">
+                <RadzenFieldset Text="Audit Details">
+                    <RadzenStack Gap="1rem">
+                        <RadzenRow>
+                            <RadzenColumn Size="12" SizeMD="6">
+                                <RadzenFormField Text="Auditor Name" Variant="Variant.Outlined">
+                                    <RadzenTextBox @bind-Value="MonitoringRecord.AuditorName" Style="width: 100%;" />
+                                </RadzenFormField>
+                            </RadzenColumn>
+                            <RadzenColumn Size="12" SizeMD="6">
+                                <RadzenFormField Text="Audit Outcome" Variant="Variant.Outlined">
+                                    <RadzenDropDown @bind-Value="MonitoringRecord.AuditOutcome" Data="@auditOutcomeOptions" Style="width: 100%;" />
+                                </RadzenFormField>
+                            </RadzenColumn>
+                        </RadzenRow>
+                        <RadzenRow>
+                            <RadzenColumn Size="12">
+                                <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.5rem">
+                                    <RadzenCheckBox @bind-Value="MonitoringRecord.IndependentAuditAllowed" Name="auditAllowed" />
+                                    <RadzenLabel Text="Independent Audit Allowed" Component="auditAllowed" />
+                                </RadzenStack>
+                            </RadzenColumn>
+                        </RadzenRow>
+                    </RadzenStack>
+                </RadzenFieldset>
+            </RadzenTabsItem>
+
+            <RadzenTabsItem Text="Compliance Check Details" Visible="@(MonitoringRecord.RecordType == "Compliance Check")">
+                <RadzenFieldset Text="Rules Compliance Information">
+                    <RadzenStack Gap="1rem">
+                        <RadzenRow>
+                            <RadzenColumn Size="12" SizeMD="6">
+                                <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.5rem">
+                                    <RadzenCheckBox @bind-Value="MonitoringRecord.RulesOnLoadingUnloadingFollowed" Name="loadingRules" />
+                                    <RadzenLabel Text="Loading/Unloading Rules Followed" Component="loadingRules" />
+                                </RadzenStack>
+                            </RadzenColumn>
+                            <RadzenColumn Size="12" SizeMD="6">
+                                <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.5rem">
+                                    <RadzenCheckBox @bind-Value="MonitoringRecord.RulesOnFeesAccessFollowed" Name="feesAccessRules" />
+                                    <RadzenLabel Text="Fees/Access Rules Followed" Component="feesAccessRules" />
+                                </RadzenStack>
+                            </RadzenColumn>
+                        </RadzenRow>
+                        <RadzenRow>
+                            <RadzenColumn Size="12">
+                                <RadzenFormField Text="Rule Violations" Variant="Variant.Outlined">
+                                    <RadzenTextArea @bind-Value="MonitoringRecord.RuleViolations" Style="width: 100%;" Rows="3" />
+                                </RadzenFormField>
+                            </RadzenColumn>
+                        </RadzenRow>
+                    </RadzenStack>
+                </RadzenFieldset>
+            </RadzenTabsItem>
+        </Tabs>
+    </RadzenTabs>
+
+    <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" Gap="0.5rem">
+        <RadzenButton Text="Cancel" ButtonStyle="ButtonStyle.Light" Click="Cancel" />
+        <RadzenButton Text="Save" ButtonStyle="ButtonStyle.Primary" Click="Save" />
+    </RadzenStack>
+</RadzenStack>
+
+@code {
+    [Parameter]
+    public MonitoringRecord MonitoringRecord { get; set; } = new();
+
+    private IEnumerable<Warehouse> warehouses = new List<Warehouse>();
+    private string[] recordTypes = new[] { "Daily Stock Report", "Audit Report", "Compliance Check" };
+    private string[] overallStatusOptions = new[] { "Compliant", "Under Review", "Non-Compliant" };
+    private string[] auditOutcomeOptions = new[] { "Compliant", "Minor Issues", "Non-Compliant" };
+
+    protected override async Task OnInitializedAsync()
+    {
+        warehouses = await WarehouseService.GetAllWarehousesAsync();
+        // If editing an existing record, ensure WarehouseCode is set
+        if (!string.IsNullOrEmpty(MonitoringRecord.WarehouseId) && string.IsNullOrEmpty(MonitoringRecord.WarehouseCode))
+        {
+            var selectedWarehouse = warehouses.FirstOrDefault(w => w.Id == MonitoringRecord.WarehouseId);
+            if (selectedWarehouse != null)
+            {
+                MonitoringRecord.WarehouseCode = selectedWarehouse.WarehouseCode;
+            }
+        }
+    }
+
+    private void OnWarehouseSelected(object value)
+    {
+        if (value is string warehouseId)
+        {
+            var selectedWarehouse = warehouses.FirstOrDefault(w => w.Id == warehouseId);
+            if (selectedWarehouse != null)
+            {
+                MonitoringRecord.WarehouseCode = selectedWarehouse.WarehouseCode;
+            }
+        }
+    }
+
+    private void Save()
+    {
+        DialogService.Close(MonitoringRecord);
+    }
+
+    private void Cancel()
+    {
+        DialogService.Close(null);
+    }
+}

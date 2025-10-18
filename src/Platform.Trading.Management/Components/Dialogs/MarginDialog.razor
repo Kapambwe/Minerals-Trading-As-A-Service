@@ -1,0 +1,131 @@
+@using Platform.Trading.Management.Models
+@using Platform.Trading.Management.Services.Interfaces
+@inject DialogService DialogService
+@inject ITradeService TradeService // To get list of trades
+
+<RadzenStack Gap="1rem">
+    <RadzenFieldset Text="Margin Entry Details">
+        <RadzenStack Gap="1rem">
+            <RadzenRow>
+                <RadzenColumn Size="6">
+                    <RadzenFormField Text="Trade" Variant="Variant.Outlined">
+                        <RadzenDropDown TValue="string" @bind-Value="Margin.TradeId" Data="@trades" TextProperty="TradeNumber" ValueProperty="Id" Style="width: 100%;" Change="@OnTradeSelected" />
+                    </RadzenFormField>
+                </RadzenColumn>
+                <RadzenColumn Size="6">
+                    <RadzenFormField Text="Margin Date" Variant="Variant.Outlined">
+                        <RadzenDatePicker @bind-Value="Margin.MarginDate" Style="width: 100%;" ShowTime="false" />
+                    </RadzenFormField>
+                </RadzenColumn>
+            </RadzenRow>
+            <RadzenRow>
+                <RadzenColumn Size="6">
+                    <RadzenFormField Text="Party Name" Variant="Variant.Outlined">
+                        <RadzenTextBox @bind-Value="Margin.PartyName" Style="width: 100%;" />
+                    </RadzenFormField>
+                </RadzenColumn>
+                <RadzenColumn Size="6">
+                    <RadzenFormField Text="Status" Variant="Variant.Outlined">
+                        <RadzenTextBox @bind-Value="Margin.Status" Style="width: 100%;" />
+                    </RadzenFormField>
+                </RadzenColumn>
+            </RadzenRow>
+            <RadzenRow>
+                <RadzenColumn Size="6">
+                    <RadzenFormField Text="Initial Margin" Variant="Variant.Outlined">
+                        <RadzenNumeric @bind-Value="Margin.InitialMargin" Style="width: 100%;" Format="c0" Change="@((decimal value) => CalculateTotalMargin(value))" />
+                    </RadzenFormField>
+                </RadzenColumn>
+                <RadzenColumn Size="6">
+                    <RadzenFormField Text="Variation Margin" Variant="Variant.Outlined">
+                        <RadzenNumeric @bind-Value="Margin.VariationMargin" Style="width: 100%;" Format="c0" Change="@((decimal value) => CalculateTotalMargin(value))" />
+                    </RadzenFormField>
+                </RadzenColumn>
+            </RadzenRow>
+            <RadzenRow>
+                <RadzenColumn Size="6">
+                    <RadzenFormField Text="Total Margin" Variant="Variant.Outlined">
+                        <RadzenNumeric @bind-Value="Margin.TotalMargin" Style="width: 100%;" Format="c0" Disabled="true" />
+                    </RadzenFormField>
+                </RadzenColumn>
+                <RadzenColumn Size="6">
+                    <RadzenFormField Text="Current Market Price" Variant="Variant.Outlined">
+                        <RadzenNumeric @bind-Value="Margin.CurrentMarketPrice" Style="width: 100%;" Format="c0" />
+                    </RadzenFormField>
+                </RadzenColumn>
+            </RadzenRow>
+            <RadzenRow>
+                <RadzenColumn Size="6">
+                    <RadzenFormField Text="Price Change" Variant="Variant.Outlined">
+                        <RadzenNumeric @bind-Value="Margin.PriceChange" Style="width: 100%;" Format="c0" />
+                    </RadzenFormField>
+                </RadzenColumn>
+                <RadzenColumn Size="6">
+                    <RadzenCheckBox @bind-Value="Margin.IsPayable" Name="isPayable" />
+                    <RadzenLabel Text="Is Payable" Component="isPayable" Style="margin-left: 8px;" />
+                </RadzenColumn>
+            </RadzenRow>
+            <RadzenRow>
+                <RadzenColumn Size="12">
+                    <RadzenFormField Text="Notes" Variant="Variant.Outlined">
+                        <RadzenTextArea @bind-Value="Margin.Notes" Style="width: 100%;" Rows="3" />
+                    </RadzenFormField>
+                </RadzenColumn>
+            </RadzenRow>
+        </RadzenStack>
+    </RadzenFieldset>
+
+    <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" Gap="0.5rem">
+        <RadzenButton Text="Cancel" ButtonStyle="ButtonStyle.Light" Click="Cancel" />
+        <RadzenButton Text="Save" ButtonStyle="ButtonStyle.Primary" Click="Save" />
+    </RadzenStack>
+</RadzenStack>
+
+@code {
+    [Parameter]
+    public Margin Margin { get; set; } = new();
+
+    private IEnumerable<Trade> trades = new List<Trade>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        trades = await TradeService.GetAllTradesAsync();
+        // If editing an existing margin, ensure TradeNumber is set
+        if (!string.IsNullOrEmpty(Margin.TradeId) && string.IsNullOrEmpty(Margin.TradeNumber))
+        {
+            var selectedTrade = trades.FirstOrDefault(t => t.Id == Margin.TradeId);
+            if (selectedTrade != null)
+            {
+                Margin.TradeNumber = selectedTrade.TradeNumber;
+            }
+        }
+        CalculateTotalMargin(0); // Initial calculation
+    }
+
+    private void OnTradeSelected(object value)
+    {
+        if (value is string tradeId)
+        {
+            var selectedTrade = trades.FirstOrDefault(t => t.Id == tradeId);
+            if (selectedTrade != null)
+            {
+                Margin.TradeNumber = selectedTrade.TradeNumber;
+            }
+        }
+    }
+
+    private void CalculateTotalMargin(decimal value) // RadzenNumeric Change event passes decimal value
+    {
+        Margin.TotalMargin = Margin.InitialMargin + Margin.VariationMargin;
+    }
+
+    private void Save()
+    {
+        DialogService.Close(Margin);
+    }
+
+    private void Cancel()
+    {
+        DialogService.Close(null);
+    }
+}

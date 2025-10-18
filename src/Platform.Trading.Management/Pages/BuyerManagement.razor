@@ -1,0 +1,242 @@
+@page "/buyers"
+@using Platform.Trading.Management.Models
+@using Platform.Trading.Management.Services.Interfaces
+@using Platform.Trading.Management.Components.Dialogs
+@inject IBuyerService BuyerService
+@inject DialogService DialogService
+@inject NotificationService NotificationService
+
+<PageTitle>Buyer Management</PageTitle>
+
+<RadzenStack Gap="1rem">
+    <RadzenRow>
+        <RadzenColumn Size="12">
+            <RadzenText TextStyle="TextStyle.H3" TagName="TagName.H1">Buyer Management</RadzenText>
+            <RadzenText TextStyle="TextStyle.Body1">Manage registered buyers and their KYC status</RadzenText>
+        </RadzenColumn>
+    </RadzenRow>
+
+    <RadzenRow>
+        <RadzenColumn Size="12">
+            <RadzenCard>
+                <RadzenRow>
+                    <RadzenColumn Size="3">
+                        <RadzenStack Gap="0.5rem">
+                            <RadzenText TextStyle="TextStyle.Overline">Total Buyers</RadzenText>
+                            <RadzenText TextStyle="TextStyle.H5">@totalBuyers</RadzenText>
+                        </RadzenStack>
+                    </RadzenColumn>
+                    <RadzenColumn Size="3">
+                        <RadzenStack Gap="0.5rem">
+                            <RadzenText TextStyle="TextStyle.Overline">Approved Buyers</RadzenText>
+                            <RadzenText TextStyle="TextStyle.H5" Style="color: green;">@approvedBuyers</RadzenText>
+                        </RadzenStack>
+                    </RadzenColumn>
+                    <RadzenColumn Size="3">
+                        <RadzenStack Gap="0.5rem">
+                            <RadzenText TextStyle="TextStyle.Overline">Pending KYC</RadzenText>
+                            <RadzenText TextStyle="TextStyle.H5" Style="color: orange;">@pendingKycBuyers</RadzenText>
+                        </RadzenStack>
+                    </RadzenColumn>
+                    <RadzenColumn Size="3">
+                        <RadzenStack Gap="0.5rem">
+                            <RadzenText TextStyle="TextStyle.Overline">KYC Approved</RadzenText>
+                            <RadzenText TextStyle="TextStyle.H5" Style="color: blue;">@kycApprovedBuyers</RadzenText>
+                        </RadzenStack>
+                    </RadzenColumn>
+                </RadzenRow>
+            </RadzenCard>
+        </RadzenColumn>
+    </RadzenRow>
+
+    <RadzenRow>
+        <RadzenColumn Size="12">
+            <RadzenButton Icon="add_circle_outline" Text="Register New Buyer" Click="(() => ShowBuyerDialog(null))" ButtonStyle="ButtonStyle.Primary" />
+        </RadzenColumn>
+    </RadzenRow>
+
+    <RadzenRow>
+        <RadzenColumn Size="12">
+            <RadzenDataGrid @ref="buyersGrid" Data="@buyers" TItem="Buyer" AllowFiltering="true"
+                           AllowSorting="true" AllowPaging="true" PageSize="10"
+                           FilterMode="FilterMode.Advanced">
+                <Columns>
+                    <RadzenDataGridColumn TItem="Buyer" Property="CompanyName" Title="Company Name" Width="200px" />
+                    <RadzenDataGridColumn TItem="Buyer" Property="ContactPerson" Title="Contact Person" Width="150px" />
+                    <RadzenDataGridColumn TItem="Buyer" Property="Country" Title="Country" Width="120px" />
+                    <RadzenDataGridColumn TItem="Buyer" Property="Email" Title="Email" Width="180px" />
+                    <RadzenDataGridColumn TItem="Buyer" Property="Status" Title="Status" Width="130px">
+                        <Template Context="buyer">
+                            <RadzenBadge BadgeStyle="@GetStatusBadgeStyle(buyer.Status)" Text="@buyer.Status" />
+                        </Template>
+                    </RadzenDataGridColumn>
+                    <RadzenDataGridColumn TItem="Buyer" Property="KYCStatus" Title="KYC Status" Width="130px">
+                        <Template Context="buyer">
+                            <RadzenBadge BadgeStyle="@GetKYCStatusBadgeStyle(buyer.KYCStatus)" Text="@buyer.KYCStatus" />
+                        </Template>
+                    </RadzenDataGridColumn>
+                    <RadzenDataGridColumn TItem="Buyer" Property="IsApproved" Title="Approved" Width="100px">
+                        <Template Context="buyer">
+                            @if (buyer.IsApproved)
+                            {
+                                <RadzenIcon Icon="check_circle" IconStyle="IconStyle.Success" />
+                            }
+                            else
+                            {
+                                <RadzenIcon Icon="cancel" IconStyle="IconStyle.Danger" />
+                            }
+                        </Template>
+                    </RadzenDataGridColumn>
+                    <RadzenDataGridColumn TItem="Buyer" Title="Actions" Width="200px" Sortable="false" Filterable="false">
+                        <Template Context="buyer">
+                            <RadzenButton Icon="edit" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.Small"
+                                         Click="(() => ShowBuyerDialog(buyer))" @onclick:stopPropagation="true" />
+                            <RadzenButton Icon="verified_user" ButtonStyle="ButtonStyle.Success" Size="ButtonSize.Small"
+                                         Click="(() => ApproveBuyer(buyer.Id))" Disabled="@buyer.IsApproved"
+                                         title="Approve Buyer" @onclick:stopPropagation="true" />
+                            <RadzenButton Icon="gavel" ButtonStyle="ButtonStyle.Info" Size="ButtonSize.Small"
+                                         Click="(() => ShowKYCStatusDialog(buyer))"
+                                         title="Update KYC Status" @onclick:stopPropagation="true" />
+                            <RadzenButton Icon="delete" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.Small"
+                                         Click="(() => DeleteBuyer(buyer.Id))" @onclick:stopPropagation="true" />
+                        </Template>
+                    </RadzenDataGridColumn>
+                </Columns>
+            </RadzenDataGrid>
+        </RadzenColumn>
+    </RadzenRow>
+</RadzenStack>
+
+@code {
+    RadzenDataGrid<Buyer> buyersGrid = new();
+    IEnumerable<Buyer> buyers = new List<Buyer>();
+
+    int totalBuyers = 0;
+    int approvedBuyers = 0;
+    int pendingKycBuyers = 0;
+    int kycApprovedBuyers = 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadBuyers();
+    }
+
+    private async Task LoadBuyers()
+    {
+        buyers = await BuyerService.GetAllBuyersAsync();
+        CalculateSummary();
+    }
+
+    private void CalculateSummary()
+    {
+        totalBuyers = buyers.Count();
+        approvedBuyers = buyers.Count(b => b.IsApproved);
+        pendingKycBuyers = buyers.Count(b => b.KYCStatus == "Pending");
+        kycApprovedBuyers = buyers.Count(b => b.KYCStatus == "Approved");
+    }
+
+    private async Task ShowBuyerDialog(Buyer? buyer)
+    {
+        var selectedBuyer = buyer ?? new Buyer { RegistrationDate = DateTime.Now, LastKYCReviewDate = DateTime.Now };
+        var isNew = buyer == null;
+
+        var result = await DialogService.OpenAsync<BuyerDialog>(
+            isNew ? "Register New Buyer" : "Edit Buyer",
+            new Dictionary<string, object> { { "Buyer", selectedBuyer } },
+            new DialogOptions { Width = "900px", Height = "700px", Resizable = true, Draggable = true }
+        );
+
+        if (result is Buyer savedBuyer)
+        {
+            if (isNew)
+            {
+                await BuyerService.CreateBuyerAsync(savedBuyer);
+                NotificationService.Notify(NotificationSeverity.Success, "Buyer Registered", $"Buyer {savedBuyer.CompanyName} registered successfully", 4000);
+            }
+            else
+            {
+                await BuyerService.UpdateBuyerAsync(savedBuyer);
+                NotificationService.Notify(NotificationSeverity.Success, "Buyer Updated", $"Buyer {savedBuyer.CompanyName} updated successfully", 4000);
+            }
+            await LoadBuyers();
+        }
+    }
+
+    private async Task ApproveBuyer(string buyerId)
+    {
+        var confirmed = await DialogService.Confirm("Are you sure you want to approve this buyer?",
+            "Approve Buyer", new ConfirmOptions { OkButtonText = "Yes, Approve", CancelButtonText = "Cancel" });
+
+        if (confirmed == true)
+        {
+            await BuyerService.ApproveBuyerAsync(buyerId);
+            NotificationService.Notify(NotificationSeverity.Success, "Buyer Approved", "Buyer has been successfully approved", 4000);
+            await LoadBuyers();
+        }
+    }
+
+    private async Task ShowKYCStatusDialog(Buyer buyer)
+    {
+        string[] kycStatusOptions = { "Pending", "Reviewed", "Approved", "Rejected" };
+        string currentKYCStatus = buyer.KYCStatus;
+
+        var result = await DialogService.OpenAsync("Update KYC Status",
+            ds => @<div>
+                <RadzenStack Gap="1rem">
+                    <RadzenFormField Text="Select KYC Status" Variant="Variant.Outlined">
+                        <RadzenDropDown Data="@kycStatusOptions" @bind-Value="@currentKYCStatus" Style="width: 100%;" />
+                    </RadzenFormField>
+                    <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" Gap="0.5rem">
+                        <RadzenButton Text="Cancel" ButtonStyle="ButtonStyle.Light" Click="(() => ds.Close(false))" />
+                        <RadzenButton Text="Update" ButtonStyle="ButtonStyle.Primary" Click="(() => ds.Close(true))" />
+                    </RadzenStack>
+                </RadzenStack>
+            </div>,
+            new DialogOptions { Width = "400px" }
+        );
+
+        if (result == true && currentKYCStatus != buyer.KYCStatus)
+        {
+            await BuyerService.UpdateKYCStatusAsync(buyer.Id, currentKYCStatus);
+            NotificationService.Notify(NotificationSeverity.Success, "KYC Status Updated", $"KYC status for {buyer.CompanyName} updated to {currentKYCStatus}", 4000);
+            await LoadBuyers();
+        }
+    }
+
+    private async Task DeleteBuyer(string buyerId)
+    {
+        var confirmed = await DialogService.Confirm("Are you sure you want to delete this buyer?",
+            "Delete Buyer", new ConfirmOptions { OkButtonText = "Yes, Delete", CancelButtonText = "Cancel" });
+
+        if (confirmed == true)
+        {
+            await BuyerService.DeleteBuyerAsync(buyerId);
+            NotificationService.Notify(NotificationSeverity.Warning, "Buyer Deleted", "Buyer has been deleted", 4000);
+            await LoadBuyers();
+        }
+    }
+
+    private BadgeStyle GetStatusBadgeStyle(string status)
+    {
+        return status switch
+        {
+            "Pending KYC" => BadgeStyle.Warning,
+            "KYC Approved" => BadgeStyle.Success,
+            "Approved" => BadgeStyle.Primary,
+            "KYC Rejected" => BadgeStyle.Danger,
+            _ => BadgeStyle.Light
+        };
+    }
+
+    private BadgeStyle GetKYCStatusBadgeStyle(string kycStatus)
+    {
+        return kycStatus switch
+        {
+            "Pending" => BadgeStyle.Warning,
+            "Reviewed" => BadgeStyle.Info,
+            "Approved" => BadgeStyle.Success,
+            "Rejected" => BadgeStyle.Danger,
+            _ => BadgeStyle.Light
+        };
+    }
+}

@@ -1,0 +1,184 @@
+@page "/margins"
+@using Platform.Trading.Management.Models
+@using Platform.Trading.Management.Services.Interfaces
+@using Platform.Trading.Management.Components.Dialogs // Add this using directive
+@inject IMarginService MarginService
+@inject DialogService DialogService // Inject DialogService
+@inject NotificationService NotificationService // Inject NotificationService
+
+<PageTitle>Margin Management</PageTitle>
+
+<RadzenStack Gap="1rem">
+    <RadzenRow>
+        <RadzenColumn Size="12">
+            <RadzenText TextStyle="TextStyle.H3" TagName="TagName.H1">Margin Management</RadzenText>
+            <RadzenText TextStyle="TextStyle.Body1">Monitor and manage initial and variation margins</RadzenText>
+        </RadzenColumn>
+    </RadzenRow>
+
+    <RadzenRow>
+        <RadzenColumn Size="12">
+            <RadzenCard>
+                <RadzenRow>
+                    <RadzenColumn Size="3">
+                        <RadzenStack Gap="0.5rem">
+                            <RadzenText TextStyle="TextStyle.Overline">Total Initial Margin</RadzenText>
+                            <RadzenText TextStyle="TextStyle.H5">@totalInitialMargin.ToString("C0")</RadzenText>
+                        </RadzenStack>
+                    </RadzenColumn>
+                    <RadzenColumn Size="3">
+                        <RadzenStack Gap="0.5rem">
+                            <RadzenText TextStyle="TextStyle.Overline">Total Variation Margin</RadzenText>
+                            <RadzenText TextStyle="TextStyle.H5" Style="@(totalVariationMargin >= 0 ? "color: green;" : "color: red;")">
+                                @totalVariationMargin.ToString("C0")
+                            </RadzenText>
+                        </RadzenStack>
+                    </RadzenColumn>
+                    <RadzenColumn Size="3">
+                        <RadzenStack Gap="0.5rem">
+                            <RadzenText TextStyle="TextStyle.Overline">Total Margin</RadzenText>
+                            <RadzenText TextStyle="TextStyle.H5">@totalMargin.ToString("C0")</RadzenText>
+                        </RadzenStack>
+                    </RadzenColumn>
+                    <RadzenColumn Size="3">
+                        <RadzenStack Gap="0.5rem">
+                            <RadzenText TextStyle="TextStyle.Overline">Active Positions</RadzenText>
+                            <RadzenText TextStyle="TextStyle.H5">@activePositions</RadzenText>
+                        </RadzenStack>
+                    </RadzenColumn>
+                </RadzenRow>
+            </RadzenCard>
+        </RadzenColumn>
+    </RadzenRow>
+
+    <RadzenRow>
+        <RadzenColumn Size="12">
+            <RadzenButton Icon="add_circle_outline" Text="New Margin Entry" Click="(() => ShowMarginDialog(null))" ButtonStyle="ButtonStyle.Primary" />
+        </RadzenColumn>
+    </RadzenRow>
+
+    <RadzenRow>
+        <RadzenColumn Size="12">
+            <RadzenDataGrid @ref="marginsGrid" Data="@margins" TItem="Margin" AllowFiltering="true"
+                           AllowSorting="true" AllowPaging="true" PageSize="10"
+                           FilterMode="FilterMode.Advanced">
+                <Columns>
+                    <RadzenDataGridColumn TItem="Margin" Property="TradeNumber" Title="Trade #" Width="140px" />
+                    <RadzenDataGridColumn TItem="Margin" Property="PartyName" Title="Party" />
+                    <RadzenDataGridColumn TItem="Margin" Property="MarginDate" Title="Date" Width="120px" FormatString="{0:MM/dd/yyyy}" />
+                    <RadzenDataGridColumn TItem="Margin" Property="InitialMargin" Title="Initial Margin" Width="140px" FormatString="{0:C0}" />
+                    <RadzenDataGridColumn TItem="Margin" Property="VariationMargin" Title="Variation Margin" Width="150px">
+                        <Template Context="margin">
+                            <span style="@(margin.VariationMargin >= 0 ? "color: green;" : "color: red;")">
+                                @margin.VariationMargin.ToString("C0")
+                            </span>
+                        </Template>
+                    </RadzenDataGridColumn>
+                    <RadzenDataGridColumn TItem="Margin" Property="TotalMargin" Title="Total Margin" Width="130px" FormatString="{0:C0}" />
+                    <RadzenDataGridColumn TItem="Margin" Property="CurrentMarketPrice" Title="Market Price" Width="130px" FormatString="{0:C0}" />
+                    <RadzenDataGridColumn TItem="Margin" Property="PriceChange" Title="Price Change" Width="130px">
+                        <Template Context="margin">
+                            <span style="@(margin.PriceChange >= 0 ? "color: green;" : "color: red;")">
+                                @margin.PriceChange.ToString("+0.00;-0.00;0")
+                            </span>
+                        </Template>
+                    </RadzenDataGridColumn>
+                    <RadzenDataGridColumn TItem="Margin" Property="IsPayable" Title="Type" Width="100px">
+                        <Template Context="margin">
+                            @if (margin.IsPayable)
+                            {
+                                <RadzenBadge BadgeStyle="BadgeStyle.Warning" Text="Payable" />
+                            }
+                            else
+                            {
+                                <RadzenBadge BadgeStyle="BadgeStyle.Success" Text="Receivable" />
+                            }
+                        </Template>
+                    </RadzenDataGridColumn>
+                    <RadzenDataGridColumn TItem="Margin" Property="Status" Title="Status" Width="100px">
+                        <Template Context="margin">
+                            <RadzenBadge BadgeStyle="@(margin.Status == "Active" ? BadgeStyle.Success : BadgeStyle.Secondary)" Text="@margin.Status" />
+                        </Template>
+                    </RadzenDataGridColumn>
+                    <RadzenDataGridColumn TItem="Margin" Title="Actions" Width="120px" Sortable="false" Filterable="false">
+                        <Template Context="margin">
+                            <RadzenButton Icon="edit" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.Small"
+                                         Click="(() => ShowMarginDialog(margin))" @onclick:stopPropagation="true" />
+                            <RadzenButton Icon="delete" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.Small"
+                                         Click="(() => DeleteMargin(margin.Id))" @onclick:stopPropagation="true" />
+                        </Template>
+                    </RadzenDataGridColumn>
+                </Columns>
+            </RadzenDataGrid>
+        </RadzenColumn>
+    </RadzenRow>
+</RadzenStack>
+
+@code {
+    RadzenDataGrid<Margin> marginsGrid = new();
+    IEnumerable<Margin> margins = new List<Margin>();
+
+    decimal totalInitialMargin = 0;
+    decimal totalVariationMargin = 0;
+    decimal totalMargin = 0;
+    int activePositions = 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadMargins();
+    }
+
+    private async Task LoadMargins()
+    {
+        margins = await MarginService.GetAllMarginsAsync();
+        CalculateSummary();
+    }
+
+    private void CalculateSummary()
+    {
+        totalInitialMargin = margins.Sum(m => m.InitialMargin);
+        totalVariationMargin = margins.Sum(m => m.VariationMargin);
+        totalMargin = margins.Sum(m => m.TotalMargin);
+        activePositions = margins.Count(m => m.Status == "Active");
+    }
+
+    private async Task ShowMarginDialog(Margin? margin)
+    {
+        var selectedMargin = margin ?? new Margin { MarginDate = DateTime.Now, Status = "Active" };
+        var isNew = margin == null;
+
+        var result = await DialogService.OpenAsync<MarginDialog>(
+            isNew ? "Create New Margin Entry" : "Edit Margin Entry",
+            new Dictionary<string, object> { { "Margin", selectedMargin } },
+            new DialogOptions { Width = "700px", Height = "600px", Resizable = true, Draggable = true }
+        );
+
+        if (result is Margin savedMargin)
+        {
+            if (isNew)
+            {
+                await MarginService.CreateMarginAsync(savedMargin);
+                NotificationService.Notify(NotificationSeverity.Success, "Margin Created", "Margin entry created successfully", 4000);
+            }
+            else
+            {
+                await MarginService.UpdateMarginAsync(savedMargin);
+                NotificationService.Notify(NotificationSeverity.Success, "Margin Updated", "Margin entry updated successfully", 4000);
+            }
+            await LoadMargins();
+        }
+    }
+
+    private async Task DeleteMargin(string marginId)
+    {
+        var confirmed = await DialogService.Confirm("Are you sure you want to delete this margin entry?",
+            "Delete Margin Entry", new ConfirmOptions { OkButtonText = "Yes, Delete", CancelButtonText = "Cancel" });
+
+        if (confirmed == true)
+        {
+            await MarginService.DeleteMarginAsync(marginId);
+            NotificationService.Notify(NotificationSeverity.Warning, "Margin Deleted", "Margin entry has been deleted", 4000);
+            await LoadMargins();
+        }
+    }
+}

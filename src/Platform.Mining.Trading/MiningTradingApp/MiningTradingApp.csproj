@@ -12,7 +12,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Platform.Mining.Trading\Platform.Mining.Trading.csproj" />
+    <ProjectReference Include="..\..\Platform.Trading.Management\Platform.Trading.Management.csproj" />
   </ItemGroup>
 
 </Project>

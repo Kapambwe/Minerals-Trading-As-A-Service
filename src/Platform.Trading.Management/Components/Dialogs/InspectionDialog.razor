@@ -1,0 +1,136 @@
+@using Platform.Trading.Management.Models
+@using Platform.Trading.Management.Services.Interfaces
+@inject DialogService DialogService
+@inject IWarehouseService WarehouseService // To get list of warehouses
+
+<RadzenStack Gap="1rem">
+    <RadzenFieldset Text="Inspection Details">
+        <RadzenStack Gap="1rem">
+            <RadzenRow>
+                <RadzenColumn Size="6">
+                    <RadzenFormField Text="Warehouse" Variant="Variant.Outlined">
+                        <RadzenDropDown TValue="string" @bind-Value="Inspection.WarehouseId" Data="@warehouses" TextProperty="WarehouseCode" ValueProperty="Id" Style="width: 100%;" Change="@OnWarehouseSelected" />
+                    </RadzenFormField>
+                </RadzenColumn>
+                <RadzenColumn Size="6">
+                    <RadzenFormField Text="Inspection Date" Variant="Variant.Outlined">
+                        <RadzenDatePicker @bind-Value="Inspection.InspectionDate" Style="width: 100%;" ShowTime="false" />
+                    </RadzenFormField>
+                </RadzenColumn>
+            </RadzenRow>
+            <RadzenRow>
+                <RadzenColumn Size="6">
+                    <RadzenFormField Text="Inspector Name" Variant="Variant.Outlined">
+                        <RadzenTextBox @bind-Value="Inspection.InspectorName" Style="width: 100%;" />
+                    </RadzenFormField>
+                </RadzenColumn>
+                <RadzenColumn Size="6">
+                    <RadzenFormField Text="Overall Outcome" Variant="Variant.Outlined">
+                        <RadzenDropDown @bind-Value="Inspection.OverallOutcome" Data="@outcomeOptions" Style="width: 100%;" />
+                    </RadzenFormField>
+                </RadzenColumn>
+            </RadzenRow>
+            <RadzenRow>
+                <RadzenColumn Size="12">
+                    <RadzenFormField Text="Findings" Variant="Variant.Outlined">
+                        <RadzenTextArea @bind-Value="Inspection.Findings" Style="width: 100%;" Rows="3" />
+                    </RadzenFormField>
+                </RadzenColumn>
+            </RadzenRow>
+            <RadzenRow>
+                <RadzenColumn Size="12">
+                    <RadzenFormField Text="Recommendations" Variant="Variant.Outlined">
+                        <RadzenTextArea @bind-Value="Inspection.Recommendations" Style="width: 100%;" Rows="3" />
+                    </RadzenFormField>
+                </RadzenColumn>
+            </RadzenRow>
+            <RadzenRow>
+                <RadzenColumn Size="6">
+                    <RadzenFormField Text="Next Inspection Date" Variant="Variant.Outlined">
+                        <RadzenDatePicker @bind-Value="Inspection.NextInspectionDate" Style="width: 100%;" ShowTime="false" />
+                    </RadzenFormField>
+                </RadzenColumn>
+            </RadzenRow>
+        </RadzenStack>
+    </RadzenFieldset>
+
+    <RadzenFieldset Text="Compliance Checks">
+        <RadzenStack Gap="1rem">
+            <RadzenRow>
+                <RadzenColumn Size="6">
+                    <RadzenCheckBox @bind-Value="Inspection.SiteInspectionPassed" Name="siteInspection" />
+                    <RadzenLabel Text="Site Inspection Passed" Component="siteInspection" Style="margin-left: 8px;" />
+                </RadzenColumn>
+                <RadzenColumn Size="6">
+                    <RadzenCheckBox @bind-Value="Inspection.WeighingSystemVerified" Name="weighingSystem" />
+                    <RadzenLabel Text="Weighing System Verified" Component="weighingSystem" Style="margin-left: 8px;" />
+                </RadzenColumn>
+            </RadzenRow>
+            <RadzenRow>
+                <RadzenColumn Size="6">
+                    <RadzenCheckBox @bind-Value="Inspection.QualityControlVerified" Name="qualityControl" />
+                    <RadzenLabel Text="Quality Control Verified" Component="qualityControl" Style="margin-left: 8px;" />
+                </RadzenColumn>
+                <RadzenColumn Size="6">
+                    <RadzenCheckBox @bind-Value="Inspection.ReportingSystemTested" Name="reportingSystem" />
+                    <RadzenLabel Text="Reporting System Tested" Component="reportingSystem" Style="margin-left: 8px;" />
+                </RadzenColumn>
+            </RadzenRow>
+            <RadzenRow>
+                <RadzenColumn Size="6">
+                    <RadzenCheckBox @bind-Value="Inspection.NeutralityEnsured" Name="neutrality" />
+                    <RadzenLabel Text="Neutrality Ensured" Component="neutrality" Style="margin-left: 8px;" />
+                </RadzenColumn>
+            </RadzenRow>
+        </RadzenStack>
+    </RadzenFieldset>
+
+    <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" Gap="0.5rem">
+        <RadzenButton Text="Cancel" ButtonStyle="ButtonStyle.Light" Click="Cancel" />
+        <RadzenButton Text="Save" ButtonStyle="ButtonStyle.Primary" Click="Save" />
+    </RadzenStack>
+</RadzenStack>
+
+@code {
+    [Parameter]
+    public Inspection Inspection { get; set; } = new();
+
+    private IEnumerable<Warehouse> warehouses = new List<Warehouse>();
+    private string[] outcomeOptions = new[] { "Passed", "Conditional Pass", "Failed" };
+
+    protected override async Task OnInitializedAsync()
+    {
+        warehouses = await WarehouseService.GetAllWarehousesAsync();
+        // If editing an existing inspection, ensure WarehouseCode is set
+        if (!string.IsNullOrEmpty(Inspection.WarehouseId) && string.IsNullOrEmpty(Inspection.WarehouseCode))
+        {
+            var selectedWarehouse = warehouses.FirstOrDefault(w => w.Id == Inspection.WarehouseId);
+            if (selectedWarehouse != null)
+            {
+                Inspection.WarehouseCode = selectedWarehouse.WarehouseCode;
+            }
+        }
+    }
+
+    private void OnWarehouseSelected(object value)
+    {
+        if (value is string warehouseId)
+        {
+            var selectedWarehouse = warehouses.FirstOrDefault(w => w.Id == warehouseId);
+            if (selectedWarehouse != null)
+            {
+                Inspection.WarehouseCode = selectedWarehouse.WarehouseCode;
+            }
+        }
+    }
+
+    private void Save()
+    {
+        DialogService.Close(Inspection);
+    }
+
+    private void Cancel()
+    {
+        DialogService.Close(null);
+    }
+}

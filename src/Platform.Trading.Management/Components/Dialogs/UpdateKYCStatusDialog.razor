@@ -1,0 +1,52 @@
+@using Platform.Trading.Management.Models
+@inject DialogService DialogService
+
+<RadzenStack Gap="1rem">
+    <RadzenFieldset Text="Update KYC Status">
+        <RadzenStack Gap="1rem">
+            <RadzenRow>
+                <RadzenColumn Size="12">
+                    <RadzenText TextStyle="TextStyle.Body1">
+                        Updating KYC Status for <b>@Seller.CompanyName</b> (Current: <b>@Seller.KYCStatus</b>)
+                    </RadzenText>
+                </RadzenColumn>
+            </RadzenRow>
+            <RadzenRow>
+                <RadzenColumn Size="12">
+                    <RadzenFormField Text="Select New KYC Status" Variant="Variant.Outlined">
+                        <RadzenDropDown Data="@kycStatusOptions" @bind-Value="@SelectedKYCStatus" Style="width: 100%;" />
+                    </RadzenFormField>
+                </RadzenColumn>
+            </RadzenRow>
+        </RadzenStack>
+    </RadzenFieldset>
+
+    <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" Gap="0.5rem">
+        <RadzenButton Text="Cancel" ButtonStyle="ButtonStyle.Light" Click="Cancel" />
+        <RadzenButton Text="Update" ButtonStyle="ButtonStyle.Primary" Click="Update" Disabled="@(string.IsNullOrEmpty(SelectedKYCStatus) || SelectedKYCStatus == Seller.KYCStatus)" />
+    </RadzenStack>
+</RadzenStack>
+
+@code {
+    [Parameter]
+    public Seller Seller { get; set; } = new();
+
+    public string SelectedKYCStatus { get; set; } = string.Empty;
+
+    string[] kycStatusOptions = { "Pending", "Reviewed", "Approved", "Rejected" };
+
+    protected override void OnInitialized()
+    {
+        SelectedKYCStatus = Seller.KYCStatus;
+    }
+
+    private void Update()
+    {
+        DialogService.Close(SelectedKYCStatus);
+    }
+
+    private void Cancel()
+    {
+        DialogService.Close(null);
+    }
+}

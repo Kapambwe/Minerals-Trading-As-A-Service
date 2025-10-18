@@ -7,6 +7,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Platform.Mining.Trading", "
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MiningTradingApp", "MiningTradingApp\MiningTradingApp.csproj", "{8B2B182D-61FB-4A6E-8636-68D3EBB22166}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Platform.Trading.Management", "..\Platform.Trading.Management\Platform.Trading.Management.csproj", "{60BFA1D2-D45F-4650-B1EC-452F6E9B8406}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +23,10 @@ Global
 		{8B2B182D-61FB-4A6E-8636-68D3EBB22166}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{8B2B182D-61FB-4A6E-8636-68D3EBB22166}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{8B2B182D-61FB-4A6E-8636-68D3EBB22166}.Release|Any CPU.Build.0 = Release|Any CPU
+		{60BFA1D2-D45F-4650-B1EC-452F6E9B8406}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{60BFA1D2-D45F-4650-B1EC-452F6E9B8406}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{60BFA1D2-D45F-4650-B1EC-452F6E9B8406}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{60BFA1D2-D45F-4650-B1EC-452F6E9B8406}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

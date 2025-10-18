@@ -1,0 +1,182 @@
+@page "/trading-dashboard"
+@using Platform.Trading.Management.Models
+@using Platform.Trading.Management.Services.Interfaces
+@using Platform.Trading.Management.Components.Dialogs
+@inject IMineralListingService MineralListingService
+@inject ITradeService TradeService
+@inject DialogService DialogService
+@inject NotificationService NotificationService
+
+<PageTitle>Trading Dashboard</PageTitle>
+
+<RadzenStack Gap="1rem">
+    <RadzenRow>
+        <RadzenColumn Size="12">
+            <RadzenText TextStyle="TextStyle.H3" TagName="TagName.H1">Trading Dashboard</RadzenText>
+            <RadzenText TextStyle="TextStyle.Body1">Browse available mineral listings and initiate trades</RadzenText>
+        </RadzenColumn>
+    </RadzenRow>
+
+    <RadzenRow>
+        <RadzenColumn Size="12">
+            <RadzenCard>
+                <RadzenRow>
+                    <RadzenColumn Size="4">
+                        <RadzenStack Gap="0.5rem">
+                            <RadzenText TextStyle="TextStyle.Overline">Total Listings</RadzenText>
+                            <RadzenText TextStyle="TextStyle.H5">@totalListings</RadzenText>
+                        </RadzenStack>
+                    </RadzenColumn>
+                    <RadzenColumn Size="4">
+                        <RadzenStack Gap="0.5rem">
+                            <RadzenText TextStyle="TextStyle.Overline">Available Listings</RadzenText>
+                            <RadzenText TextStyle="TextStyle.H5" Style="color: green;">@availableListingsCount</RadzenText>
+                        </RadzenStack>
+                    </RadzenColumn>
+                    <RadzenColumn Size="4">
+                        <RadzenStack Gap="0.5rem">
+                            <RadzenText TextStyle="TextStyle.Overline">Total Quantity (MT)</RadzenText>
+                            <RadzenText TextStyle="TextStyle.H5">@totalQuantityAvailable.ToString("N0")</RadzenText>
+                        </RadzenStack>
+                    </RadzenColumn>
+                </RadzenRow>
+            </RadzenCard>
+        </RadzenColumn>
+    </RadzenRow>
+
+    <RadzenRow>
+        <RadzenColumn Size="12">
+            <RadzenText TextStyle="TextStyle.H5" TagName="TagName.H2">Available Mineral Listings</RadzenText>
+            <RadzenDataList AllowVirtualization="false" Style="@(false ? "height:400px;overflow:auto;" : "")"
+                            WrapItems="true" AllowPaging="true"
+                            Data="@availableMineralListings" TItem="MineralListing" PageSize="5" PagerHorizontalAlign="HorizontalAlign.Left" ShowPagingSummary="true">
+                <Template Context="listing">
+                    <RadzenCard Variant="Variant.Outlined" class="rz-p-0" Style="width: 100%; overflow: hidden; margin-bottom: 1rem;">
+                        <RadzenRow Gap="0">
+                            <RadzenColumn Size="12" SizeLG="3" class="rz-p-4">
+                                <RadzenText TextStyle="TextStyle.H6" TagName="TagName.H5" class="rz-color-on-secondary-lighter">@listing.MetalType.ToString()</RadzenText>
+                                <RadzenText TextStyle="TextStyle.Body2">@listing.QualityGrade</RadzenText>
+                            </RadzenColumn>
+                            <RadzenColumn Size="12" SizeLG="6" class="rz-p-4">
+                                <RadzenStack Orientation="Orientation.Vertical" Gap="0.5rem">
+                                    <RadzenText TextStyle="TextStyle.Body1">Seller: <b>@listing.SellerCompanyName</b></RadzenText>
+                                    <RadzenText TextStyle="TextStyle.Body1">Quantity: <b>@listing.QuantityAvailable.ToString("N0") MT</b></RadzenText>
+                                    <RadzenText TextStyle="TextStyle.Body1">Price: <b>@listing.PricePerTon.ToString("C0") / MT</b></RadzenText>
+                                    <RadzenText TextStyle="TextStyle.Body2">Origin: @listing.OriginCountry</RadzenText>
+                                    <RadzenText TextStyle="TextStyle.Body2">Listed: @listing.ListingDate.ToShortDateString()</RadzenText>
+                                </RadzenStack>
+                            </RadzenColumn>
+                            <RadzenColumn Size="12" SizeLG="3" class="rz-p-4 rz-text-align-right">
+                                <RadzenButton Text="Initiate Trade" ButtonStyle="ButtonStyle.Primary" Size="ButtonSize.Medium"
+                                             Click="(() => InitiateTrade(listing))" />
+                            </RadzenColumn>
+                        </RadzenRow>
+                    </RadzenCard>
+                </Template>
+            </RadzenDataList>
+        </RadzenColumn>
+    </RadzenRow>
+
+    <RadzenRow>
+        <RadzenColumn Size="12">
+            <RadzenText TextStyle="TextStyle.H5" TagName="TagName.H2">Recent Successful Sales</RadzenText>
+            <RadzenDataGrid Data="@successfulSales" TItem="Trade" AllowFiltering="true"
+                           AllowSorting="true" AllowPaging="true" PageSize="5"
+                           FilterMode="FilterMode.Advanced">
+                <Columns>
+                    <RadzenDataGridColumn TItem="Trade" Property="TradeNumber" Title="Trade #" Width="140px" />
+                    <RadzenDataGridColumn TItem="Trade" Property="BuyerName" Title="Buyer" />
+                    <RadzenDataGridColumn TItem="Trade" Property="SellerName" Title="Seller" />
+                    <RadzenDataGridColumn TItem="Trade" Property="MetalType" Title="Metal" Width="100px" />
+                    <RadzenDataGridColumn TItem="Trade" Property="Quantity" Title="Quantity (MT)" Width="130px" FormatString="{0:N2}" />
+                    <RadzenDataGridColumn TItem="Trade" Property="TotalValue" Title="Total Value" Width="130px" FormatString="{0:C0}" />
+                    <RadzenDataGridColumn TItem="Trade" Property="TradeDate" Title="Trade Date" Width="120px" FormatString="{0:MM/dd/yyyy}" />
+                    <RadzenDataGridColumn TItem="Trade" Property="Status" Title="Status" Width="130px">
+                        <Template Context="trade">
+                            <RadzenBadge BadgeStyle="@GetStatusBadgeStyle(trade.Status)" Text="@trade.Status.ToString()" />
+                        </Template>
+                    </RadzenDataGridColumn>
+                </Columns>
+            </RadzenDataGrid>
+        </RadzenColumn>
+    </RadzenRow>
+</RadzenStack>
+
+@code {
+    IEnumerable<MineralListing> availableMineralListings = new List<MineralListing>();
+    IEnumerable<Trade> successfulSales = new List<Trade>();
+
+    int totalListings = 0;
+    int availableListingsCount = 0;
+    decimal totalQuantityAvailable = 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        availableMineralListings = await MineralListingService.GetAvailableMineralListingsAsync();
+        successfulSales = (await TradeService.GetAllTradesAsync()).Where(t => t.Status == TradeStatus.Completed || t.Status == TradeStatus.Settled);
+        CalculateSummary();
+    }
+
+    private void CalculateSummary()
+    {
+        totalListings = availableMineralListings.Count();
+        availableListingsCount = availableMineralListings.Count(l => l.Status == "Available");
+        totalQuantityAvailable = availableMineralListings.Sum(l => l.QuantityAvailable);
+    }
+
+    private async Task InitiateTrade(MineralListing listing)
+    {
+        // For simplicity, assume a default buyer for now or prompt for buyer selection
+        // In a real app, the logged-in user (buyer) would be pre-selected or chosen from a list.
+        // For this example, we'll create a new Trade object with some default buyer info.
+        var newTrade = new Trade
+        {
+            SellerName = listing.SellerCompanyName,
+            MetalType = listing.MetalType,
+            Quantity = listing.QuantityAvailable, // Buyer wants to buy all available
+            PricePerTon = listing.PricePerTon,
+            DeliveryDate = DateTime.Now.AddMonths(1), // Default delivery in 1 month
+            Status = TradeStatus.Pending,
+            BuyerName = "Default Buyer Inc." // Placeholder for the buyer initiating the trade
+        };
+
+        var result = await DialogService.OpenAsync<TradeDialog>(
+            "Confirm Trade Details",
+            new Dictionary<string, object> { { "Trade", newTrade } },
+            new DialogOptions { Width = "700px", Height = "600px", Resizable = true, Draggable = true }
+        );
+
+        if (result is Trade confirmedTrade)
+        {
+            // Create the trade
+            await TradeService.CreateTradeAsync(confirmedTrade);
+
+            // Update the mineral listing status to "Under Offer" or "Sold"
+            await MineralListingService.UpdateListingStatusAsync(listing.Id, "Under Offer");
+
+            NotificationService.Notify(NotificationSeverity.Success, "Trade Initiated",
+                $"Trade {confirmedTrade.TradeNumber} initiated for {confirmedTrade.Quantity} MT of {confirmedTrade.MetalType}.", 4000);
+
+            await LoadData(); // Reload data to reflect changes
+        }
+    }
+
+    private BadgeStyle GetStatusBadgeStyle(TradeStatus status)
+    {
+        return status switch
+        {
+            TradeStatus.Pending => BadgeStyle.Warning,
+            TradeStatus.Confirmed => BadgeStyle.Info,
+            TradeStatus.Active => BadgeStyle.Success,
+            TradeStatus.Settled => BadgeStyle.Primary,
+            TradeStatus.Completed => BadgeStyle.Secondary,
+            TradeStatus.Cancelled => BadgeStyle.Danger,
+            _ => BadgeStyle.Light
+        };
+    }
+}

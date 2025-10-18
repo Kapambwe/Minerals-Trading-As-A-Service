@@ -1,0 +1,142 @@
+@using Platform.Trading.Management.Models
+@inject DialogService DialogService
+
+<RadzenStack Gap="1rem">
+    <RadzenTabs SelectedIndex="0">
+        <Tabs>
+            <RadzenTabsItem Text="General Information">
+                <RadzenFieldset Text="Buyer Details">
+                    <RadzenStack Gap="1rem">
+                        <RadzenRow>
+                            <RadzenColumn Size="6">
+                                <RadzenFormField Text="Company Name" Variant="Variant.Outlined">
+                                    <RadzenTextBox @bind-Value="Buyer.CompanyName" Style="width: 100%;" />
+                                </RadzenFormField>
+                            </RadzenColumn>
+                            <RadzenColumn Size="6">
+                                <RadzenFormField Text="Contact Person" Variant="Variant.Outlined">
+                                    <RadzenTextBox @bind-Value="Buyer.ContactPerson" Style="width: 100%;" />
+                                </RadzenFormField>
+                            </RadzenColumn>
+                        </RadzenRow>
+                        <RadzenRow>
+                            <RadzenColumn Size="6">
+                                <RadzenFormField Text="Email" Variant="Variant.Outlined">
+                                    <RadzenTextBox @bind-Value="Buyer.Email" Style="width: 100%;" />
+                                </RadzenFormField>
+                            </RadzenColumn>
+                            <RadzenColumn Size="6">
+                                <RadzenFormField Text="Phone Number" Variant="Variant.Outlined">
+                                    <RadzenTextBox @bind-Value="Buyer.PhoneNumber" Style="width: 100%;" />
+                                </RadzenFormField>
+                            </RadzenColumn>
+                        </RadzenRow>
+                        <RadzenRow>
+                            <RadzenColumn Size="12">
+                                <RadzenFormField Text="Address" Variant="Variant.Outlined">
+                                    <RadzenTextArea @bind-Value="Buyer.Address" Style="width: 100%;" Rows="2" />
+                                </RadzenFormField>
+                            </RadzenColumn>
+                        </RadzenRow>
+                        <RadzenRow>
+                            <RadzenColumn Size="6">
+                                <RadzenFormField Text="City" Variant="Variant.Outlined">
+                                    <RadzenTextBox @bind-Value="Buyer.City" Style="width: 100%;" />
+                                </RadzenFormField>
+                            </RadzenColumn>
+                            <RadzenColumn Size="6">
+                                <RadzenFormField Text="Country" Variant="Variant.Outlined">
+                                    <RadzenTextBox @bind-Value="Buyer.Country" Style="width: 100%;" />
+                                </RadzenFormField>
+                            </RadzenColumn>
+                        </RadzenRow>
+                    </RadzenStack>
+                </RadzenFieldset>
+            </RadzenTabsItem>
+
+            <RadzenTabsItem Text="KYC Details">
+                <RadzenFieldset Text="KYC Information">
+                    <RadzenStack Gap="1rem">
+                        <RadzenRow>
+                            <RadzenColumn Size="6">
+                                <RadzenFormField Text="Company Reg. Number" Variant="Variant.Outlined">
+                                    <RadzenTextBox @bind-Value="Buyer.CompanyRegistrationNumber" Style="width: 100%;" />
+                                </RadzenFormField>
+                            </RadzenColumn>
+                            <RadzenColumn Size="6">
+                                <RadzenFormField Text="Tax ID Number" Variant="Variant.Outlined">
+                                    <RadzenTextBox @bind-Value="Buyer.TaxIdentificationNumber" Style="width: 100%;" />
+                                </RadzenFormField>
+                            </RadzenColumn>
+                        </RadzenRow>
+                        <RadzenRow>
+                            <RadzenColumn Size="6">
+                                <RadzenFormField Text="Bank Name" Variant="Variant.Outlined">
+                                    <RadzenTextBox @bind-Value="Buyer.BankName" Style="width: 100%;" />
+                                </RadzenFormField>
+                            </RadzenColumn>
+                            <RadzenColumn Size="6">
+                                <RadzenFormField Text="Bank Account Number" Variant="Variant.Outlined">
+                                    <RadzenTextBox @bind-Value="Buyer.BankAccountNumber" Style="width: 100%;" />
+                                </RadzenFormField>
+                            </RadzenColumn>
+                        </RadzenRow>
+                        <RadzenRow>
+                            <RadzenColumn Size="6">
+                                <RadzenFormField Text="SWIFT Code" Variant="Variant.Outlined">
+                                    <RadzenTextBox @bind-Value="Buyer.SwiftCode" Style="width: 100%;" />
+                                </RadzenFormField>
+                            </RadzenColumn>
+                            <RadzenColumn Size="6">
+                                <RadzenFormField Text="Compliance Officer" Variant="Variant.Outlined">
+                                    <RadzenTextBox @bind-Value="Buyer.ComplianceOfficer" Style="width: 100%;" />
+                                </RadzenFormField>
+                            </RadzenColumn>
+                        </RadzenRow>
+                        <RadzenRow>
+                            <RadzenColumn Size="6">
+                                <RadzenFormField Text="Last KYC Review Date" Variant="Variant.Outlined">
+                                    <RadzenDatePicker @bind-Value="Buyer.LastKYCReviewDate" Style="width: 100%;" ShowTime="false" />
+                                </RadzenFormField>
+                            </RadzenColumn>
+                            <RadzenColumn Size="6">
+                                <RadzenFormField Text="KYC Status" Variant="Variant.Outlined">
+                                    <RadzenDropDown @bind-Value="Buyer.KYCStatus" Data="@kycStatusOptions" Style="width: 100%;" />
+                                </RadzenFormField>
+                            </RadzenColumn>
+                        </RadzenRow>
+                        <RadzenRow>
+                            <RadzenColumn Size="12">
+                                <RadzenFormField Text="Notes" Variant="Variant.Outlined">
+                                    <RadzenTextArea @bind-Value="Buyer.Notes" Style="width: 100%;" Rows="3" />
+                                </RadzenFormField>
+                            </RadzenColumn>
+                        </RadzenRow>
+                    </RadzenStack>
+                </RadzenFieldset>
+            </RadzenTabsItem>
+        </Tabs>
+    </RadzenTabs>
+
+    <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" Gap="0.5rem">
+        <RadzenButton Text="Cancel" ButtonStyle="ButtonStyle.Light" Click="Cancel" />
+        <RadzenButton Text="Save" ButtonStyle="ButtonStyle.Primary" Click="Save" />
+    </RadzenStack>
+</RadzenStack>
+
+@code {
+    [Parameter]
+    public Buyer Buyer { get; set; } = new();
+
+    string[] kycStatusOptions = { "Pending", "Reviewed", "Approved", "Rejected" };
+
+    private void Save()
+    {
+        DialogService.Close(Buyer);
+    }
+
+    private void Cancel()
+    {
+        DialogService.Close(null);
+    }
+}

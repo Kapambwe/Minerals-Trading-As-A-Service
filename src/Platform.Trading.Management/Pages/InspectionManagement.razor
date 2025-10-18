@@ -1,0 +1,188 @@
+@page "/inspections"
+@using Platform.Trading.Management.Models
+@using Platform.Trading.Management.Services.Interfaces
+@using Platform.Trading.Management.Components.Dialogs
+@inject IInspectionService InspectionService
+@inject DialogService DialogService
+@inject NotificationService NotificationService
+
+<PageTitle>Inspection Management</PageTitle>
+
+<RadzenStack Gap="1rem">
+    <RadzenRow>
+        <RadzenColumn Size="12">
+            <RadzenText TextStyle="TextStyle.H3" TagName="TagName.H1">Inspection Management</RadzenText>
+            <RadzenText TextStyle="TextStyle.Body1">Manage warehouse inspection records</RadzenText>
+        </RadzenColumn>
+    </RadzenRow>
+
+    <RadzenRow>
+        <RadzenColumn Size="12">
+            <RadzenCard>
+                <RadzenRow>
+                    <RadzenColumn Size="3">
+                        <RadzenStack Gap="0.5rem">
+                            <RadzenText TextStyle="TextStyle.Overline">Total Inspections</RadzenText>
+                            <RadzenText TextStyle="TextStyle.H5">@totalInspections</RadzenText>
+                        </RadzenStack>
+                    </RadzenColumn>
+                    <RadzenColumn Size="3">
+                        <RadzenStack Gap="0.5rem">
+                            <RadzenText TextStyle="TextStyle.Overline">Passed</RadzenText>
+                            <RadzenText TextStyle="TextStyle.H5" Style="color: green;">@passedInspections</RadzenText>
+                        </RadzenStack>
+                    </RadzenColumn>
+                    <RadzenColumn Size="3">
+                        <RadzenStack Gap="0.5rem">
+                            <RadzenText TextStyle="TextStyle.Overline">Conditional Pass</RadzenText>
+                            <RadzenText TextStyle="TextStyle.H5" Style="color: orange;">@conditionalPassInspections</RadzenText>
+                        </RadzenStack>
+                    </RadzenColumn>
+                    <RadzenColumn Size="3">
+                        <RadzenStack Gap="0.5rem">
+                            <RadzenText TextStyle="TextStyle.Overline">Failed</RadzenText>
+                            <RadzenText TextStyle="TextStyle.H5" Style="color: red;">@failedInspections</RadzenText>
+                        </RadzenStack>
+                    </RadzenColumn>
+                </RadzenRow>
+            </RadzenCard>
+        </RadzenColumn>
+    </RadzenRow>
+
+    <RadzenRow>
+        <RadzenColumn Size="12">
+            <RadzenButton Icon="add_circle_outline" Text="New Inspection" Click="(() => ShowInspectionDialog(null))" ButtonStyle="ButtonStyle.Primary" />
+        </RadzenColumn>
+    </RadzenRow>
+
+    <RadzenRow>
+        <RadzenColumn Size="12">
+            <RadzenDataGrid Data="@inspections" TItem="Inspection" AllowFiltering="true"
+                           AllowSorting="true" AllowPaging="true" PageSize="10"
+                           FilterMode="FilterMode.Advanced">
+                <Columns>
+                    <RadzenDataGridColumn TItem="Inspection" Property="WarehouseCode" Title="Warehouse Code" Width="150px" />
+                    <RadzenDataGridColumn TItem="Inspection" Property="InspectionDate" Title="Date" Width="120px" FormatString="{0:MM/dd/yyyy}" />
+                    <RadzenDataGridColumn TItem="Inspection" Property="InspectorName" Title="Inspector" Width="150px" />
+                    <RadzenDataGridColumn TItem="Inspection" Property="OverallOutcome" Title="Outcome" Width="130px">
+                        <Template Context="inspection">
+                            <RadzenBadge BadgeStyle="@GetOutcomeBadgeStyle(inspection.OverallOutcome)" Text="@inspection.OverallOutcome" />
+                        </Template>
+                    </RadzenDataGridColumn>
+                    <RadzenDataGridColumn TItem="Inspection" Property="SiteInspectionPassed" Title="Site" Width="80px">
+                        <Template Context="inspection">
+                            @if (inspection.SiteInspectionPassed) { <RadzenIcon Icon="check_circle" IconStyle="IconStyle.Success" /> } else { <RadzenIcon Icon="cancel" IconStyle="IconStyle.Danger" /> }
+                        </Template>
+                    </RadzenDataGridColumn>
+                    <RadzenDataGridColumn TItem="Inspection" Property="WeighingSystemVerified" Title="Weighing" Width="80px">
+                        <Template Context="inspection">
+                            @if (inspection.WeighingSystemVerified) { <RadzenIcon Icon="check_circle" IconStyle="IconStyle.Success" /> } else { <RadzenIcon Icon="cancel" IconStyle="IconStyle.Danger" /> }
+                        </Template>
+                    </RadzenDataGridColumn>
+                    <RadzenDataGridColumn TItem="Inspection" Property="QualityControlVerified" Title="QC" Width="80px">
+                        <Template Context="inspection">
+                            @if (inspection.QualityControlVerified) { <RadzenIcon Icon="check_circle" IconStyle="IconStyle.Success" /> } else { <RadzenIcon Icon="cancel" IconStyle="IconStyle.Danger" /> }
+                        </Template>
+                    </RadzenDataGridColumn>
+                    <RadzenDataGridColumn TItem="Inspection" Property="ReportingSystemTested" Title="Reporting" Width="80px">
+                        <Template Context="inspection">
+                            @if (inspection.ReportingSystemTested) { <RadzenIcon Icon="check_circle" IconStyle="IconStyle.Success" /> } else { <RadzenIcon Icon="cancel" IconStyle="IconStyle.Danger" /> }
+                        </Template>
+                    </RadzenDataGridColumn>
+                    <RadzenDataGridColumn TItem="Inspection" Property="NeutralityEnsured" Title="Neutrality" Width="80px">
+                        <Template Context="inspection">
+                            @if (inspection.NeutralityEnsured) { <RadzenIcon Icon="check_circle" IconStyle="IconStyle.Success" /> } else { <RadzenIcon Icon="cancel" IconStyle="IconStyle.Danger" /> }
+                        </Template>
+                    </RadzenDataGridColumn>
+                    <RadzenDataGridColumn TItem="Inspection" Title="Actions" Width="100px" Sortable="false" Filterable="false">
+                        <Template Context="inspection">
+                            <RadzenButton Icon="edit" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.Small"
+                                         Click="(() => ShowInspectionDialog(inspection))" @onclick:stopPropagation="true" />
+                            <RadzenButton Icon="delete" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.Small"
+                                         Click="(() => DeleteInspection(inspection.Id))" @onclick:stopPropagation="true" />
+                        </Template>
+                    </RadzenDataGridColumn>
+                </Columns>
+            </RadzenDataGrid>
+        </RadzenColumn>
+    </RadzenRow>
+</RadzenStack>
+
+@code {
+    IEnumerable<Inspection> inspections = new List<Inspection>();
+
+    int totalInspections = 0;
+    int passedInspections = 0;
+    int conditionalPassInspections = 0;
+    int failedInspections = 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadInspections();
+    }
+
+    private async Task LoadInspections()
+    {
+        inspections = await InspectionService.GetAllInspectionsAsync();
+        CalculateSummary();
+    }
+
+    private void CalculateSummary()
+    {
+        totalInspections = inspections.Count();
+        passedInspections = inspections.Count(i => i.OverallOutcome == "Passed");
+        conditionalPassInspections = inspections.Count(i => i.OverallOutcome == "Conditional Pass");
+        failedInspections = inspections.Count(i => i.OverallOutcome == "Failed");
+    }
+
+    private async Task ShowInspectionDialog(Inspection? inspection)
+    {
+        var selectedInspection = inspection ?? new Inspection { InspectionDate = DateTime.Now };
+        var isNew = inspection == null;
+
+        var result = await DialogService.OpenAsync<InspectionDialog>(
+            isNew ? "Create New Inspection" : "Edit Inspection",
+            new Dictionary<string, object> { { "Inspection", selectedInspection } },
+            new DialogOptions { Width = "800px", Height = "650px", Resizable = true, Draggable = true }
+        );
+
+        if (result is Inspection savedInspection)
+        {
+            if (isNew)
+            {
+                await InspectionService.CreateInspectionAsync(savedInspection);
+                NotificationService.Notify(NotificationSeverity.Success, "Inspection Created", $"Inspection for {savedInspection.WarehouseCode} created successfully", 4000);
+            }
+            else
+            {
+                await InspectionService.UpdateInspectionAsync(savedInspection);
+                NotificationService.Notify(NotificationSeverity.Success, "Inspection Updated", $"Inspection for {savedInspection.WarehouseCode} updated successfully", 4000);
+            }
+            await LoadInspections();
+        }
+    }
+
+    private async Task DeleteInspection(string inspectionId)
+    {
+        var confirmed = await DialogService.Confirm("Are you sure you want to delete this inspection record?",
+            "Delete Inspection", new ConfirmOptions { OkButtonText = "Yes, Delete", CancelButtonText = "Cancel" });
+
+        if (confirmed == true)
+        {
+            await InspectionService.DeleteInspectionAsync(inspectionId);
+            NotificationService.Notify(NotificationSeverity.Warning, "Inspection Deleted", "Inspection record has been deleted", 4000);
+            await LoadInspections();
+        }
+    }
+
+    private BadgeStyle GetOutcomeBadgeStyle(string outcome)
+    {
+        return outcome switch
+        {
+            "Passed" => BadgeStyle.Success,
+            "Conditional Pass" => BadgeStyle.Warning,
+            "Failed" => BadgeStyle.Danger,
+            _ => BadgeStyle.Light
+        };
+    }
+}

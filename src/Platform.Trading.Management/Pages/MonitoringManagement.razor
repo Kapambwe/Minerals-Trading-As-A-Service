@@ -1,0 +1,184 @@
+@page "/monitoring"
+@using Platform.Trading.Management.Models
+@using Platform.Trading.Management.Services.Interfaces
+@using Platform.Trading.Management.Components.Dialogs
+@inject IMonitoringService MonitoringService
+@inject DialogService DialogService
+@inject NotificationService NotificationService
+
+<PageTitle>Monitoring & Compliance</PageTitle>
+
+<RadzenStack Gap="1rem">
+    <RadzenRow>
+        <RadzenColumn Size="12">
+            <RadzenText TextStyle="TextStyle.H3" TagName="TagName.H1">Monitoring & Compliance</RadzenText>
+            <RadzenText TextStyle="TextStyle.Body1">Track warehouse compliance, stock reports, and audits</RadzenText>
+        </RadzenColumn>
+    </RadzenRow>
+
+    <RadzenRow>
+        <RadzenColumn Size="12">
+            <RadzenCard>
+                <RadzenRow>
+                    <RadzenColumn Size="3">
+                        <RadzenStack Gap="0.5rem">
+                            <RadzenText TextStyle="TextStyle.Overline">Total Records</RadzenText>
+                            <RadzenText TextStyle="TextStyle.H5">@totalRecords</RadzenText>
+                        </RadzenStack>
+                    </RadzenColumn>
+                    <RadzenColumn Size="3">
+                        <RadzenStack Gap="0.5rem">
+                            <RadzenText TextStyle="TextStyle.Overline">Compliant</RadzenText>
+                            <RadzenText TextStyle="TextStyle.H5" Style="color: green;">@compliantRecords</RadzenText>
+                        </RadzenStack>
+                    </RadzenColumn>
+                    <RadzenColumn Size="3">
+                        <RadzenStack Gap="0.5rem">
+                            <RadzenText TextStyle="TextStyle.Overline">Under Review</RadzenText>
+                            <RadzenText TextStyle="TextStyle.H5" Style="color: orange;">@underReviewRecords</RadzenText>
+                        </RadzenStack>
+                    </RadzenColumn>
+                    <RadzenColumn Size="3">
+                        <RadzenStack Gap="0.5rem">
+                            <RadzenText TextStyle="TextStyle.Overline">Non-Compliant</RadzenText>
+                            <RadzenText TextStyle="TextStyle.H5" Style="color: red;">@nonCompliantRecords</RadzenText>
+                        </RadzenStack>
+                    </RadzenColumn>
+                </RadzenRow>
+            </RadzenCard>
+        </RadzenColumn>
+    </RadzenRow>
+
+    <RadzenRow>
+        <RadzenColumn Size="12">
+            <RadzenButton Icon="add_circle_outline" Text="New Monitoring Record" Click="(() => ShowMonitoringDialog(null))" ButtonStyle="ButtonStyle.Primary" />
+        </RadzenColumn>
+    </RadzenRow>
+
+    <RadzenRow>
+        <RadzenColumn Size="12">
+            <RadzenDataGrid Data="@monitoringRecords" TItem="MonitoringRecord" AllowFiltering="true"
+                           AllowSorting="true" AllowPaging="true" PageSize="10"
+                           FilterMode="FilterMode.Advanced">
+                <Columns>
+                    <RadzenDataGridColumn TItem="MonitoringRecord" Property="WarehouseCode" Title="Warehouse" Width="120px" />
+                    <RadzenDataGridColumn TItem="MonitoringRecord" Property="RecordDate" Title="Date" Width="100px" FormatString="{0:MM/dd/yyyy}" />
+                    <RadzenDataGridColumn TItem="MonitoringRecord" Property="RecordType" Title="Type" Width="150px" />
+                    <RadzenDataGridColumn TItem="MonitoringRecord" Property="ReportedBy" Title="Reported By" Width="150px" />
+                    <RadzenDataGridColumn TItem="MonitoringRecord" Property="OverallStatus" Title="Status" Width="130px">
+                        <Template Context="record">
+                            <RadzenBadge BadgeStyle="@GetStatusBadgeStyle(record.OverallStatus)" Text="@record.OverallStatus" />
+                        </Template>
+                    </RadzenDataGridColumn>
+                    <RadzenDataGridColumn TItem="MonitoringRecord" Property="StockReportSubmitted" Title="Stock Rpt" Width="80px">
+                        <Template Context="record">
+                            @if (record.StockReportSubmitted) { <RadzenIcon Icon="check_circle" IconStyle="IconStyle.Success" /> } else { <RadzenIcon Icon="cancel" IconStyle="IconStyle.Danger" /> } 
+                        </Template>
+                    </RadzenDataGridColumn>
+                    <RadzenDataGridColumn TItem="MonitoringRecord" Property="IndependentAuditAllowed" Title="Audit Allowed" Width="80px">
+                        <Template Context="record">
+                            @if (record.IndependentAuditAllowed) { <RadzenIcon Icon="check_circle" IconStyle="IconStyle.Success" /> } else { <RadzenIcon Icon="cancel" IconStyle="IconStyle.Danger" /> } 
+                        </Template>
+                    </RadzenDataGridColumn>
+                    <RadzenDataGridColumn TItem="MonitoringRecord" Property="RulesOnLoadingUnloadingFollowed" Title="L/UL Rules" Width="80px">
+                        <Template Context="record">
+                            @if (record.RulesOnLoadingUnloadingFollowed) { <RadzenIcon Icon="check_circle" IconStyle="IconStyle.Success" /> } else { <RadzenIcon Icon="cancel" IconStyle="IconStyle.Danger" /> } 
+                        </Template>
+                    </RadzenDataGridColumn>
+                    <RadzenDataGridColumn TItem="MonitoringRecord" Property="RulesOnFeesAccessFollowed" Title="Fees/Access" Width="80px">
+                        <Template Context="record">
+                            @if (record.RulesOnFeesAccessFollowed) { <RadzenIcon Icon="check_circle" IconStyle="IconStyle.Success" /> } else { <RadzenIcon Icon="cancel" IconStyle="IconStyle.Danger" /> } 
+                        </Template>
+                    </RadzenDataGridColumn>
+                    <RadzenDataGridColumn TItem="MonitoringRecord" Title="Actions" Width="100px" Sortable="false" Filterable="false">
+                        <Template Context="record">
+                            <RadzenButton Icon="edit" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.Small"
+                                         Click="(() => ShowMonitoringDialog(record))" @onclick:stopPropagation="true" />
+                            <RadzenButton Icon="delete" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.Small"
+                                         Click="(() => DeleteMonitoringRecord(record.Id))" @onclick:stopPropagation="true" />
+                        </Template>
+                    </RadzenDataGridColumn>
+                </Columns>
+            </RadzenDataGrid>
+        </RadzenColumn>
+    </RadzenRow>
+</RadzenStack>
+
+@code {
+    IEnumerable<MonitoringRecord> monitoringRecords = new List<MonitoringRecord>();
+
+    int totalRecords = 0;
+    int compliantRecords = 0;
+    int underReviewRecords = 0;
+    int nonCompliantRecords = 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadMonitoringRecords();
+    }
+
+    private async Task LoadMonitoringRecords()
+    {
+        monitoringRecords = await MonitoringService.GetAllMonitoringRecordsAsync();
+        CalculateSummary();
+    }
+
+    private void CalculateSummary()
+    {
+        totalRecords = monitoringRecords.Count();
+        compliantRecords = monitoringRecords.Count(r => r.OverallStatus == "Compliant");
+        underReviewRecords = monitoringRecords.Count(r => r.OverallStatus == "Under Review");
+        nonCompliantRecords = monitoringRecords.Count(r => r.OverallStatus == "Non-Compliant");
+    }
+
+    private async Task ShowMonitoringDialog(MonitoringRecord? record)
+    {
+        var selectedRecord = record ?? new MonitoringRecord { RecordDate = DateTime.Now };
+        var isNew = record == null;
+
+        var result = await DialogService.OpenAsync<MonitoringDialog>(
+            isNew ? "Create New Monitoring Record" : "Edit Monitoring Record",
+            new Dictionary<string, object> { { "MonitoringRecord", selectedRecord } },
+            new DialogOptions { Width = "900px", Height = "700px", Resizable = true, Draggable = true }
+        );
+
+        if (result is MonitoringRecord savedRecord)
+        {
+            if (isNew)
+            {
+                await MonitoringService.CreateMonitoringRecordAsync(savedRecord);
+                NotificationService.Notify(NotificationSeverity.Success, "Record Created", $"Monitoring record for {savedRecord.WarehouseCode} created successfully", 4000);
+            }
+            else
+            {
+                await MonitoringService.UpdateMonitoringRecordAsync(savedRecord);
+                NotificationService.Notify(NotificationSeverity.Success, "Record Updated", $"Monitoring record for {savedRecord.WarehouseCode} updated successfully", 4000);
+            }
+            await LoadMonitoringRecords();
+        }
+    }
+
+    private async Task DeleteMonitoringRecord(string recordId)
+    {
+        var confirmed = await DialogService.Confirm("Are you sure you want to delete this monitoring record?",
+            "Delete Monitoring Record");
+
+        if (confirmed == true)
+        {
+            await MonitoringService.DeleteMonitoringRecordAsync(recordId);
+            NotificationService.Notify(NotificationSeverity.Warning, "Record Deleted", "Monitoring record has been deleted", 4000);
+            await LoadMonitoringRecords();
+        }
+    }
+
+    private BadgeStyle GetStatusBadgeStyle(string status)
+    {
+        return status switch
+        {
+            "Compliant" => BadgeStyle.Success,
+            "Under Review" => BadgeStyle.Warning,
+            "Non-Compliant" => BadgeStyle.Danger,
+            _ => BadgeStyle.Light
+        };
+    }
+}

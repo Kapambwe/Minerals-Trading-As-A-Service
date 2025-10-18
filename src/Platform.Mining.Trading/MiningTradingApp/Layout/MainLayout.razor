@@ -47,40 +47,24 @@
         <RadzenPanelMenu Style="height: 100%;">
             <RadzenPanelMenuItem Text="Dashboard" Icon="dashboard" Expanded="true">
                 <RadzenPanelMenuItem Text="Trading Dashboard" Path='@NavManager.WithBase("trading-dashboard")' />
-                <RadzenPanelMenuItem Text="System Monitoring" Path='@NavManager.WithBase("system-monitoring")' />
+                <RadzenPanelMenuItem Text="System Monitoring" Path='@NavManager.WithBase("monitoring")' />
             </RadzenPanelMenuItem>
 
             <RadzenPanelMenuItem Text="Trading" Icon="trending_up" Expanded="true">
-                <RadzenPanelMenuItem Text="Order Entry" Path='@NavManager.WithBase("order-entry")' />
-                <RadzenPanelMenuItem Text="Order Book" Path='@NavManager.WithBase("order-book")' />
-                <RadzenPanelMenuItem Text="Market Data" Path='@NavManager.WithBase("market-data")' />
-                <RadzenPanelMenuItem Text="Trade Blotter" Path='@NavManager.WithBase("trade-blotter")' />
-                <RadzenPanelMenuItem Text="Positions & Portfolio" Path='@NavManager.WithBase("positions-portfolio")' />
+                <RadzenPanelMenuItem Text="Trade Management" Path='@NavManager.WithBase("trades")' />
+                <RadzenPanelMenuItem Text="Buyer Management" Path='@NavManager.WithBase("buyers")' />
+                <RadzenPanelMenuItem Text="Seller Management" Path='@NavManager.WithBase("sellers")' />
             </RadzenPanelMenuItem>
 
             <RadzenPanelMenuItem Text="Risk & Margin" Icon="account_balance" Expanded="true">
-                <RadzenPanelMenuItem Text="Margin & Collateral" Path='@NavManager.WithBase("margin-collateral")' />
-                <RadzenPanelMenuItem Text="Surveillance" Path='@NavManager.WithBase("surveillance")' />
+                <RadzenPanelMenuItem Text="Margin Management" Path='@NavManager.WithBase("margins")' />
             </RadzenPanelMenuItem>
 
             <RadzenPanelMenuItem Text="Operations" Icon="business" Expanded="true">
-                <RadzenPanelMenuItem Text="Warehouse Operations" Path='@NavManager.WithBase("warehouse-operations")' />
-                <RadzenPanelMenuItem Text="Clearing & Settlement" Path='@NavManager.WithBase("clearing-settlement")' />
-                <RadzenPanelMenuItem Text="Settlement Engine" Path='@NavManager.WithBase("settlement-engine")' />
-                <RadzenPanelMenuItem Text="Reconciliation" Path='@NavManager.WithBase("reconciliation")' />
-            </RadzenPanelMenuItem>
-
-            <RadzenPanelMenuItem Text="Market Administration" Icon="admin_panel_settings" Expanded="true">
-                <RadzenPanelMenuItem Text="Market Operations" Path='@NavManager.WithBase("market-operations")' />
-                <RadzenPanelMenuItem Text="Matching Engine Admin" Path='@NavManager.WithBase("matching-engine-admin")' />
-                <RadzenPanelMenuItem Text="Product Definition" Path='@NavManager.WithBase("product-definition")' />
-                <RadzenPanelMenuItem Text="Simulation Lab" Path='@NavManager.WithBase("simulation-lab")' />
-            </RadzenPanelMenuItem>
-
-            <RadzenPanelMenuItem Text="Compliance & Users" Icon="security" Expanded="true">
-                <RadzenPanelMenuItem Text="KYC & Compliance" Path='@NavManager.WithBase("kyc-compliance")' />
-                <RadzenPanelMenuItem Text="User Management" Path='@NavManager.WithBase("user-management")' />
-                <RadzenPanelMenuItem Text="Audit Logs" Path='@NavManager.WithBase("audit-logs")' />
+                <RadzenPanelMenuItem Text="Warehouse Management" Path='@NavManager.WithBase("warehouses")' />
+                <RadzenPanelMenuItem Text="Warrant Management" Path='@NavManager.WithBase("warrants")' />
+                <RadzenPanelMenuItem Text="Settlement Management" Path='@NavManager.WithBase("settlements")' />
+                <RadzenPanelMenuItem Text="Inspection Management" Path='@NavManager.WithBase("inspections")' />
             </RadzenPanelMenuItem>
         </RadzenPanelMenu>
     </RadzenSidebar>

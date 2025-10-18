@@ -1,0 +1,70 @@
+@using Platform.Trading.Management.Models
+@using Platform.Trading.Management.Services.Interfaces
+@inject DialogService DialogService
+@inject IBuyerService BuyerService
+@inject ISellerService SellerService
+
+<RadzenStack Gap="1rem">
+    <RadzenFieldset Text="Transfer Warrant Ownership">
+        <RadzenStack Gap="1rem">
+            <RadzenRow>
+                <RadzenColumn Size="12">
+                    <RadzenText TextStyle="TextStyle.Body1">
+                        Transferring ownership of Warrant <b>@Warrant.WarrantNumber</b> (Current Owner: <b>@Warrant.CurrentOwner</b>)
+                    </RadzenText>
+                </RadzenColumn>
+            </RadzenRow>
+            <RadzenRow>
+                <RadzenColumn Size="12">
+                    <RadzenFormField Text="Select New Owner" Variant="Variant.Outlined">
+                        <RadzenDropDown TValue="string" @bind-Value="SelectedNewOwnerId" Data="@allPotentialOwners"
+                                        TextProperty="CompanyName" ValueProperty="Id"
+                                        Placeholder="Select a buyer or seller" Style="width: 100%;" />
+                    </RadzenFormField>
+                </RadzenColumn>
+            </RadzenRow>
+        </RadzenStack>
+    </RadzenFieldset>
+
+    <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" Gap="0.5rem">
+        <RadzenButton Text="Cancel" ButtonStyle="ButtonStyle.Light" Click="Cancel" />
+        <RadzenButton Text="Transfer" ButtonStyle="ButtonStyle.Primary" Click="Transfer" Disabled="@(string.IsNullOrEmpty(SelectedNewOwnerId))" />
+    </RadzenStack>
+</RadzenStack>
+
+@code {
+    [Parameter]
+    public Warrant Warrant { get; set; } = new();
+
+    public string SelectedNewOwnerId { get; set; } = string.Empty;
+
+    private List<dynamic> allPotentialOwners = new List<dynamic>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        var buyers = await BuyerService.GetAllBuyersAsync();
+        var sellers = await SellerService.GetAllSellersAsync();
+
+        allPotentialOwners.AddRange(buyers.Select(b => new { Id = b.Id, CompanyName = b.CompanyName }));
+        allPotentialOwners.AddRange(sellers.Select(s => new { Id = s.Id, CompanyName = s.CompanyName }));
+    }
+
+    private void Transfer()
+    {
+        // Find the selected owner's name based on SelectedNewOwnerId
+        var selectedOwner = allPotentialOwners.FirstOrDefault(o => o.Id == SelectedNewOwnerId);
+        if (selectedOwner != null)
+        {
+            DialogService.Close(selectedOwner.CompanyName); // Return the name of the new owner
+        }
+        else
+        {
+            DialogService.Close(null); // No owner selected
+        }
+    }
+
+    private void Cancel()
+    {
+        DialogService.Close(null);
+    }
+}

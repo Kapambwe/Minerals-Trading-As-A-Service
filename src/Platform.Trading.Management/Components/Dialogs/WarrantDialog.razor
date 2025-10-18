@@ -1,0 +1,142 @@
+@using Platform.Trading.Management.Models
+@inject DialogService DialogService
+
+<RadzenStack Gap="1rem">
+    <RadzenTabs SelectedIndex="0">
+        <Tabs>
+            <RadzenTabsItem Text="General Information">
+                <RadzenFieldset Text="Warrant Details">
+                    <RadzenStack Gap="1rem">
+                        <RadzenRow>
+                            <RadzenColumn Size="6">
+                                <RadzenFormField Text="Warrant Number" Variant="Variant.Outlined">
+                                    <RadzenTextBox @bind-Value="Warrant.WarrantNumber" Style="width: 100%;" Disabled="true" />
+                                </RadzenFormField>
+                            </RadzenColumn>
+                            <RadzenColumn Size="6">
+                                <RadzenFormField Text="Trade Number" Variant="Variant.Outlined">
+                                    <RadzenTextBox @bind-Value="Warrant.TradeNumber" Style="width: 100%;" />
+                                </RadzenFormField>
+                            </RadzenColumn>
+                        </RadzenRow>
+                        <RadzenRow>
+                            <RadzenColumn Size="6">
+                                <RadzenFormField Text="Warehouse Name" Variant="Variant.Outlined">
+                                    <RadzenTextBox @bind-Value="Warrant.WarehouseName" Style="width: 100%;" />
+                                </RadzenFormField>
+                            </RadzenColumn>
+                            <RadzenColumn Size="6">
+                                <RadzenFormField Text="Lot Number" Variant="Variant.Outlined">
+                                    <RadzenTextBox @bind-Value="Warrant.LotNumber" Style="width: 100%;" />
+                                </RadzenFormField>
+                            </RadzenColumn>
+                        </RadzenRow>
+                        <RadzenRow>
+                            <RadzenColumn Size="4">
+                                <RadzenFormField Text="Metal Type" Variant="Variant.Outlined">
+                                    <RadzenDropDown @bind-Value="Warrant.MetalType" Data="@metalTypes" Style="width: 100%;" />
+                                </RadzenFormField>
+                            </RadzenColumn>
+                            <RadzenColumn Size="4">
+                                <RadzenFormField Text="Quantity (MT)" Variant="Variant.Outlined">
+                                    <RadzenNumeric @bind-Value="Warrant.Quantity" Style="width: 100%;" />
+                                </RadzenFormField>
+                            </RadzenColumn>
+                            <RadzenColumn Size="4">
+                                <RadzenFormField Text="Quality Grade" Variant="Variant.Outlined">
+                                    <RadzenTextBox @bind-Value="Warrant.QualityGrade" Style="width: 100%;" />
+                                </RadzenFormField>
+                            </RadzenColumn>
+                        </RadzenRow>
+                        <RadzenRow>
+                            <RadzenColumn Size="6">
+                                <RadzenFormField Text="Issue Date" Variant="Variant.Outlined">
+                                    <RadzenDatePicker @bind-Value="Warrant.IssueDate" Style="width: 100%;" ShowTime="false" />
+                                </RadzenFormField>
+                            </RadzenColumn>
+                            <RadzenColumn Size="6">
+                                <RadzenFormField Text="Status" Variant="Variant.Outlined">
+                                    <RadzenTextBox @bind-Value="Warrant.Status" Style="width: 100%;" />
+                                </RadzenFormField>
+                            </RadzenColumn>
+                        </RadzenRow>
+                        <RadzenRow>
+                            <RadzenColumn Size="12">
+                                <RadzenCheckBox @bind-Value="Warrant.IsActive" Name="isActive" />
+                                <RadzenLabel Text="Active Warrant" Component="isActive" Style="margin-left: 8px;" />
+                            </RadzenColumn>
+                        </RadzenRow>
+                        <RadzenRow>
+                            <RadzenColumn Size="12">
+                                <RadzenFormField Text="Notes" Variant="Variant.Outlined">
+                                    <RadzenTextArea @bind-Value="Warrant.Notes" Style="width: 100%;" Rows="3" />
+                                </RadzenFormField>
+                            </RadzenColumn>
+                        </RadzenRow>
+                    </RadzenStack>
+                </RadzenFieldset>
+            </RadzenTabsItem>
+
+            <RadzenTabsItem Text="Ownership Details">
+                <RadzenFieldset Text="Ownership Transfer History">
+                    <RadzenStack Gap="1rem">
+                        <RadzenRow>
+                            <RadzenColumn Size="12">
+                                <RadzenText TextStyle="TextStyle.Body1"><b>Current Owner:</b> @Warrant.CurrentOwner</RadzenText>
+                            </RadzenColumn>
+                        </RadzenRow>
+                        <RadzenRow>
+                            <RadzenColumn Size="12">
+                                <RadzenText TextStyle="TextStyle.Body1"><b>Previous Owner:</b> @Warrant.PreviousOwner</RadzenText>
+                            </RadzenColumn>
+                        </RadzenRow>
+                        <RadzenRow>
+                            <RadzenColumn Size="12">
+                                <RadzenText TextStyle="TextStyle.Body1"><b>Last Transfer Date:</b> @(Warrant.TransferDate.HasValue ? Warrant.TransferDate.Value.ToShortDateString() : "N/A")</RadzenText>
+                            </RadzenColumn>
+                        </RadzenRow>
+                    </RadzenStack>
+                </RadzenFieldset>
+            </RadzenTabsItem>
+
+            <RadzenTabsItem Text="Shareable View">
+                <RadzenFieldset Text="Read-Only Warrant Details">
+                    <RadzenStack Gap="1rem">
+                        <RadzenText TextStyle="TextStyle.Body1"><b>Warrant Number:</b> @Warrant.WarrantNumber</RadzenText>
+                        <RadzenText TextStyle="TextStyle.Body1"><b>Trade Number:</b> @Warrant.TradeNumber</RadzenText>
+                        <RadzenText TextStyle="TextStyle.Body1"><b>Warehouse:</b> @Warrant.WarehouseName</RadzenText>
+                        <RadzenText TextStyle="TextStyle.Body1"><b>Metal Type:</b> @Warrant.MetalType</RadzenText>
+                        <RadzenText TextStyle="TextStyle.Body1"><b>Quantity:</b> @Warrant.Quantity MT</RadzenText>
+                        <RadzenText TextStyle="TextStyle.Body1"><b>Quality Grade:</b> @Warrant.QualityGrade</RadzenText>
+                        <RadzenText TextStyle="TextStyle.Body1"><b>Current Owner:</b> @Warrant.CurrentOwner</RadzenText>
+                        <RadzenText TextStyle="TextStyle.Body1"><b>Issue Date:</b> @Warrant.IssueDate.ToShortDateString()</RadzenText>
+                        <RadzenText TextStyle="TextStyle.Body1"><b>Status:</b> @Warrant.Status</RadzenText>
+                        <RadzenText TextStyle="TextStyle.Body2"><i>(This view can be shared with stakeholders for verification)</i></RadzenText>
+                    </RadzenStack>
+                </RadzenFieldset>
+            </RadzenTabsItem>
+        </Tabs>
+    </RadzenTabs>
+
+    <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" Gap="0.5rem">
+        <RadzenButton Text="Cancel" ButtonStyle="ButtonStyle.Light" Click="Cancel" />
+        <RadzenButton Text="Save" ButtonStyle="ButtonStyle.Primary" Click="Save" />
+    </RadzenStack>
+</RadzenStack>
+
+@code {
+    [Parameter]
+    public Warrant Warrant { get; set; } = new();
+
+    private MetalType[] metalTypes = Enum.GetValues<MetalType>();
+
+    private void Save()
+    {
+        DialogService.Close(Warrant);
+    }
+
+    private void Cancel()
+    {
+        DialogService.Close(null);
+    }
+}

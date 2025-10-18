@@ -1,0 +1,165 @@
+@using Platform.Trading.Management.Models
+@inject DialogService DialogService
+
+<RadzenStack Gap="1rem">
+    <RadzenRow>
+        <RadzenColumn Size="12">
+            <RadzenFieldset Text="Settlement Information">
+                <RadzenStack Gap="1rem">
+                    <RadzenRow>
+                        <RadzenColumn Size="6">
+                            <RadzenFormField Text="Trade Number" Variant="Variant.Outlined">
+                                <RadzenTextBox @bind-Value="Settlement.TradeNumber" Style="width: 100%;" />
+                            </RadzenFormField>
+                        </RadzenColumn>
+                        <RadzenColumn Size="6">
+                            <RadzenFormField Text="Settlement Type" Variant="Variant.Outlined">
+                                <RadzenDropDown @bind-Value="Settlement.SettlementType"
+                                               Data="@settlementTypes" Style="width: 100%;" />
+                            </RadzenFormField>
+                        </RadzenColumn>
+                    </RadzenRow>
+
+                    <RadzenRow>
+                        <RadzenColumn Size="6">
+                            <RadzenFormField Text="Buyer Name" Variant="Variant.Outlined">
+                                <RadzenTextBox @bind-Value="Settlement.BuyerName" Style="width: 100%;" />
+                            </RadzenFormField>
+                        </RadzenColumn>
+                        <RadzenColumn Size="6">
+                            <RadzenFormField Text="Seller Name" Variant="Variant.Outlined">
+                                <RadzenTextBox @bind-Value="Settlement.SellerName" Style="width: 100%;" />
+                            </RadzenFormField>
+                        </RadzenColumn>
+                    </RadzenRow>
+                </RadzenStack>
+            </RadzenFieldset>
+        </RadzenColumn>
+    </RadzenRow>
+
+    <RadzenRow>
+        <RadzenColumn Size="12">
+            <RadzenFieldset Text="Financial Details">
+                <RadzenStack Gap="1rem">
+                    <RadzenRow>
+                        <RadzenColumn Size="4">
+                            <RadzenFormField Text="Settlement Amount" Variant="Variant.Outlined">
+                                <RadzenNumeric @bind-Value="Settlement.SettlementAmount" Style="width: 100%;" Format="c0" />
+                            </RadzenFormField>
+                        </RadzenColumn>
+                        <RadzenColumn Size="4">
+                            <RadzenFormField Text="Final Price" Variant="Variant.Outlined">
+                                <RadzenNumeric @bind-Value="Settlement.FinalPrice" Style="width: 100%;" Format="c0" />
+                            </RadzenFormField>
+                        </RadzenColumn>
+                        <RadzenColumn Size="4">
+                            <RadzenFormField Text="Price Difference" Variant="Variant.Outlined">
+                                <RadzenNumeric @bind-Value="Settlement.PriceDifference" Style="width: 100%;" Format="c0" />
+                            </RadzenFormField>
+                        </RadzenColumn>
+                    </RadzenRow>
+
+                    <RadzenRow>
+                        <RadzenColumn Size="6">
+                            <RadzenFormField Text="Settlement Date" Variant="Variant.Outlined">
+                                <RadzenDatePicker @bind-Value="Settlement.SettlementDate" Style="width: 100%;" />
+                            </RadzenFormField>
+                        </RadzenColumn>
+                        <RadzenColumn Size="6">
+                            <RadzenFormField Text="Status" Variant="Variant.Outlined">
+                                <RadzenTextBox @bind-Value="Settlement.Status" Style="width: 100%;" />
+                            </RadzenFormField>
+                        </RadzenColumn>
+                    </RadzenRow>
+                </RadzenStack>
+            </RadzenFieldset>
+        </RadzenColumn>
+    </RadzenRow>
+
+    @if (Settlement.SettlementType == SettlementType.PhysicalDelivery)
+    {
+        <RadzenRow>
+            <RadzenColumn Size="12">
+                <RadzenFieldset Text="Physical Delivery Details">
+                    <RadzenStack Gap="1rem">
+                        <RadzenRow>
+                            <RadzenColumn Size="4">
+                                <RadzenFormField Text="Metal Type" Variant="Variant.Outlined">
+                                    <RadzenDropDown @bind-Value="Settlement.MetalType" Data="@metalTypes" Style="width: 100%;" />
+                                </RadzenFormField>
+                            </RadzenColumn>
+                            <RadzenColumn Size="4">
+                                <RadzenFormField Text="Quantity (MT)" Variant="Variant.Outlined">
+                                    <RadzenNumeric @bind-Value="Settlement.Quantity" Style="width: 100%;" />
+                                </RadzenFormField>
+                            </RadzenColumn>
+                            <RadzenColumn Size="4">
+                                <RadzenFormField Text="Warrant Number" Variant="Variant.Outlined">
+                                    <RadzenTextBox @bind-Value="Settlement.WarrantNumber" Style="width: 100%;" />
+                                </RadzenFormField>
+                            </RadzenColumn>
+                        </RadzenRow>
+
+                        <RadzenRow>
+                            <RadzenColumn Size="12">
+                                <RadzenFormField Text="Warehouse Location" Variant="Variant.Outlined">
+                                    <RadzenTextBox @bind-Value="Settlement.WarehouseLocation" Style="width: 100%;" />
+                                </RadzenFormField>
+                            </RadzenColumn>
+                        </RadzenRow>
+                    </RadzenStack>
+                </RadzenFieldset>
+            </RadzenColumn>
+        </RadzenRow>
+    }
+
+    <RadzenRow>
+        <RadzenColumn Size="12">
+            <RadzenFieldset Text="Additional Information">
+                <RadzenStack Gap="1rem">
+                    <RadzenRow>
+                        <RadzenColumn Size="12">
+                            <RadzenCheckBox @bind-Value="Settlement.IsCompleted" Name="isCompleted" />
+                            <RadzenLabel Text="Settlement Completed" Component="isCompleted" Style="margin-left: 8px;" />
+                        </RadzenColumn>
+                    </RadzenRow>
+
+                    <RadzenRow>
+                        <RadzenColumn Size="12">
+                            <RadzenFormField Text="Notes" Variant="Variant.Outlined">
+                                <RadzenTextArea @bind-Value="Settlement.Notes" Style="width: 100%;" Rows="3" />
+                            </RadzenFormField>
+                        </RadzenColumn>
+                    </RadzenRow>
+                </RadzenStack>
+            </RadzenFieldset>
+        </RadzenColumn>
+    </RadzenRow>
+
+    <RadzenRow>
+        <RadzenColumn Size="12">
+            <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" Gap="0.5rem">
+                <RadzenButton Text="Cancel" ButtonStyle="ButtonStyle.Light" Click="@Cancel" />
+                <RadzenButton Text="Save" ButtonStyle="ButtonStyle.Primary" Click="@Save" />
+            </RadzenStack>
+        </RadzenColumn>
+    </RadzenRow>
+</RadzenStack>
+
+@code {
+    [Parameter]
+    public Settlement Settlement { get; set; } = new();
+
+    private SettlementType[] settlementTypes = Enum.GetValues<SettlementType>();
+    private MetalType[] metalTypes = Enum.GetValues<MetalType>();
+
+    private void Save()
+    {
+        DialogService.Close(Settlement);
+    }
+
+    private void Cancel()
+    {
+        DialogService.Close(null);
+    }
+}

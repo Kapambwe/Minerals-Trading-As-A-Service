@@ -1,0 +1,155 @@
+@using Platform.Trading.Management.Models
+@inject DialogService DialogService
+
+<RadzenStack Gap="1rem">
+    <RadzenTabs SelectedIndex="0">
+        <Tabs>
+            <RadzenTabsItem Text="General Information">
+                <RadzenFieldset Text="Seller Details">
+                    <RadzenStack Gap="1rem">
+                        <RadzenRow>
+                            <RadzenColumn Size="6">
+                                <RadzenFormField Text="Company Name" Variant="Variant.Outlined">
+                                    <RadzenTextBox @bind-Value="Seller.CompanyName" Style="width: 100%;" />
+                                </RadzenFormField>
+                            </RadzenColumn>
+                            <RadzenColumn Size="6">
+                                <RadzenFormField Text="Contact Person" Variant="Variant.Outlined">
+                                    <RadzenTextBox @bind-Value="Seller.ContactPerson" Style="width: 100%;" />
+                                </RadzenFormField>
+                            </RadzenColumn>
+                        </RadzenRow>
+                        <RadzenRow>
+                            <RadzenColumn Size="6">
+                                <RadzenFormField Text="Email" Variant="Variant.Outlined">
+                                    <RadzenTextBox @bind-Value="Seller.Email" Style="width: 100%;" />
+                                </RadzenFormField>
+                            </RadzenColumn>
+                            <RadzenColumn Size="6">
+                                <RadzenFormField Text="Phone Number" Variant="Variant.Outlined">
+                                    <RadzenTextBox @bind-Value="Seller.PhoneNumber" Style="width: 100%;" />
+                                </RadzenFormField>
+                            </RadzenColumn>
+                        </RadzenRow>
+                        <RadzenRow>
+                            <RadzenColumn Size="12">
+                                <RadzenFormField Text="Address" Variant="Variant.Outlined">
+                                    <RadzenTextArea @bind-Value="Seller.Address" Style="width: 100%;" Rows="2" />
+                                </RadzenFormField>
+                            </RadzenColumn>
+                        </RadzenRow>
+                        <RadzenRow>
+                            <RadzenColumn Size="6">
+                                <RadzenFormField Text="City" Variant="Variant.Outlined">
+                                    <RadzenTextBox @bind-Value="Seller.City" Style="width: 100%;" />
+                                </RadzenFormField>
+                            </RadzenColumn>
+                            <RadzenColumn Size="6">
+                                <RadzenFormField Text="Country" Variant="Variant.Outlined">
+                                    <RadzenTextBox @bind-Value="Seller.Country" Style="width: 100%;" />
+                                </RadzenFormField>
+                            </RadzenColumn>
+                        </RadzenRow>
+                        <RadzenRow>
+                            <RadzenColumn Size="6">
+                                <RadzenFormField Text="Minerals Sold" Variant="Variant.Outlined">
+                                    <RadzenDropDown @bind-Value="Seller.MineralsSold" Data="@metalTypes" Multiple="true" Style="width: 100%;" />
+                                </RadzenFormField>
+                            </RadzenColumn>
+                            <RadzenColumn Size="6">
+                                <RadzenFormField Text="Production Capacity (MT/month)" Variant="Variant.Outlined">
+                                    <RadzenNumeric @bind-Value="Seller.ProductionCapacityPerMonth" Style="width: 100%;" />
+                                </RadzenFormField>
+                            </RadzenColumn>
+                        </RadzenRow>
+                    </RadzenStack>
+                </RadzenFieldset>
+            </RadzenTabsItem>
+
+            <RadzenTabsItem Text="KYC Details">
+                <RadzenFieldset Text="KYC Information">
+                    <RadzenStack Gap="1rem">
+                        <RadzenRow>
+                            <RadzenColumn Size="6">
+                                <RadzenFormField Text="Company Reg. Number" Variant="Variant.Outlined">
+                                    <RadzenTextBox @bind-Value="Seller.CompanyRegistrationNumber" Style="width: 100%;" />
+                                </RadzenFormField>
+                            </RadzenColumn>
+                            <RadzenColumn Size="6">
+                                <RadzenFormField Text="Tax ID Number" Variant="Variant.Outlined">
+                                    <RadzenTextBox @bind-Value="Seller.TaxIdentificationNumber" Style="width: 100%;" />
+                                </RadzenFormField>
+                            </RadzenColumn>
+                        </RadzenRow>
+                        <RadzenRow>
+                            <RadzenColumn Size="6">
+                                <RadzenFormField Text="Bank Name" Variant="Variant.Outlined">
+                                    <RadzenTextBox @bind-Value="Seller.BankName" Style="width: 100%;" />
+                                </RadzenFormField>
+                            </RadzenColumn>
+                            <RadzenColumn Size="6">
+                                <RadzenFormField Text="Bank Account Number" Variant="Variant.Outlined">
+                                    <RadzenTextBox @bind-Value="Seller.BankAccountNumber" Style="width: 100%;" />
+                                </RadzenFormField>
+                            </RadzenColumn>
+                        </RadzenRow>
+                        <RadzenRow>
+                            <RadzenColumn Size="6">
+                                <RadzenFormField Text="SWIFT Code" Variant="Variant.Outlined">
+                                    <RadzenTextBox @bind-Value="Seller.SwiftCode" Style="width: 100%;" />
+                                </RadzenFormField>
+                            </RadzenColumn>
+                            <RadzenColumn Size="6">
+                                <RadzenFormField Text="Compliance Officer" Variant="Variant.Outlined">
+                                    <RadzenTextBox @bind-Value="Seller.ComplianceOfficer" Style="width: 100%;" />
+                                </RadzenFormField>
+                            </RadzenColumn>
+                        </RadzenRow>
+                        <RadzenRow>
+                            <RadzenColumn Size="6">
+                                <RadzenFormField Text="Last KYC Review Date" Variant="Variant.Outlined">
+                                    <RadzenDatePicker @bind-Value="Seller.LastKYCReviewDate" Style="width: 100%;" ShowTime="false" />
+                                </RadzenFormField>
+                            </RadzenColumn>
+                            <RadzenColumn Size="6">
+                                <RadzenFormField Text="KYC Status" Variant="Variant.Outlined">
+                                    <RadzenDropDown @bind-Value="Seller.KYCStatus" Data="@kycStatusOptions" Style="width: 100%;" />
+                                </RadzenFormField>
+                            </RadzenColumn>
+                        </RadzenRow>
+                        <RadzenRow>
+                            <RadzenColumn Size="12">
+                                <RadzenFormField Text="Notes" Variant="Variant.Outlined">
+                                    <RadzenTextArea @bind-Value="Seller.Notes" Style="width: 100%;" Rows="3" />
+                                </RadzenFormField>
+                            </RadzenColumn>
+                        </RadzenRow>
+                    </RadzenStack>
+                </RadzenFieldset>
+            </RadzenTabsItem>
+        </Tabs>
+    </RadzenTabs>
+
+    <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" Gap="0.5rem">
+        <RadzenButton Text="Cancel" ButtonStyle="ButtonStyle.Light" Click="Cancel" />
+        <RadzenButton Text="Save" ButtonStyle="ButtonStyle.Primary" Click="Save" />
+    </RadzenStack>
+</RadzenStack>
+
+@code {
+    [Parameter]
+    public Seller Seller { get; set; } = new();
+
+    string[] kycStatusOptions = { "Pending", "Reviewed", "Approved", "Rejected" };
+    MetalType[] metalTypes = Enum.GetValues<MetalType>();
+
+    private void Save()
+    {
+        DialogService.Close(Seller);
+    }
+
+    private void Cancel()
+    {
+        DialogService.Close(null);
+    }
+}

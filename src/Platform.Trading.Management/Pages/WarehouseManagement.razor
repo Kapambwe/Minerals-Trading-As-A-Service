@@ -1,0 +1,204 @@
+@page "/warehouses"
+@using Platform.Trading.Management.Models
+@using Platform.Trading.Management.Services.Interfaces
+@using Platform.Trading.Management.Components.Dialogs
+@inject IWarehouseService WarehouseService
+@inject DialogService DialogService
+@inject NotificationService NotificationService
+
+<PageTitle>Warehouse Management</PageTitle>
+
+<RadzenStack Gap="1rem">
+    <RadzenRow>
+        <RadzenColumn Size="12">
+            <RadzenText TextStyle="TextStyle.H3" TagName="TagName.H1">Warehouse Management</RadzenText>
+            <RadzenText TextStyle="TextStyle.Body1">Manage ZME-approved warehouse facilities across Zambia</RadzenText>
+        </RadzenColumn>
+    </RadzenRow>
+
+    <RadzenRow>
+        <RadzenColumn Size="12">
+            <RadzenCard>
+                <RadzenRow>
+                    <RadzenColumn Size="3">
+                        <RadzenStack Gap="0.5rem">
+                            <RadzenText TextStyle="TextStyle.Overline">Total Warehouses</RadzenText>
+                            <RadzenText TextStyle="TextStyle.H5">@totalWarehouses</RadzenText>
+                        </RadzenStack>
+                    </RadzenColumn>
+                    <RadzenColumn Size="3">
+                        <RadzenStack Gap="0.5rem">
+                            <RadzenText TextStyle="TextStyle.Overline">LME Approved</RadzenText>
+                            <RadzenText TextStyle="TextStyle.H5" Style="color: green;">@approvedWarehouses</RadzenText>
+                        </RadzenStack>
+                    </RadzenColumn>
+                    <RadzenColumn Size="3">
+                        <RadzenStack Gap="0.5rem">
+                            <RadzenText TextStyle="TextStyle.Overline">Total Capacity (MT)</RadzenText>
+                            <RadzenText TextStyle="TextStyle.H5">@totalCapacity.ToString("N0")</RadzenText>
+                        </RadzenStack>
+                    </RadzenColumn>
+                    <RadzenColumn Size="3">
+                        <RadzenStack Gap="0.5rem">
+                            <RadzenText TextStyle="TextStyle.Overline">Available Capacity (MT)</RadzenText>
+                            <RadzenText TextStyle="TextStyle.H5">@availableCapacity.ToString("N0")</RadzenText>
+                        </RadzenStack>
+                    </RadzenColumn>
+                </RadzenRow>
+            </RadzenCard>
+        </RadzenColumn>
+    </RadzenRow>
+
+    <RadzenRow>
+        <RadzenColumn Size="12">
+            <RadzenButton Icon="add_circle_outline" Text="New Warehouse" Click="@ShowWarehouseDialog" ButtonStyle="ButtonStyle.Primary" />
+        </RadzenColumn>
+    </RadzenRow>
+
+    <RadzenRow>
+        <RadzenColumn Size="12">
+            <RadzenDataGrid @ref="warehousesGrid" Data="@warehouses" TItem="Warehouse" AllowFiltering="true"
+                           AllowSorting="true" AllowPaging="true" PageSize="10"
+                           FilterMode="FilterMode.Advanced">
+                <Columns>
+                    <RadzenDataGridColumn TItem="Warehouse" Property="WarehouseCode" Title="Code" Width="140px" />
+                    <RadzenDataGridColumn TItem="Warehouse" Property="OperatorName" Title="Operator" />
+                    <RadzenDataGridColumn TItem="Warehouse" Property="City" Title="City" Width="120px" />
+                    <RadzenDataGridColumn TItem="Warehouse" Property="Country" Title="Country" Width="120px" />
+                    <RadzenDataGridColumn TItem="Warehouse" Property="StorageCapacity" Title="Capacity (MT)" Width="130px" FormatString="{0:N0}" />
+                    <RadzenDataGridColumn TItem="Warehouse" Property="CurrentStock" Title="Current Stock (MT)" Width="150px" FormatString="{0:N0}" />
+                    <RadzenDataGridColumn TItem="Warehouse" Property="AvailableCapacity" Title="Available (MT)" Width="130px" FormatString="{0:N0}">
+                        <Template Context="warehouse">
+                            <RadzenProgressBarCircular Value="@(((double)warehouse.CurrentStock / (double)warehouse.StorageCapacity) * 100)"
+                                                      ShowValue="false" Size="ProgressBarCircularSize.Small">
+                                <Template>@warehouse.AvailableCapacity.ToString("N0")</Template>
+                            </RadzenProgressBarCircular>
+                        </Template>
+                    </RadzenDataGridColumn>
+                    <RadzenDataGridColumn TItem="Warehouse" Property="IsLMEApproved" Title="LME Approved" Width="120px">
+                        <Template Context="warehouse">
+                            @if (warehouse.IsLMEApproved)
+                            {
+                                <RadzenBadge BadgeStyle="BadgeStyle.Success" Text="Approved" />
+                            }
+                            else
+                            {
+                                <RadzenBadge BadgeStyle="BadgeStyle.Warning" Text="Pending" />
+                            }
+                        </Template>
+                    </RadzenDataGridColumn>
+                    <RadzenDataGridColumn TItem="Warehouse" Property="SecurityLevel" Title="Security" Width="100px" />
+                    <RadzenDataGridColumn TItem="Warehouse" Property="LastInspectionDate" Title="Last Inspection" Width="140px" FormatString="{0:MM/dd/yyyy}" />
+                    <RadzenDataGridColumn TItem="Warehouse" Property="Status" Title="Status" Width="100px">
+                        <Template Context="warehouse">
+                            <RadzenBadge BadgeStyle="@(warehouse.Status == "Active" ? BadgeStyle.Success : BadgeStyle.Warning)"
+                                        Text="@warehouse.Status" />
+                        </Template>
+                    </RadzenDataGridColumn>
+                    <RadzenDataGridColumn TItem="Warehouse" Title="Actions" Width="120px" Sortable="false" Filterable="false">
+                        <Template Context="warehouse">
+                            <RadzenButton Icon="edit" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.Small"
+                                         Click="@(() => EditWarehouse(warehouse))" @onclick:stopPropagation="true" />
+                            <RadzenButton Icon="check_circle" ButtonStyle="ButtonStyle.Success" Size="ButtonSize.Small"
+                                         Click="@(() => ApproveWarehouse(warehouse.Id))" Disabled="@warehouse.IsLMEApproved"
+                                         title="Approve Warehouse" @onclick:stopPropagation="true" />
+                            <RadzenButton Icon="delete" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.Small"
+                                         Click="@(() => DeleteWarehouse(warehouse.Id))" @onclick:stopPropagation="true" />
+                        </Template>
+                    </RadzenDataGridColumn>
+                </Columns>
+            </RadzenDataGrid>
+        </RadzenColumn>
+    </RadzenRow>
+</RadzenStack>
+
+@code {
+    RadzenDataGrid<Warehouse> warehousesGrid = new();
+    IEnumerable<Warehouse> warehouses = new List<Warehouse>();
+
+    int totalWarehouses = 0;
+    int approvedWarehouses = 0;
+    decimal totalCapacity = 0;
+    decimal availableCapacity = 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadWarehouses();
+    }
+
+    private async Task LoadWarehouses()
+    {
+        warehouses = await WarehouseService.GetAllWarehousesAsync();
+        CalculateSummary();
+    }
+    private void CalculateSummary()
+    {
+        totalWarehouses = warehouses.Count();
+        approvedWarehouses = warehouses.Count(w => w.IsLMEApproved);
+        totalCapacity = warehouses.Sum(w => w.StorageCapacity);
+        availableCapacity = warehouses.Sum(w => w.AvailableCapacity);
+    }
+
+    private async Task ShowWarehouseDialog()
+    {
+        await ShowWarehouseEditDialog(null);
+    }
+
+    private async Task EditWarehouse(Warehouse warehouse)
+    {
+        await ShowWarehouseEditDialog(warehouse);
+    }
+
+    private async Task ShowWarehouseEditDialog(Warehouse? warehouse)
+    {
+        var selectedWarehouse = warehouse ?? new Warehouse { ApprovalDate = DateTime.Now, LastInspectionDate = DateTime.Now, Status = "Pending Approval" };
+        var isNew = warehouse == null;
+
+        var result = await DialogService.OpenAsync<WarehouseDialog>(
+            isNew ? "Create New Warehouse" : "Edit Warehouse",
+            new Dictionary<string, object> { { "Warehouse", selectedWarehouse } },
+            new DialogOptions { Width = "800px", Height = "700px", Resizable = true, Draggable = true }
+        );
+
+        if (result is Warehouse savedWarehouse)
+        {
+            if (isNew)
+            {
+                await WarehouseService.CreateWarehouseAsync(savedWarehouse);
+                NotificationService.Notify(NotificationSeverity.Success, "Warehouse Created", "Warehouse created successfully", 4000);
+            }
+            else
+            {
+                await WarehouseService.UpdateWarehouseAsync(savedWarehouse);
+                NotificationService.Notify(NotificationSeverity.Success, "Warehouse Updated", "Warehouse updated successfully", 4000);
+            }
+            await LoadWarehouses();
+        }
+    }
+
+    private async Task ApproveWarehouse(string warehouseId)
+    {
+        var confirmed = await DialogService.Confirm("Are you sure you want to approve this warehouse?",
+            "Approve Warehouse", new ConfirmOptions { OkButtonText = "Yes, Approve", CancelButtonText = "Cancel" });
+
+        if (confirmed == true)
+        {
+            await WarehouseService.ApproveWarehouseAsync(warehouseId);
+            NotificationService.Notify(NotificationSeverity.Success, "Warehouse Approved", "Warehouse has been successfully approved", 4000);
+            await LoadWarehouses();
+        }
+    }
+
+    private async Task DeleteWarehouse(string warehouseId)
+    {
+        var confirmed = await DialogService.Confirm("Are you sure you want to delete this warehouse?",
+            "Delete Warehouse");
+
+        if (confirmed == true)
+        {
+            await WarehouseService.DeleteWarehouseAsync(warehouseId);
+            NotificationService.Notify(NotificationSeverity.Warning, "Warehouse Deleted", "Warehouse has been deleted", 4000);
+            await LoadWarehouses();
+        }
+    }
+}

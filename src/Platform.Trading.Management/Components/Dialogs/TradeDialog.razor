@@ -1,0 +1,128 @@
+@using Platform.Trading.Management.Models
+@inject DialogService DialogService
+
+<RadzenStack Gap="1rem">
+    <RadzenRow>
+        <RadzenColumn Size="12">
+            <RadzenFieldset Text="Trade Information">
+                <RadzenStack Gap="1rem">
+                    <RadzenRow>
+                        <RadzenColumn Size="6">
+                            <RadzenFormField Text="Buyer Name" Variant="Variant.Outlined">
+                                <RadzenTextBox @bind-Value="Trade.BuyerName" Style="width: 100%;" />
+                            </RadzenFormField>
+                        </RadzenColumn>
+                        <RadzenColumn Size="6">
+                            <RadzenFormField Text="Seller Name" Variant="Variant.Outlined">
+                                <RadzenTextBox @bind-Value="Trade.SellerName" Style="width: 100%;" />
+                            </RadzenFormField>
+                        </RadzenColumn>
+                    </RadzenRow>
+
+                    <RadzenRow>
+                        <RadzenColumn Size="6">
+                            <RadzenFormField Text="Trade Date" Variant="Variant.Outlined">
+                                <RadzenDatePicker @bind-Value="Trade.TradeDate" Style="width: 100%;" ShowTime="false" />
+                            </RadzenFormField>
+                        </RadzenColumn>
+                        <RadzenColumn Size="6">
+                            <RadzenFormField Text="Delivery Date" Variant="Variant.Outlined">
+                                <RadzenDatePicker @bind-Value="Trade.DeliveryDate" Style="width: 100%;" ShowTime="false" />
+                            </RadzenFormField>
+                        </RadzenColumn>
+                    </RadzenRow>
+                </RadzenStack>
+            </RadzenFieldset>
+        </RadzenColumn>
+    </RadzenRow>
+
+    <RadzenRow>
+        <RadzenColumn Size="12">
+            <RadzenFieldset Text="Metal Details">
+                <RadzenStack Gap="1rem">
+                    <RadzenRow>
+                        <RadzenColumn Size="4">
+                            <RadzenFormField Text="Metal Type" Variant="Variant.Outlined">
+                                <RadzenDropDown @bind-Value="Trade.MetalType" Data="@metalTypes" Style="width: 100%;" />
+                            </RadzenFormField>
+                        </RadzenColumn>
+                        <RadzenColumn Size="4">
+                            <RadzenFormField Text="Quantity (MT)" Variant="Variant.Outlined">
+                                <RadzenNumeric @bind-Value="Trade.Quantity" Style="width: 100%;"
+                                              Change="@((decimal value) => CalculateTotalValue(value))" />
+                            </RadzenFormField>
+                        </RadzenColumn>
+                        <RadzenColumn Size="4">
+                            <RadzenFormField Text="Price per Ton" Variant="Variant.Outlined">
+                                <RadzenNumeric @bind-Value="Trade.PricePerTon" Style="width: 100%;"
+                                              Format="c0" Change="@((decimal value) => CalculateTotalValue(value))" />
+                            </RadzenFormField>
+                        </RadzenColumn>
+                    </RadzenRow>
+
+                    <RadzenRow>
+                        <RadzenColumn Size="6">
+                            <RadzenFormField Text="Total Value" Variant="Variant.Outlined">
+                                <RadzenNumeric @bind-Value="Trade.TotalValue" Style="width: 100%;"
+                                              Format="c0" Disabled="true" />
+                            </RadzenFormField>
+                        </RadzenColumn>
+                        <RadzenColumn Size="6">
+                            <RadzenFormField Text="Status" Variant="Variant.Outlined">
+                                <RadzenDropDown @bind-Value="Trade.Status" Data="@statusList" Style="width: 100%;" />
+                            </RadzenFormField>
+                        </RadzenColumn>
+                    </RadzenRow>
+                </RadzenStack>
+            </RadzenFieldset>
+        </RadzenColumn>
+    </RadzenRow>
+
+    <RadzenRow>
+        <RadzenColumn Size="12">
+            <RadzenFieldset Text="Additional Information">
+                <RadzenStack Gap="1rem">
+                    <RadzenRow>
+                        <RadzenColumn Size="12">
+                            <RadzenFormField Text="Notes" Variant="Variant.Outlined">
+                                <RadzenTextArea @bind-Value="Trade.Notes" Style="width: 100%;" Rows="3" />
+                            </RadzenFormField>
+                        </RadzenColumn>
+                    </RadzenRow>
+                </RadzenStack>
+            </RadzenFieldset>
+        </RadzenColumn>
+    </RadzenRow>
+
+    <RadzenRow>
+        <RadzenColumn Size="12">
+            <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" Gap="0.5rem">
+                <RadzenButton Text="Cancel" ButtonStyle="ButtonStyle.Light" Click="@Cancel" />
+                <RadzenButton Text="Save" ButtonStyle="ButtonStyle.Primary" Click="@Save" />
+            </RadzenStack>
+        </RadzenColumn>
+    </RadzenRow>
+</RadzenStack>
+
+@code {
+    [Parameter]
+    public Trade Trade { get; set; } = new();
+
+    private MetalType[] metalTypes = Enum.GetValues<MetalType>();
+    private TradeStatus[] statusList = Enum.GetValues<TradeStatus>();
+
+    private void CalculateTotalValue(decimal value)
+    {
+        Trade.TotalValue = Trade.Quantity * Trade.PricePerTon;
+    }
+
+    private void Save()
+    {
+        DialogService.Close(Trade);
+    }
+
+    private void Cancel()
+    {
+        DialogService.Close(null);
+    }
+}

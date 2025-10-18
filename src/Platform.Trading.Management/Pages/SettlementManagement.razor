@@ -1,0 +1,253 @@
+@page "/settlements"
+@using Platform.Trading.Management.Models
+@using Platform.Trading.Management.Services.Interfaces
+@using Platform.Trading.Management.Components.Dialogs
+@inject ISettlementService SettlementService
+@inject DialogService DialogService
+@inject NotificationService NotificationService
+
+<PageTitle>Settlement Management</PageTitle>
+
+<RadzenStack Gap="1rem">
+    <RadzenRow>
+        <RadzenColumn Size="12">
+            <RadzenText TextStyle="TextStyle.H3" TagName="TagName.H1">Settlement Management</RadzenText>
+            <RadzenText TextStyle="TextStyle.Body1">Track physical delivery and cash settlements</RadzenText>
+        </RadzenColumn>
+    </RadzenRow>
+
+    <RadzenRow>
+        <RadzenColumn Size="12">
+            <RadzenCard>
+                <RadzenRow>
+                    <RadzenColumn Size="3">
+                        <RadzenStack Gap="0.5rem">
+                            <RadzenText TextStyle="TextStyle.Overline">Total Settlements</RadzenText>
+                            <RadzenText TextStyle="TextStyle.H5">@totalSettlements</RadzenText>
+                        </RadzenStack>
+                    </RadzenColumn>
+                    <RadzenColumn Size="3">
+                        <RadzenStack Gap="0.5rem">
+                            <RadzenText TextStyle="TextStyle.Overline">Completed</RadzenText>
+                            <RadzenText TextStyle="TextStyle.H5" Style="color: green;">@completedSettlements</RadzenText>
+                        </RadzenStack>
+                    </RadzenColumn>
+                    <RadzenColumn Size="3">
+                        <RadzenStack Gap="0.5rem">
+                            <RadzenText TextStyle="TextStyle.Overline">Pending</RadzenText>
+                            <RadzenText TextStyle="TextStyle.H5" Style="color: orange;">@pendingSettlements</RadzenText>
+                        </RadzenStack>
+                    </RadzenColumn>
+                    <RadzenColumn Size="3">
+                        <RadzenStack Gap="0.5rem">
+                            <RadzenText TextStyle="TextStyle.Overline">Total Value</RadzenText>
+                            <RadzenText TextStyle="TextStyle.H5">@totalValue.ToString("C0")</RadzenText>
+                        </RadzenStack>
+                    </RadzenColumn>
+                </RadzenRow>
+            </RadzenCard>
+        </RadzenColumn>
+    </RadzenRow>
+
+    <RadzenRow>
+        <RadzenColumn Size="12">
+            <RadzenTabs>
+                <Tabs>
+                    <RadzenTabsItem Text="All Settlements">
+                        <RadzenButton Icon="add_circle_outline" Text="New Settlement" Click="@ShowSettlementDialog"
+                                     ButtonStyle="ButtonStyle.Primary" Style="margin-bottom: 1rem;" />
+
+                        <RadzenDataGrid @ref="settlementsGrid" Data="@settlements" TItem="Settlement" AllowFiltering="true"
+                                       AllowSorting="true" AllowPaging="true" PageSize="10"
+                                       FilterMode="FilterMode.Advanced">
+                            <Columns>
+                                <RadzenDataGridColumn TItem="Settlement" Property="SettlementNumber" Title="Settlement #" Width="140px" />
+                                <RadzenDataGridColumn TItem="Settlement" Property="TradeNumber" Title="Trade #" Width="130px" />
+                                <RadzenDataGridColumn TItem="Settlement" Property="SettlementType" Title="Type" Width="140px">
+                                    <Template Context="settlement">
+                                        @if (settlement.SettlementType == SettlementType.PhysicalDelivery)
+                                        {
+                                            <RadzenBadge BadgeStyle="BadgeStyle.Info" Text="Physical Delivery" />
+                                        }
+                                        else
+                                        {
+                                            <RadzenBadge BadgeStyle="BadgeStyle.Primary" Text="Cash Settlement" />
+                                        }
+                                    </Template>
+                                </RadzenDataGridColumn>
+                                <RadzenDataGridColumn TItem="Settlement" Property="BuyerName" Title="Buyer" />
+                                <RadzenDataGridColumn TItem="Settlement" Property="SellerName" Title="Seller" />
+                                <RadzenDataGridColumn TItem="Settlement" Property="MetalType" Title="Metal" Width="100px" />
+                                <RadzenDataGridColumn TItem="Settlement" Property="Quantity" Title="Quantity (MT)" Width="130px" FormatString="{0:N2}" />
+                                <RadzenDataGridColumn TItem="Settlement" Property="SettlementAmount" Title="Amount" Width="130px" FormatString="{0:C0}" />
+                                <RadzenDataGridColumn TItem="Settlement" Property="SettlementDate" Title="Settlement Date" Width="130px" FormatString="{0:MM/dd/yyyy}" />
+                                <RadzenDataGridColumn TItem="Settlement" Property="Status" Title="Status" Width="110px">
+                                    <Template Context="settlement">
+                                        <RadzenBadge BadgeStyle="@(settlement.IsCompleted ? BadgeStyle.Success : BadgeStyle.Warning)"
+                                                    Text="@settlement.Status" />
+                                    </Template>
+                                </RadzenDataGridColumn>
+                                <RadzenDataGridColumn TItem="Settlement" Title="Actions" Width="150px" Sortable="false" Filterable="false">
+                                    <Template Context="settlement">
+                                        <RadzenButton Icon="check_circle" ButtonStyle="ButtonStyle.Success" Size="ButtonSize.Small"
+                                                     Click="@(() => CompleteSettlement(settlement.Id))" Disabled="@settlement.IsCompleted"
+                                                     title="Complete Settlement" @onclick:stopPropagation="true" />
+                                        <RadzenButton Icon="edit" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.Small"
+                                                     Click="@(() => EditSettlement(settlement))" @onclick:stopPropagation="true" />
+                                        <RadzenButton Icon="delete" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.Small"
+                                                     Click="@(() => DeleteSettlement(settlement.Id))" @onclick:stopPropagation="true" />
+                                    </Template>
+                                </RadzenDataGridColumn>
+                            </Columns>
+                        </RadzenDataGrid>
+                    </RadzenTabsItem>
+
+                    <RadzenTabsItem Text="Physical Deliveries">
+                        <RadzenDataGrid Data="@physicalDeliveries" TItem="Settlement" AllowFiltering="true"
+                                       AllowSorting="true" AllowPaging="true" PageSize="10">
+                            <Columns>
+                                <RadzenDataGridColumn TItem="Settlement" Property="SettlementNumber" Title="Settlement #" Width="140px" />
+                                <RadzenDataGridColumn TItem="Settlement" Property="TradeNumber" Title="Trade #" Width="130px" />
+                                <RadzenDataGridColumn TItem="Settlement" Property="WarrantNumber" Title="Warrant #" Width="140px" />
+                                <RadzenDataGridColumn TItem="Settlement" Property="WarehouseLocation" Title="Warehouse" />
+                                <RadzenDataGridColumn TItem="Settlement" Property="MetalType" Title="Metal" Width="100px" />
+                                <RadzenDataGridColumn TItem="Settlement" Property="Quantity" Title="Quantity (MT)" Width="130px" FormatString="{0:N2}" />
+                                <RadzenDataGridColumn TItem="Settlement" Property="SettlementDate" Title="Delivery Date" Width="130px" FormatString="{0:MM/dd/yyyy}" />
+                                <RadzenDataGridColumn TItem="Settlement" Property="Status" Title="Status" Width="110px">
+                                    <Template Context="settlement">
+                                        <RadzenBadge BadgeStyle="@(settlement.IsCompleted ? BadgeStyle.Success : BadgeStyle.Warning)"
+                                                    Text="@settlement.Status" />
+                                    </Template>
+                                </RadzenDataGridColumn>
+                            </Columns>
+                        </RadzenDataGrid>
+                    </RadzenTabsItem>
+
+                    <RadzenTabsItem Text="Cash Settlements">
+                        <RadzenDataGrid Data="@cashSettlements" TItem="Settlement" AllowFiltering="true"
+                                       AllowSorting="true" AllowPaging="true" PageSize="10">
+                            <Columns>
+                                <RadzenDataGridColumn TItem="Settlement" Property="SettlementNumber" Title="Settlement #" Width="140px" />
+                                <RadzenDataGridColumn TItem="Settlement" Property="TradeNumber" Title="Trade #" Width="130px" />
+                                <RadzenDataGridColumn TItem="Settlement" Property="BuyerName" Title="Buyer" />
+                                <RadzenDataGridColumn TItem="Settlement" Property="SellerName" Title="Seller" />
+                                <RadzenDataGridColumn TItem="Settlement" Property="FinalPrice" Title="Final Price" Width="120px" FormatString="{0:C0}" />
+                                <RadzenDataGridColumn TItem="Settlement" Property="PriceDifference" Title="Price Diff" Width="120px">
+                                    <Template Context="settlement">
+                                        <span style="@(settlement.PriceDifference >= 0 ? "color: green;" : "color: red;")">
+                                            @settlement.PriceDifference.ToString("+0.00;-0.00;0")
+                                        </span>
+                                    </Template>
+                                </RadzenDataGridColumn>
+                                <RadzenDataGridColumn TItem="Settlement" Property="SettlementAmount" Title="Amount" Width="130px" FormatString="{0:C0}" />
+                                <RadzenDataGridColumn TItem="Settlement" Property="SettlementDate" Title="Settlement Date" Width="130px" FormatString="{0:MM/dd/yyyy}" />
+                                <RadzenDataGridColumn TItem="Settlement" Property="Status" Title="Status" Width="110px">
+                                    <Template Context="settlement">
+                                        <RadzenBadge BadgeStyle="@(settlement.IsCompleted ? BadgeStyle.Success : BadgeStyle.Warning)"
+                                                    Text="@settlement.Status" />
+                                    </Template>
+                                </RadzenDataGridColumn>
+                            </Columns>
+                        </RadzenDataGrid>
+                    </RadzenTabsItem>
+                </Tabs>
+            </RadzenTabs>
+        </RadzenColumn>
+    </RadzenRow>
+</RadzenStack>
+
+@code {
+    RadzenDataGrid<Settlement> settlementsGrid = new();
+    IEnumerable<Settlement> settlements = new List<Settlement>();
+    IEnumerable<Settlement> physicalDeliveries = new List<Settlement>();
+    IEnumerable<Settlement> cashSettlements = new List<Settlement>();
+
+    int totalSettlements = 0;
+    int completedSettlements = 0;
+    int pendingSettlements = 0;
+    decimal totalValue = 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadSettlements();
+    }
+
+    private async Task LoadSettlements()
+    {
+        settlements = await SettlementService.GetAllSettlementsAsync();
+        physicalDeliveries = settlements.Where(s => s.SettlementType == SettlementType.PhysicalDelivery);
+        cashSettlements = settlements.Where(s => s.SettlementType == SettlementType.CashSettlement);
+        CalculateSummary();
+    }
+
+    private void CalculateSummary()
+    {
+        totalSettlements = settlements.Count();
+        completedSettlements = settlements.Count(s => s.IsCompleted);
+        pendingSettlements = settlements.Count(s => !s.IsCompleted);
+        totalValue = settlements.Sum(s => s.SettlementAmount);
+    }
+
+    private async Task ShowSettlementDialog()
+    {
+        await ShowSettlementEditDialog(null);
+    }
+
+    private async Task EditSettlement(Settlement settlement)
+    {
+        await ShowSettlementEditDialog(settlement);
+    }
+
+    private async Task ShowSettlementEditDialog(Settlement? settlement)
+    {
+        var selectedSettlement = settlement ?? new Settlement { SettlementDate = DateTime.Now, Status = "Pending" };
+        var isNew = settlement == null;
+
+        var result = await DialogService.OpenAsync<SettlementDialog>(
+            isNew ? "Create New Settlement" : "Edit Settlement",
+            new Dictionary<string, object> { { "Settlement", selectedSettlement } },
+            new DialogOptions { Width = "800px", Height = "700px", Resizable = true, Draggable = true }
+        );
+
+        if (result is Settlement savedSettlement)
+        {
+            if (isNew)
+            {
+                await SettlementService.CreateSettlementAsync(savedSettlement);
+                NotificationService.Notify(NotificationSeverity.Success, "Settlement Created", "Settlement created successfully", 4000);
+            }
+            else
+            {
+                await SettlementService.UpdateSettlementAsync(savedSettlement);
+                NotificationService.Notify(NotificationSeverity.Success, "Settlement Updated", "Settlement updated successfully", 4000);
+            }
+            await LoadSettlements();
+        }
+    }
+
+    private async Task CompleteSettlement(string settlementId)
+    {
+        var confirmed = await DialogService.Confirm("Are you sure you want to complete this settlement?",
+            "Complete Settlement");
+
+        if (confirmed == true)
+        {
+            await SettlementService.CompleteSettlementAsync(settlementId);
+            NotificationService.Notify(NotificationSeverity.Success, "Settlement Completed", "Settlement has been completed", 4000);
+            await LoadSettlements();
+        }
+    }
+
+    private async Task DeleteSettlement(string settlementId)
+    {
+        var confirmed = await DialogService.Confirm("Are you sure you want to delete this settlement?",
+            "Delete Settlement");
+
+        if (confirmed == true)
+        {
+            await SettlementService.DeleteSettlementAsync(settlementId);
+            NotificationService.Notify(NotificationSeverity.Warning, "Settlement Deleted", "Settlement has been deleted", 4000);
+            await LoadSettlements();
+        }
+    }
+}

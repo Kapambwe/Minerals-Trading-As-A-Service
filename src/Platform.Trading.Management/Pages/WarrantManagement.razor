@@ -1,0 +1,192 @@
+@page "/warrants"
+@using Platform.Trading.Management.Models
+@using Platform.Trading.Management.Services.Interfaces
+@using Platform.Trading.Management.Components.Dialogs
+@inject IWarrantService WarrantService
+@inject DialogService DialogService
+@inject NotificationService NotificationService
+
+<PageTitle>Warrant Management</PageTitle>
+
+<RadzenStack Gap="1rem">
+    <RadzenRow>
+        <RadzenColumn Size="12">
+            <RadzenText TextStyle="TextStyle.H3" TagName="TagName.H1">Warrant Management</RadzenText>
+            <RadzenText TextStyle="TextStyle.Body1">Digital certificates of copper ownership in ZME warehouses</RadzenText>
+        </RadzenColumn>
+    </RadzenRow>
+
+    <RadzenRow>
+        <RadzenColumn Size="12">
+            <RadzenCard>
+                <RadzenRow>
+                    <RadzenColumn Size="3">
+                        <RadzenStack Gap="0.5rem">
+                            <RadzenText TextStyle="TextStyle.Overline">Total Warrants</RadzenText>
+                            <RadzenText TextStyle="TextStyle.H5">@totalWarrants</RadzenText>
+                        </RadzenStack>
+                    </RadzenColumn>
+                    <RadzenColumn Size="3">
+                        <RadzenStack Gap="0.5rem">
+                            <RadzenText TextStyle="TextStyle.Overline">Active Warrants</RadzenText>
+                            <RadzenText TextStyle="TextStyle.H5" Style="color: green;">@activeWarrants</RadzenText>
+                        </RadzenStack>
+                    </RadzenColumn>
+                    <RadzenColumn Size="3">
+                        <RadzenStack Gap="0.5rem">
+                            <RadzenText TextStyle="TextStyle.Overline">Total Metal (MT)</RadzenText>
+                            <RadzenText TextStyle="TextStyle.H5">@totalQuantity.ToString("N2")</RadzenText>
+                        </RadzenStack>
+                    </RadzenColumn>
+                    <RadzenColumn Size="3">
+                        <RadzenStack Gap="0.5rem">
+                            <RadzenText TextStyle="TextStyle.Overline">Transfers This Month</RadzenText>
+                            <RadzenText TextStyle="TextStyle.H5">@recentTransfers</RadzenText>
+                        </RadzenStack>
+                    </RadzenColumn>
+                </RadzenRow>
+            </RadzenCard>
+        </RadzenColumn>
+    </RadzenRow>
+
+    <RadzenRow>
+        <RadzenColumn Size="12">
+            <RadzenButton Icon="add_circle_outline" Text="Issue New Warrant" Click="@ShowWarrantDialog" ButtonStyle="ButtonStyle.Primary" />
+        </RadzenColumn>
+    </RadzenRow>
+
+    <RadzenRow>
+        <RadzenColumn Size="12">
+            <RadzenDataGrid @ref="warrantsGrid" Data="@warrants" TItem="Warrant" AllowFiltering="true"
+                           AllowSorting="true" AllowPaging="true" PageSize="10"
+                           FilterMode="FilterMode.Advanced">
+                <Columns>
+                    <RadzenDataGridColumn TItem="Warrant" Property="WarrantNumber" Title="Warrant #" Width="140px" />
+                    <RadzenDataGridColumn TItem="Warrant" Property="TradeNumber" Title="Trade #" Width="130px" />
+                    <RadzenDataGridColumn TItem="Warrant" Property="MetalType" Title="Metal" Width="100px" />
+                    <RadzenDataGridColumn TItem="Warrant" Property="Quantity" Title="Quantity (MT)" Width="130px" FormatString="{0:N2}" />
+                    <RadzenDataGridColumn TItem="Warrant" Property="CurrentOwner" Title="Current Owner" />
+                    <RadzenDataGridColumn TItem="Warrant" Property="WarehouseName" Title="Warehouse" />
+                    <RadzenDataGridColumn TItem="Warrant" Property="QualityGrade" Title="Grade" Width="100px" />
+                    <RadzenDataGridColumn TItem="Warrant" Property="LotNumber" Title="Lot #" Width="140px" />
+                    <RadzenDataGridColumn TItem="Warrant" Property="IssueDate" Title="Issue Date" Width="120px" FormatString="{0:MM/dd/yyyy}" />
+                    <RadzenDataGridColumn TItem="Warrant" Property="TransferDate" Title="Transfer Date" Width="130px" FormatString="{0:MM/dd/yyyy}" />
+                    <RadzenDataGridColumn TItem="Warrant" Property="Status" Title="Status" Width="100px">
+                        <Template Context="warrant">
+                            <RadzenBadge BadgeStyle="@(warrant.IsActive ? BadgeStyle.Success : BadgeStyle.Secondary)"
+                                        Text="@warrant.Status" />
+                        </Template>
+                    </RadzenDataGridColumn>
+                    <RadzenDataGridColumn TItem="Warrant" Title="Actions" Width="150px" Sortable="false" Filterable="false">
+                        <Template Context="warrant">
+                            <RadzenButton Icon="swap_horiz" ButtonStyle="ButtonStyle.Info" Size="ButtonSize.Small"
+                                         Click="@(() => ShowTransferDialog(warrant))" Disabled="@(!warrant.IsActive)"
+                                         title="Transfer Warrant" @onclick:stopPropagation="true" />
+                            <RadzenButton Icon="edit" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.Small"
+                                         Click="@(() => EditWarrant(warrant))" @onclick:stopPropagation="true" />
+                            <RadzenButton Icon="delete" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.Small"
+                                         Click="@(() => DeleteWarrant(warrant.Id))" @onclick:stopPropagation="true" />
+                        </Template>
+                    </RadzenDataGridColumn>
+                </Columns>
+            </RadzenDataGrid>
+        </RadzenColumn>
+    </RadzenRow>
+</RadzenStack>
+
+@code {
+    RadzenDataGrid<Warrant> warrantsGrid = new();
+    IEnumerable<Warrant> warrants = new List<Warrant>();
+
+    int totalWarrants = 0;
+    int activeWarrants = 0;
+    decimal totalQuantity = 0;
+    int recentTransfers = 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadWarrants();
+    }
+
+    private async Task LoadWarrants()
+    {
+        warrants = await WarrantService.GetAllWarrantsAsync();
+        CalculateSummary();
+    }
+
+    private void CalculateSummary()
+    {
+        totalWarrants = warrants.Count();
+        activeWarrants = warrants.Count(w => w.IsActive);
+        totalQuantity = warrants.Where(w => w.IsActive).Sum(w => w.Quantity);
+        recentTransfers = warrants.Count(w => w.TransferDate.HasValue &&
+                                              w.TransferDate.Value >= DateTime.Now.AddMonths(-1));
+    }
+
+    private async Task ShowWarrantDialog()
+    {
+        await ShowWarrantEditDialog(null);
+    }
+
+    private async Task ShowTransferDialog(Warrant warrant)
+    {
+        var result = await DialogService.OpenAsync<TransferWarrantDialog>(
+            "Transfer Warrant",
+            new Dictionary<string, object> { { "Warrant", warrant } },
+            new DialogOptions { Width = "500px", Height = "300px", Resizable = true, Draggable = true }
+        );
+
+        if (result is string newOwnerName && !string.IsNullOrWhiteSpace(newOwnerName))
+        {
+            await WarrantService.TransferWarrantAsync(warrant.Id, newOwnerName);
+            NotificationService.Notify(NotificationSeverity.Success, "Warrant Transferred",
+                $"Warrant {warrant.WarrantNumber} transferred to {newOwnerName}", 4000);
+            await LoadWarrants();
+        }
+    }
+
+    private async Task EditWarrant(Warrant warrant)
+    {
+        await ShowWarrantEditDialog(warrant);
+    }
+
+    private async Task ShowWarrantEditDialog(Warrant? warrant)
+    {
+        var selectedWarrant = warrant ?? new Warrant { IssueDate = DateTime.Now, Status = "Active", IsActive = true };
+        var isNew = warrant == null;
+
+        var result = await DialogService.OpenAsync<WarrantDialog>(
+            isNew ? "Issue New Warrant" : "Edit Warrant",
+            new Dictionary<string, object> { { "Warrant", selectedWarrant } },
+            new DialogOptions { Width = "700px", Height = "600px", Resizable = true, Draggable = true }
+        );
+
+        if (result is Warrant savedWarrant)
+        {
+            if (isNew)
+            {
+                await WarrantService.CreateWarrantAsync(savedWarrant);
+                NotificationService.Notify(NotificationSeverity.Success, "Warrant Issued", "Warrant issued successfully", 4000);
+            }
+            else
+            {
+                await WarrantService.UpdateWarrantAsync(savedWarrant);
+                NotificationService.Notify(NotificationSeverity.Success, "Warrant Updated", "Warrant updated successfully", 4000);
+            }
+            await LoadWarrants();
+        }
+    }
+
+    private async Task DeleteWarrant(string warrantId)
+    {
+        var confirmed = await DialogService.Confirm("Are you sure you want to delete this warrant?",
+            "Delete Warrant", new ConfirmOptions { OkButtonText = "Yes, Delete", CancelButtonText = "Cancel" });
+
+        if (confirmed == true)
+        {
+            await WarrantService.DeleteWarrantAsync(warrantId);
+            NotificationService.Notify(NotificationSeverity.Warning, "Warrant Deleted", "Warrant has been deleted", 4000);
+            await LoadWarrants();
+        }
+    }
+}

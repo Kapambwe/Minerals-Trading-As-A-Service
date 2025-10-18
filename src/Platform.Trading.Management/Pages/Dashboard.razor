@@ -1,0 +1,261 @@
+@page "/"
+@using Platform.Trading.Management.Models
+@using Platform.Trading.Management.Services.Interfaces
+@inject ITradeService TradeService
+@inject IMarginService MarginService
+@inject IWarehouseService WarehouseService
+@inject IWarrantService WarrantService
+@inject ISettlementService SettlementService
+@inject NavigationManager NavigationManager
+
+<PageTitle>Zambia Metal Exchange - Dashboard</PageTitle>
+
+<RadzenStack Gap="1.5rem">
+    <RadzenRow>
+        <RadzenColumn Size="12">
+            <RadzenText TextStyle="TextStyle.H3" TagName="TagName.H1">Zambia Metal Exchange Dashboard</RadzenText>
+            <RadzenText TextStyle="TextStyle.Body1">Real-time overview of copper trading, clearance, and settlement</RadzenText>
+        </RadzenColumn>
+    </RadzenRow>
+
+    <!-- Key Metrics Cards -->
+    <RadzenRow>
+        <RadzenColumn Size="3">
+            <RadzenCard Style="cursor: pointer;" Click="@(() => NavigationManager.NavigateTo("/trades"))">
+                <RadzenStack Gap="0.5rem">
+                    <RadzenRow AlignItems="AlignItems.Center">
+                        <RadzenColumn Size="8">
+                            <RadzenText TextStyle="TextStyle.Overline" Style="color: var(--rz-text-secondary-color);">Active Trades</RadzenText>
+                            <RadzenText TextStyle="TextStyle.H4" Style="margin-top: 0.5rem;">@activeTrades</RadzenText>
+                        </RadzenColumn>
+                        <RadzenColumn Size="4" Style="text-align: right;">
+                            <RadzenIcon Icon="trending_up" IconStyle="IconStyle.Primary" Style="font-size: 3rem;" />
+                        </RadzenColumn>
+                    </RadzenRow>
+                    <RadzenText TextStyle="TextStyle.Caption">Total Value: @totalTradeValue.ToString("C0")</RadzenText>
+                </RadzenStack>
+            </RadzenCard>
+        </RadzenColumn>
+
+        <RadzenColumn Size="3">
+            <RadzenCard Style="cursor: pointer;" Click="@(() => NavigationManager.NavigateTo("/margins"))">
+                <RadzenStack Gap="0.5rem">
+                    <RadzenRow AlignItems="AlignItems.Center">
+                        <RadzenColumn Size="8">
+                            <RadzenText TextStyle="TextStyle.Overline" Style="color: var(--rz-text-secondary-color);">Total Margin</RadzenText>
+                            <RadzenText TextStyle="TextStyle.H4" Style="margin-top: 0.5rem;">@totalMargin.ToString("C0")</RadzenText>
+                        </RadzenColumn>
+                        <RadzenColumn Size="4" Style="text-align: right;">
+                            <RadzenIcon Icon="account_balance" IconStyle="IconStyle.Success" Style="font-size: 3rem;" />
+                        </RadzenColumn>
+                    </RadzenRow>
+                    <RadzenText TextStyle="TextStyle.Caption">Variation: <span style="@(totalVariationMargin >= 0 ? "color: green;" : "color: red;")">@totalVariationMargin.ToString("C0")</span></RadzenText>
+                </RadzenStack>
+            </RadzenCard>
+        </RadzenColumn>
+
+        <RadzenColumn Size="3">
+            <RadzenCard Style="cursor: pointer;" Click="@(() => NavigationManager.NavigateTo("/warehouses"))">
+                <RadzenStack Gap="0.5rem">
+                    <RadzenRow AlignItems="AlignItems.Center">
+                        <RadzenColumn Size="8">
+                            <RadzenText TextStyle="TextStyle.Overline" Style="color: var(--rz-text-secondary-color);">Warehouses</RadzenText>
+                            <RadzenText TextStyle="TextStyle.H4" Style="margin-top: 0.5rem;">@lmeApprovedWarehouses / @totalWarehouses</RadzenText>
+                        </RadzenColumn>
+                        <RadzenColumn Size="4" Style="text-align: right;">
+                            <RadzenIcon Icon="warehouse" IconStyle="IconStyle.Info" Style="font-size: 3rem;" />
+                        </RadzenColumn>
+                    </RadzenRow>
+                    <RadzenText TextStyle="TextStyle.Caption">Capacity: @warehouseCapacity.ToString("N0") MT</RadzenText>
+                </RadzenStack>
+            </RadzenCard>
+        </RadzenColumn>
+
+        <RadzenColumn Size="3">
+            <RadzenCard Style="cursor: pointer;" Click="@(() => NavigationManager.NavigateTo("/settlements"))">
+                <RadzenStack Gap="0.5rem">
+                    <RadzenRow AlignItems="AlignItems.Center">
+                        <RadzenColumn Size="8">
+                            <RadzenText TextStyle="TextStyle.Overline" Style="color: var(--rz-text-secondary-color);">Settlements</RadzenText>
+                            <RadzenText TextStyle="TextStyle.H4" Style="margin-top: 0.5rem;">@pendingSettlements</RadzenText>
+                        </RadzenColumn>
+                        <RadzenColumn Size="4" Style="text-align: right;">
+                            <RadzenIcon Icon="payments" IconStyle="IconStyle.Warning" Style="font-size: 3rem;" />
+                        </RadzenColumn>
+                    </RadzenRow>
+                    <RadzenText TextStyle="TextStyle.Caption">Completed: @completedSettlements</RadzenText>
+                </RadzenStack>
+            </RadzenCard>
+        </RadzenColumn>
+    </RadzenRow>
+
+    <!-- Charts Row -->
+    <RadzenRow>
+        <RadzenColumn Size="8">
+            <RadzenCard>
+                <RadzenText TextStyle="TextStyle.H6">Recent Trades by Metal Type</RadzenText>
+                <RadzenChart>
+                    <RadzenColumnSeries Data="@tradesByMetal" CategoryProperty="MetalType" ValueProperty="Count" Title="Trades">
+                        <RadzenSeriesDataLabels Visible="true" />
+                    </RadzenColumnSeries>
+                    <RadzenCategoryAxis>
+                        <RadzenAxisTitle Text="Metal Type" />
+                    </RadzenCategoryAxis>
+                    <RadzenValueAxis>
+                        <RadzenAxisTitle Text="Number of Trades" />
+                        <RadzenGridLines Visible="true" />
+                    </RadzenValueAxis>
+                </RadzenChart>
+            </RadzenCard>
+        </RadzenColumn>
+
+        <RadzenColumn Size="4">
+            <RadzenCard>
+                <RadzenText TextStyle="TextStyle.H6">Trade Status Distribution</RadzenText>
+                <RadzenChart Style="height: 300px;">
+                    <RadzenDonutSeries Data="@tradesByStatus" CategoryProperty="Status" ValueProperty="Count"
+                                      InnerRadius="50" Fills="@statusColors">
+                        <RadzenSeriesDataLabels Visible="true" />
+                    </RadzenDonutSeries>
+                </RadzenChart>
+            </RadzenCard>
+        </RadzenColumn>
+    </RadzenRow>
+
+    <!-- Recent Activity -->
+    <RadzenRow>
+        <RadzenColumn Size="6">
+            <RadzenCard>
+                <RadzenText TextStyle="TextStyle.H6">Recent Trades</RadzenText>
+                <RadzenDataList Data="@recentTrades" TItem="Trade" AllowPaging="false" PageSize="5">
+                    <Template Context="trade">
+                        <RadzenRow Style="padding: 0.5rem 0; border-bottom: 1px solid var(--rz-border-color);">
+                            <RadzenColumn Size="8">
+                                <RadzenText TextStyle="TextStyle.Body2"><strong>@trade.TradeNumber</strong></RadzenText>
+                                <RadzenText TextStyle="TextStyle.Caption">@trade.BuyerName ← @trade.SellerName</RadzenText>
+                                <RadzenText TextStyle="TextStyle.Caption">@trade.Quantity MT of @trade.MetalType</RadzenText>
+                            </RadzenColumn>
+                            <RadzenColumn Size="4" Style="text-align: right;">
+                                <RadzenBadge BadgeStyle="@GetStatusBadgeStyle(trade.Status)" Text="@trade.Status.ToString()" />
+                                <RadzenText TextStyle="TextStyle.Body2">@trade.TotalValue.ToString("C0")</RadzenText>
+                            </RadzenColumn>
+                        </RadzenRow>
+                    </Template>
+                </RadzenDataList>
+            </RadzenCard>
+        </RadzenColumn>
+
+        <RadzenColumn Size="6">
+            <RadzenCard>
+                <RadzenText TextStyle="TextStyle.H6">Active Warrants</RadzenText>
+                <RadzenDataList Data="@activeWarrants" TItem="Warrant" AllowPaging="false" PageSize="5">
+                    <Template Context="warrant">
+                        <RadzenRow Style="padding: 0.5rem 0; border-bottom: 1px solid var(--rz-border-color);">
+                            <RadzenColumn Size="8">
+                                <RadzenText TextStyle="TextStyle.Body2"><strong>@warrant.WarrantNumber</strong></RadzenText>
+                                <RadzenText TextStyle="TextStyle.Caption">Owner: @warrant.CurrentOwner</RadzenText>
+                                <RadzenText TextStyle="TextStyle.Caption">@warrant.Quantity MT of @warrant.MetalType at @warrant.WarehouseName</RadzenText>
+                            </RadzenColumn>
+                            <RadzenColumn Size="4" Style="text-align: right;">
+                                <RadzenBadge BadgeStyle="BadgeStyle.Success" Text="Active" />
+                            </RadzenColumn>
+                        </RadzenRow>
+                    </Template>
+                </RadzenDataList>
+            </RadzenCard>
+        </RadzenColumn>
+    </RadzenRow>
+</RadzenStack>
+
+@code {
+    // Summary Data
+    int activeTrades = 0;
+    decimal totalTradeValue = 0;
+    decimal totalMargin = 0;
+    decimal totalVariationMargin = 0;
+    int totalWarehouses = 0;
+    int lmeApprovedWarehouses = 0;
+    decimal warehouseCapacity = 0;
+    int pendingSettlements = 0;
+    int completedSettlements = 0;
+
+    // Chart Data
+    List<MetalTradeCount> tradesByMetal = new();
+    List<StatusCount> tradesByStatus = new();
+    string[] statusColors = new[] { "#4CAF50", "#2196F3", "#FF9800", "#F44336", "#9E9E9E" };
+
+    // Recent Activity
+    IEnumerable<Trade> recentTrades = new List<Trade>();
+    IEnumerable<Warrant> activeWarrants = new List<Warrant>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadDashboardData();
+    }
+
+    private async Task LoadDashboardData()
+    {
+        // Load Trades
+        var trades = await TradeService.GetAllTradesAsync();
+        activeTrades = trades.Count(t => t.Status == TradeStatus.Active || t.Status == TradeStatus.Confirmed);
+        totalTradeValue = trades.Where(t => t.Status == TradeStatus.Active).Sum(t => t.TotalValue);
+        recentTrades = trades.OrderByDescending(t => t.TradeDate).Take(5);
+
+        // Trades by Metal
+        tradesByMetal = trades.GroupBy(t => t.MetalType)
+            .Select(g => new MetalTradeCount { MetalType = g.Key.ToString(), Count = g.Count() })
+            .OrderByDescending(x => x.Count)
+            .ToList();
+
+        // Trades by Status
+        tradesByStatus = trades.GroupBy(t => t.Status)
+            .Select(g => new StatusCount { Status = g.Key.ToString(), Count = g.Count() })
+            .ToList();
+
+        // Load Margins
+        var margins = await MarginService.GetAllMarginsAsync();
+        totalMargin = margins.Sum(m => m.TotalMargin);
+        totalVariationMargin = margins.Sum(m => m.VariationMargin);
+
+        // Load Warehouses
+        var warehouses = await WarehouseService.GetAllWarehousesAsync();
+        totalWarehouses = warehouses.Count();
+        lmeApprovedWarehouses = warehouses.Count(w => w.IsLMEApproved);
+        warehouseCapacity = warehouses.Sum(w => w.StorageCapacity);
+
+        // Load Warrants
+        var warrants = await WarrantService.GetAllWarrantsAsync();
+        activeWarrants = warrants.Where(w => w.IsActive).Take(5);
+
+        // Load Settlements
+        var settlements = await SettlementService.GetAllSettlementsAsync();
+        pendingSettlements = settlements.Count(s => !s.IsCompleted);
+        completedSettlements = settlements.Count(s => s.IsCompleted);
+    }
+
+    private BadgeStyle GetStatusBadgeStyle(TradeStatus status)
+    {
+        return status switch
+        {
+            TradeStatus.Pending => BadgeStyle.Warning,
+            TradeStatus.Confirmed => BadgeStyle.Info,
+            TradeStatus.Active => BadgeStyle.Success,
+            TradeStatus.Settled => BadgeStyle.Primary,
+            TradeStatus.Completed => BadgeStyle.Secondary,
+            TradeStatus.Cancelled => BadgeStyle.Danger,
+            _ => BadgeStyle.Light
+        };
+    }
+
+    public class MetalTradeCount
+    {
+        public string MetalType { get; set; } = string.Empty;
+        public int Count { get; set; }
+    }
+
+    public class StatusCount
+    {
+        public string Status { get; set; } = string.Empty;
+        public int Count { get; set; }
+    }
+}

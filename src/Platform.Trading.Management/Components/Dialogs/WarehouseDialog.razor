@@ -1,0 +1,166 @@
+@using Platform.Trading.Management.Models
+@inject DialogService DialogService
+
+<RadzenStack Gap="1rem">
+    <RadzenTabs SelectedIndex="0">
+        <Tabs>
+            <RadzenTabsItem Text="General Information">
+                <RadzenFieldset Text="Warehouse Details">
+                    <RadzenStack Gap="1rem">
+                        <RadzenRow>
+                            <RadzenColumn Size="6">
+                                <RadzenFormField Text="Warehouse Code" Variant="Variant.Outlined">
+                                    <RadzenTextBox @bind-Value="Warehouse.WarehouseCode" Style="width: 100%;" />
+                                </RadzenFormField>
+                            </RadzenColumn>
+                            <RadzenColumn Size="6">
+                                <RadzenFormField Text="Operator Name" Variant="Variant.Outlined">
+                                    <RadzenTextBox @bind-Value="Warehouse.OperatorName" Style="width: 100%;" />
+                                </RadzenFormField>
+                            </RadzenColumn>
+                        </RadzenRow>
+                        <RadzenRow>
+                            <RadzenColumn Size="6">
+                                <RadzenFormField Text="Location" Variant="Variant.Outlined">
+                                    <RadzenTextBox @bind-Value="Warehouse.Location" Style="width: 100%;" />
+                                </RadzenFormField>
+                            </RadzenColumn>
+                            <RadzenColumn Size="6">
+                                <RadzenFormField Text="City" Variant="Variant.Outlined">
+                                    <RadzenTextBox @bind-Value="Warehouse.City" Style="width: 100%;" />
+                                </RadzenFormField>
+                            </RadzenColumn>
+                        </RadzenRow>
+                        <RadzenRow>
+                            <RadzenColumn Size="6">
+                                <RadzenFormField Text="Country" Variant="Variant.Outlined">
+                                    <RadzenTextBox @bind-Value="Warehouse.Country" Style="width: 100%;" />
+                                </RadzenFormField>
+                            </RadzenColumn>
+                            <RadzenColumn Size="6">
+                                <RadzenFormField Text="Security Level" Variant="Variant.Outlined">
+                                    <RadzenDropDown @bind-Value="Warehouse.SecurityLevel"
+                                                   Data="@securityLevels" Style="width: 100%;" />
+                                </RadzenFormField>
+                            </RadzenColumn>
+                        </RadzenRow>
+                        <RadzenRow>
+                            <RadzenColumn Size="12">
+                                <RadzenFormField Text="Notes" Variant="Variant.Outlined">
+                                    <RadzenTextArea @bind-Value="Warehouse.Notes" Style="width: 100%;" Rows="3" />
+                                </RadzenFormField>
+                            </RadzenColumn>
+                        </RadzenRow>
+                    </RadzenStack>
+                </RadzenFieldset>
+            </RadzenTabsItem>
+
+            <RadzenTabsItem Text="Capacity & Equipment">
+                <RadzenFieldset Text="Storage & Handling">
+                    <RadzenStack Gap="1rem">
+                        <RadzenRow>
+                            <RadzenColumn Size="6">
+                                <RadzenFormField Text="Storage Capacity (MT)" Variant="Variant.Outlined">
+                                    <RadzenNumeric @bind-Value="Warehouse.StorageCapacity" Style="width: 100%;" />
+                                </RadzenFormField>
+                            </RadzenColumn>
+                            <RadzenColumn Size="6">
+                                <RadzenFormField Text="Current Stock (MT)" Variant="Variant.Outlined">
+                                    <RadzenNumeric @bind-Value="Warehouse.CurrentStock" Style="width: 100%;" />
+                                </RadzenFormField>
+                            </RadzenColumn>
+                        </RadzenRow>
+                        <RadzenRow>
+                            <RadzenColumn Size="6">
+                                <RadzenCheckBox @bind-Value="Warehouse.HasWeighingSystem" Name="weighing" />
+                                <RadzenLabel Text="Has Weighing System" Component="weighing" Style="margin-left: 8px;" />
+                            </RadzenColumn>
+                            <RadzenColumn Size="6">
+                                <RadzenCheckBox @bind-Value="Warehouse.HasQualityControl" Name="quality" />
+                                <RadzenLabel Text="Has Quality Control" Component="quality" Style="margin-left: 8px;" />
+                            </RadzenColumn>
+                        </RadzenRow>
+                        <RadzenRow>
+                            <RadzenColumn Size="12">
+                                <RadzenFormField Text="Handling Equipment Details" Variant="Variant.Outlined">
+                                    <RadzenTextArea @bind-Value="Warehouse.HandlingEquipmentDetails" Style="width: 100%;" Rows="3" />
+                                </RadzenFormField>
+                            </RadzenColumn>
+                        </RadzenRow>
+                    </RadzenStack>
+                </RadzenFieldset>
+            </RadzenTabsItem>
+
+            <RadzenTabsItem Text="ZME Compliance & Financials">
+                <RadzenFieldset Text="Compliance & Financials">
+                    <RadzenStack Gap="1rem">
+                        <RadzenRow>
+                            <RadzenColumn Size="6">
+                                <RadzenFormField Text="Status" Variant="Variant.Outlined">
+                                    <RadzenDropDown @bind-Value="Warehouse.Status"
+                                                   Data="@statusOptions" Style="width: 100%;" />
+                                </RadzenFormField>
+                            </RadzenColumn>
+                            <RadzenColumn Size="6">
+                                <RadzenFormField Text="Approval Date" Variant="Variant.Outlined">
+                                    <RadzenDatePicker @bind-Value="Warehouse.ApprovalDate" Style="width: 100%;" ShowTime="false" />
+                                </RadzenFormField>
+                            </RadzenColumn>
+                        </RadzenRow>
+                        <RadzenRow>
+                            <RadzenColumn Size="6">
+                                <RadzenFormField Text="Last Inspection" Variant="Variant.Outlined">
+                                    <RadzenDatePicker @bind-Value="Warehouse.LastInspectionDate" Style="width: 100%;" ShowTime="false" />
+                                </RadzenFormField>
+                            </RadzenColumn>
+                            <RadzenColumn Size="6">
+                                <RadzenCheckBox @bind-Value="Warehouse.IsLMEApproved" Name="lmeApproved" />
+                                <RadzenLabel Text="Is LME Approved" Component="lmeApproved" Style="margin-left: 8px;" />
+                            </RadzenColumn>
+                        </RadzenRow>
+                        <RadzenRow>
+                            <RadzenColumn Size="6">
+                                <RadzenCheckBox @bind-Value="Warehouse.HasFinancialStabilityProof" Name="financialStability" />
+                                <RadzenLabel Text="Has Financial Stability Proof" Component="financialStability" Style="margin-left: 8px;" />
+                            </RadzenColumn>
+                            <RadzenColumn Size="6">
+                                <RadzenCheckBox @bind-Value="Warehouse.AgreesToLMERules" Name="lmeRules" />
+                                <RadzenLabel Text="Agrees to LME Rules" Component="lmeRules" Style="margin-left: 8px;" />
+                            </RadzenColumn>
+                        </RadzenRow>
+                        <RadzenRow>
+                            <RadzenColumn Size="12">
+                                <RadzenFormField Text="Compliance Notes" Variant="Variant.Outlined">
+                                    <RadzenTextArea @bind-Value="Warehouse.ComplianceNotes" Style="width: 100%;" Rows="3" />
+                                </RadzenFormField>
+                            </RadzenColumn>
+                        </RadzenRow>
+                    </RadzenStack>
+                </RadzenFieldset>
+            </RadzenTabsItem>
+        </Tabs>
+    </RadzenTabs>
+
+    <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" Gap="0.5rem">
+        <RadzenButton Text="Cancel" ButtonStyle="ButtonStyle.Light" Click="Cancel" />
+        <RadzenButton Text="Save" ButtonStyle="ButtonStyle.Primary" Click="Save" />
+    </RadzenStack>
+</RadzenStack>
+
+@code {
+    [Parameter]
+    public Warehouse Warehouse { get; set; } = new();
+
+    private string[] securityLevels = new[] { "High", "Medium", "Standard" };
+    private string[] statusOptions = new[] { "Active", "Pending Approval", "Under Inspection", "Suspended" };
+
+    private void Save()
+    {
+        DialogService.Close(Warehouse);
+    }
+
+    private void Cancel()
+    {
+        DialogService.Close(null);
+    }
+}

@@ -1,0 +1,200 @@
+@page "/trades"
+@using Platform.Trading.Management.Models
+@using Platform.Trading.Management.Services.Interfaces
+@using Platform.Trading.Management.Components.Dialogs
+@inject ITradeService TradeService
+@inject DialogService DialogService
+@inject NotificationService NotificationService
+
+<PageTitle>Trade Management</PageTitle>
+
+<RadzenStack Gap="1rem">
+    <RadzenRow>
+        <RadzenColumn Size="12">
+            <RadzenText TextStyle="TextStyle.H3" TagName="TagName.H1">Trade Management</RadzenText>
+            <RadzenText TextStyle="TextStyle.Body1">Manage copper trading contracts on the Zambia Metal Exchange</RadzenText>
+        </RadzenColumn>
+    </RadzenRow>
+
+    <RadzenRow>
+        <RadzenColumn Size="12">
+            <RadzenButton Icon="add_circle_outline" Text="New Trade" Click="@(() => ShowTradeDialog(null))" ButtonStyle="ButtonStyle.Primary" />
+        </RadzenColumn>
+    </RadzenRow>
+
+    <RadzenRow>
+        <RadzenColumn Size="12">
+            <RadzenDataGrid @ref="tradesGrid" Data="@trades" TItem="Trade" AllowFiltering="true"
+                           AllowSorting="true" AllowPaging="true" PageSize="10"
+                           FilterMode="FilterMode.Advanced" EditMode="DataGridEditMode.Single">
+                <Columns>
+                    <RadzenDataGridColumn TItem="Trade" Property="TradeNumber" Title="Trade #" Width="140px" />
+                    <RadzenDataGridColumn TItem="Trade" Property="TradeDate" Title="Trade Date" Width="120px" FormatString="{0:MM/dd/yyyy}" />
+                    <RadzenDataGridColumn TItem="Trade" Property="BuyerName" Title="Buyer" />
+                    <RadzenDataGridColumn TItem="Trade" Property="SellerName" Title="Seller" />
+                    <RadzenDataGridColumn TItem="Trade" Property="MetalType" Title="Metal" Width="100px" />
+                    <RadzenDataGridColumn TItem="Trade" Property="Quantity" Title="Quantity (MT)" Width="130px" FormatString="{0:N2}" />
+                    <RadzenDataGridColumn TItem="Trade" Property="PricePerTon" Title="Price/Ton" Width="120px" FormatString="{0:C0}" />
+                    <RadzenDataGridColumn TItem="Trade" Property="TotalValue" Title="Total Value" Width="130px" FormatString="{0:C0}" />
+                    <RadzenDataGridColumn TItem="Trade" Property="Status" Title="Status" Width="130px">
+                        <Template Context="trade">
+                            <RadzenBadge BadgeStyle="@GetStatusBadgeStyle(trade.Status)" Text="@trade.Status.ToString()" />
+                        </Template>
+                    </RadzenDataGridColumn>
+                    <RadzenDataGridColumn TItem="Trade" Property="IsNovated" Title="Novated" Width="100px">
+                        <Template Context="trade">
+                            @if (trade.IsNovated)
+                            {
+                                <RadzenIcon Icon="check_circle" IconStyle="IconStyle.Success" />
+                            }
+                            else
+                            {
+                                <RadzenIcon Icon="cancel" IconStyle="IconStyle.Danger" />
+                            }
+                        </Template>
+                    </RadzenDataGridColumn>
+                    <RadzenDataGridColumn TItem="Trade" Title="Actions" Width="180px" Sortable="false" Filterable="false">
+                        <Template Context="trade">
+                            <RadzenButton Icon="edit" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.Small"
+                                         Click="@(() => ShowTradeDialog(trade))" @onclick:stopPropagation="true" />
+                            <RadzenButton Icon="transform" ButtonStyle="ButtonStyle.Info" Size="ButtonSize.Small"
+                                         Click="@(() => NovateTrade(trade.Id))" Disabled="@trade.IsNovated"
+                                         title="Novate Trade" @onclick:stopPropagation="true" />
+                            <RadzenButton Icon="check_circle" ButtonStyle="ButtonStyle.Success" Size="ButtonSize.Small"
+                                         Click="@(() => ConfirmTrade(trade.Id))" Disabled="@(trade.Status != TradeStatus.Pending)"
+                                         title="Confirm Trade" @onclick:stopPropagation="true" />
+                            <RadzenButton Icon="delete" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.Small"
+                                         Click="@(() => DeleteTrade(trade.Id))" @onclick:stopPropagation="true" />
+                        </Template>
+                    </RadzenDataGridColumn>
+                </Columns>
+            </RadzenDataGrid>
+        </RadzenColumn>
+    </RadzenRow>
+</RadzenStack>
+
+@code {
+    RadzenDataGrid<Trade> tradesGrid = new();
+    IEnumerable<Trade> trades = new List<Trade>();
+    Trade selectedTrade = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadTrades();
+    }
+
+    private async Task LoadTrades()
+    {
+        trades = await TradeService.GetAllTradesAsync();
+    }
+
+    private async Task ShowTradeDialog(Trade? trade)
+    {
+        selectedTrade = trade ?? new Trade { TradeDate = DateTime.Now, DeliveryDate = DateTime.Now.AddDays(90), Status = TradeStatus.Pending };
+        var isNew = trade == null;
+
+        var result = await DialogService.OpenAsync<TradeDialog>(
+            isNew ? "Create New Trade" : "Edit Trade",
+            new Dictionary<string, object> { { "Trade", selectedTrade } },
+            new DialogOptions { Width = "700px", Height = "600px", Resizable = true, Draggable = true }
+        );
+
+        if (result is Trade savedTrade)
+        {
+            if (isNew)
+            {
+                await TradeService.CreateTradeAsync(savedTrade);
+                NotificationService.Notify(new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Success,
+                    Summary = "Trade Created",
+                    Detail = $"Trade {savedTrade.TradeNumber} created successfully",
+                    Duration = 4000
+                });
+            }
+            else
+            {
+                await TradeService.UpdateTradeAsync(savedTrade);
+                NotificationService.Notify(new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Success,
+                    Summary = "Trade Updated",
+                    Detail = $"Trade {savedTrade.TradeNumber} updated successfully",
+                    Duration = 4000
+                });
+            }
+            await LoadTrades();
+        }
+    }
+
+    private async Task NovateTrade(string tradeId)
+    {
+        var confirmed = await DialogService.Confirm("Are you sure you want to novate this trade to ZME Clear?",
+            "Novate Trade", new ConfirmOptions { OkButtonText = "Yes, Novate", CancelButtonText = "Cancel" });
+
+        if (confirmed == true)
+        {
+            await TradeService.NovateTradeAsync(tradeId);
+            NotificationService.Notify(new NotificationMessage
+            {
+                Severity = NotificationSeverity.Success,
+                Summary = "Trade Novated",
+                Detail = "Trade has been successfully novated to ZME Clear",
+                Duration = 4000
+            });
+            await LoadTrades();
+        }
+    }
+
+    private async Task ConfirmTrade(string tradeId)
+    {
+        var confirmed = await DialogService.Confirm("Are you sure you want to confirm this trade?",
+            "Confirm Trade", new ConfirmOptions { OkButtonText = "Yes, Confirm", CancelButtonText = "Cancel" });
+
+        if (confirmed == true)
+        {
+            await TradeService.ConfirmTradeAsync(tradeId);
+            NotificationService.Notify(new NotificationMessage
+            {
+                Severity = NotificationSeverity.Success,
+                Summary = "Trade Confirmed",
+                Detail = "Trade has been successfully confirmed",
+                Duration = 4000
+            });
+            await LoadTrades();
+        }
+    }
+
+    private async Task DeleteTrade(string tradeId)
+    {
+        var confirmed = await DialogService.Confirm("Are you sure you want to delete this trade?",
+            "Delete Trade", new ConfirmOptions { OkButtonText = "Yes, Delete", CancelButtonText = "Cancel" });
+
+        if (confirmed == true)
+        {
+            await TradeService.DeleteTradeAsync(tradeId);
+            NotificationService.Notify(new NotificationMessage
+            {
+                Severity = NotificationSeverity.Warning,
+                Summary = "Trade Deleted",
+                Detail = "Trade has been deleted",
+                Duration = 4000
+            });
+            await LoadTrades();
+        }
+    }
+
+    private BadgeStyle GetStatusBadgeStyle(TradeStatus status)
+    {
+        return status switch
+        {
+            TradeStatus.Pending => BadgeStyle.Warning,
+            TradeStatus.Confirmed => BadgeStyle.Info,
+            TradeStatus.Active => BadgeStyle.Success,
+            TradeStatus.Settled => BadgeStyle.Primary,
+            TradeStatus.Completed => BadgeStyle.Secondary,
+            TradeStatus.Cancelled => BadgeStyle.Danger,
+            _ => BadgeStyle.Light
+        };
+    }
+}
