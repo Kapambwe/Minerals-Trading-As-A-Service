@@ -1,0 +1,82 @@
+@page "/order/{MineralId:guid}"
+@using MiningTradingClientApp.Models
+@using MiningTradingClientApp.Services
+@inject IMineralService MineralService
+@inject NavigationManager NavigationManager
+
+<PageTitle>Place Order</PageTitle>
+
+<div class="page-container">
+    <h1>Place Your Order</h1>
+
+    @if (mineral == null)
+    {
+        <div class="info-message">
+            <em>Loading mineral details...</em>
+        </div>
+    }
+    else
+    {
+        <div class="order-summary-card">
+            <div class="card-body">
+                <h5 class="card-title">Mineral: @mineral.Name</h5>
+                <p class="card-text">Price: @mineral.Price.ToString("C")</p>
+                <p class="card-text">Weight: @mineral.Weight kg</p>
+                <p class="card-text">Seller: @mineral.Seller</p>
+                <p class="card-text">Origin: @mineral.Origin</p>
+            </div>
+        </div>
+
+        <form class="order-form">
+            <div class="form-group">
+                <label for="buyerName">Your Name</label>
+                <input type="text" id="buyerName" @bind="buyerName" class="form-input" />
+            </div>
+            <div class="form-group">
+                <label for="buyerEmail">Your Email</label>
+                <input type="email" id="buyerEmail" @bind="buyerEmail" class="form-input" />
+            </div>
+            <div class="form-group">
+                <label for="quantity">Quantity (kg)</label>
+                <input type="number" id="quantity" @bind="quantity" min="0.1" step="0.1" class="form-input" />
+            </div>
+            <button type="button" class="btn btn-primary" @onclick="SubmitOrder">Submit Order</button>
+        </form>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public Guid MineralId { get; set; }
+
+    private Mineral? mineral;
+    private string buyerName = string.Empty;
+    private string buyerEmail = string.Empty;
+    private double quantity = 0.1;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // In a real app, you'd fetch a single mineral by ID.
+        // For mock service, we'll find it from the list.
+        var allMinerals = await MineralService.GetAvailableMineralsAsync();
+        mineral = allMinerals.FirstOrDefault(m => m.Id == MineralId);
+
+        if (mineral == null)
+        {
+            // Handle case where mineral is not found, e.g., redirect to 404 or minerals list
+            NavigationManager.NavigateTo("/minerals");
+        }
+    }
+
+    private void SubmitOrder()
+    {
+        // Here you would typically send the order details to a backend service.
+        // For now, we'll just show an alert.
+        if (mineral != null)
+        {
+            var message = $"Order placed for {quantity} kg of {mineral.Name} by {buyerName} ({buyerEmail}). Total: {(mineral.Price * (decimal)quantity):C}";
+            // In a real application, you might navigate to an order confirmation page.
+            NavigationManager.NavigateTo($"/orderconfirmation/{mineral.Id}");
+        }
+    }
+}

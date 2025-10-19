@@ -1,0 +1,112 @@
+@page "/ordertracking"
+@using MiningTradingClientApp.Models
+@using MiningTradingClientApp.Services
+@inject IMineralService MineralService
+
+<PageTitle>Order Tracking (Backoffice)</PageTitle>
+
+<div class="page-container">
+    <h1>Order Tracking (Backoffice)</h1>
+
+    @if (allOrderTrackings == null)
+    {
+        <div class="info-message">
+            <em>Loading order tracking data...</em>
+        </div>
+    }
+    else if (!allOrderTrackings.Any())
+    {
+        <div class="info-message">
+            <em>No orders available.</em>
+        </div>
+    }
+    else
+    {
+        <QuickGrid Items="@filteredOrderTrackings" Pagination="@pagination">
+            <PropertyColumn Property="@(o => o.OrderId)" Title="Order ID">
+                <ColumnOptions>
+                    <div class="search-box">
+                        <input type="search" @bind="orderIdFilter" @bind:event="oninput" placeholder="Filter Order ID..." />
+                    </div>
+                </ColumnOptions>
+            </PropertyColumn>
+            <PropertyColumn Property="@(o => o.MineralName)" Title="Mineral" Sortable="true" />
+            <PropertyColumn Property="@(o => o.BuyerName)" Title="Buyer" Sortable="true" />
+            <PropertyColumn Property="@(o => o.OrderDate)" Title="Order Date" Format="yyyy-MM-dd" Sortable="true" />
+            <PropertyColumn Property="@(o => o.Status)" Title="Status" Sortable="true" />
+            <PropertyColumn Property="@(o => o.PriceAtOrder)" Title="Price At Order" Format="C" Sortable="true" />
+            <PropertyColumn Property="@(o => o.Quantity)" Title="Quantity (kg)" Sortable="true" />
+            <PropertyColumn Property="@(o => o.SellingPrice)" Title="Selling Price" Format="C" Sortable="true" />
+            <PropertyColumn Property="@(o => o.CostPrice)" Title="Cost Price" Format="C" Sortable="true" />
+            <PropertyColumn Property="@(o => o.CalculatedMargin)" Title="Calc. Margin" Format="C" Sortable="true" />
+            <TemplateColumn Title="Adj. Margin">
+                <input type="number" @bind-value="context.AdjustedMargin" @bind-value:event="oninput" />
+            </TemplateColumn>
+            <PropertyColumn Property="@(o => o.Notes)" Title="Notes" />
+            <TemplateColumn Title="Actions">
+                <button class="btn btn-primary btn-sm" @onclick="() => UpdateOrderStatus(context)">Update Status</button>
+            </TemplateColumn>
+        </QuickGrid>
+        <Paginator State="@pagination" />
+    }
+</div>
+
+@code {
+    private IEnumerable<MiningTradingClientApp.Models.OrderTracking>? allOrderTrackings; // Store original list
+    private IQueryable<MiningTradingClientApp.Models.OrderTracking>? filteredOrderTrackings; // Filtered list for QuickGrid
+    private PaginationState pagination = new PaginationState { ItemsPerPage = 10 };
+    private string orderIdFilter = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        allOrderTrackings = await MineralService.GetOrderTrackingAsync();
+        ApplyFilter(); // Apply initial filter
+    }
+
+    protected override void OnParametersSet()
+    {
+        ApplyFilter(); // Apply filter whenever parameters change (e.g., orderIdFilter)
+    }
+
+    private void ApplyFilter()
+    {
+        if (allOrderTrackings == null)
+        {
+            filteredOrderTrackings = null;
+            return;
+        }
+
+        var query = allOrderTrackings.AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(orderIdFilter))
+        {
+            query = query.Where(o => o.OrderId.ToString().Contains(orderIdFilter, StringComparison.OrdinalIgnoreCase));
+        }
+
+        filteredOrderTrackings = query;
+    }
+
+    private void UpdateOrderStatus(MiningTradingClientApp.Models.OrderTracking order)
+    {
+        // Simulate updating order status
+        switch (order.Status)
+        {
+            case "Pending":
+                order.Status = "Processing";
+                break;
+            case "Processing":
+                order.Status = "Shipped";
+                break;
+            case "Shipped":
+                order.Status = "Delivered";
+                break;
+            case "Delivered":
+                order.Status = "Completed";
+                break;
+            default:
+                order.Status = "Pending";
+                break;
+        }
+        StateHasChanged();
+    }
+}

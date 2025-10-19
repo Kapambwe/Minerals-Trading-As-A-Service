@@ -1,0 +1,40 @@
+@page "/orderconfirmation/{MineralId:guid}"
+@using MiningTradingClientApp.Models
+@using MiningTradingClientApp.Services
+@inject IMineralService MineralService
+
+<PageTitle>Order Confirmation</PageTitle>
+
+<div class="page-container">
+    <h1>Order Confirmation</h1>
+
+    @if (mineral == null)
+    {
+        <div class="info-message">
+            <em>Loading order details...</em>
+        </div>
+    }
+    else
+    {
+        <div class="confirmation-message success">
+            <h4>Thank you for your order!</h4>
+            <p>Your order for <strong>@mineral.Name</strong> has been placed successfully.</p>
+            <p>We will process your request shortly.</p>
+            <hr />
+            <p class="mb-0">You can view more minerals <a href="/minerals">here</a>.</p>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public Guid MineralId { get; set; }
+
+    private Mineral? mineral;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var allMinerals = await MineralService.GetAvailableMineralsAsync();
+        mineral = allMinerals.FirstOrDefault(m => m.Id == MineralId);
+    }
+}

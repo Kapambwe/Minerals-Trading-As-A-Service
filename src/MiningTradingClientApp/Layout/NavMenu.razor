@@ -1,36 +1,37 @@
-﻿<div class="top-row ps-3 navbar navbar-dark">
-    <div class="container-fluid">
-        <a class="navbar-brand" href="">MiningTradingClientApp</a>
-        <button title="Navigation menu" class="navbar-toggler" @onclick="ToggleNavMenu">
-            <span class="navbar-toggler-icon"></span>
+<div class="main-nav">
+    <div class="nav-container">
+        <a class="app-brand" href="">
+            <img src="favicon.png" alt="Logo" class="brand-logo">
+            MiningTradingClientApp
+        </a>
+        <button class="menu-toggle" @onclick="ToggleNavMenu">
+            <span class="toggle-icon"></span>
         </button>
-    </div>
-</div>
-
-<div class="@NavMenuCssClass nav-scrollable" @onclick="ToggleNavMenu">
-    <nav class="nav flex-column">
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
+        <div class="@NavMenuCssClass nav-links">
+            <NavLink class="nav-item" href="" Match="NavLinkMatch.All">
                 <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Home
             </NavLink>
-        </div>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="counter">
-                <span class="bi bi-plus-square-fill-nav-menu" aria-hidden="true"></span> Counter
+            <NavLink class="nav-item" href="minerals">
+                <span class="bi bi-gem" aria-hidden="true"></span> Minerals
             </NavLink>
-        </div>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="weather">
-                <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Weather
+            <NavLink class="nav-item" href="searchminerals">
+                <span class="bi bi-search" aria-hidden="true"></span> Search
             </NavLink>
+            <NavLink class="nav-item" href="ordertracking">
+                <span class="bi bi-truck" aria-hidden="true"></span> Order Tracking
+            </NavLink>
+            <form class="search-form" action="searchminerals">
+                <input type="search" placeholder="Search minerals..." aria-label="Search" name="searchTerm" class="search-input">
+                <button type="submit" class="search-button">Search</button>
+            </form>
         </div>
-    </nav>
+    </div>
 </div>
 
 @code {
     private bool collapseNavMenu = true;
 
-    private string? NavMenuCssClass => collapseNavMenu ? "collapse" : null;
+    private string? NavMenuCssClass => collapseNavMenu ? "collapsed" : null;
 
     private void ToggleNavMenu()
     {
