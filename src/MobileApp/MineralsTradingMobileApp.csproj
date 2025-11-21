@@ -64,6 +64,8 @@
         <PackageReference Include="Radzen.Blazor" Version="5.9.0" />
     </ItemGroup>
 
+    <!-- Project reference to shared Razor component library -->
+    <!-- Note: This relative path assumes MobileApp is in src/MobileApp and Platform.Trading.Management is in src/Platform.Trading.Management -->
     <ItemGroup>
       <ProjectReference Include="..\Platform.Trading.Management\Platform.Trading.Management.csproj" />
     </ItemGroup>
