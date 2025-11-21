@@ -1,0 +1,24 @@
+@using Microsoft.AspNetCore.Components.Routing
+
+@inherits LayoutComponentBase
+
+<RadzenDialog />
+<RadzenNotification />
+<RadzenContextMenu />
+<RadzenTooltip />
+
+<div class="page">
+    <div class="sidebar">
+        <NavMenu />
+    </div>
+
+    <main>
+        <div class="top-row px-4">
+            <!-- Add links to company website or documentation as needed -->
+        </div>
+
+        <article class="content px-4">
+            @Body
+        </article>
+    </main>
+</div>
