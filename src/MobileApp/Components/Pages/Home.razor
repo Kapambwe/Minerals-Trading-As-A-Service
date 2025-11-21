@@ -1,0 +1,99 @@
+@page "/"
+
+<PageTitle>Home</PageTitle>
+
+<RadzenStack Gap="1rem" Style="margin-top: 1rem;">
+    <RadzenRow>
+        <RadzenColumn Size="12">
+            <RadzenText TextStyle="TextStyle.H3" TagName="TagName.H1">Welcome to Minerals Trading Mobile</RadzenText>
+            <RadzenText TextStyle="TextStyle.Body1">Your mobile platform for copper trading on the Zambia Metal Exchange</RadzenText>
+        </RadzenColumn>
+    </RadzenRow>
+
+    <RadzenRow>
+        <RadzenColumn Size="12" SizeMD="6">
+            <RadzenCard Style="height: 200px;">
+                <RadzenStack Gap="1rem">
+                    <RadzenText TextStyle="TextStyle.H5">
+                        <span class="bi bi-people-fill" style="margin-right: 0.5rem;"></span>
+                        Buyer Management
+                    </RadzenText>
+                    <RadzenText TextStyle="TextStyle.Body2">
+                        Register and manage buyer profiles, complete KYC processes, and maintain compliance.
+                    </RadzenText>
+                    <RadzenButton Text="Manage Buyers" ButtonStyle="ButtonStyle.Primary" Click="@(() => NavigateTo("/buyers"))" />
+                </RadzenStack>
+            </RadzenCard>
+        </RadzenColumn>
+
+        <RadzenColumn Size="12" SizeMD="6">
+            <RadzenCard Style="height: 200px;">
+                <RadzenStack Gap="1rem">
+                    <RadzenText TextStyle="TextStyle.H5">
+                        <span class="bi bi-arrow-left-right" style="margin-right: 0.5rem;"></span>
+                        Trade Execution
+                    </RadzenText>
+                    <RadzenText TextStyle="TextStyle.Body2">
+                        Browse available minerals, execute trades, and track trade status in real-time.
+                    </RadzenText>
+                    <RadzenButton Text="View Trades" ButtonStyle="ButtonStyle.Primary" Click="@(() => NavigateTo("/trades"))" />
+                </RadzenStack>
+            </RadzenCard>
+        </RadzenColumn>
+    </RadzenRow>
+
+    <RadzenRow>
+        <RadzenColumn Size="12" SizeMD="6">
+            <RadzenCard Style="height: 200px;">
+                <RadzenStack Gap="1rem">
+                    <RadzenText TextStyle="TextStyle.H5">
+                        <span class="bi bi-building" style="margin-right: 0.5rem;"></span>
+                        Warehouse Operations
+                    </RadzenText>
+                    <RadzenText TextStyle="TextStyle.Body2">
+                        Monitor warehouse inventory, track storage, and manage mineral locations.
+                    </RadzenText>
+                    <RadzenButton Text="View Warehouses" ButtonStyle="ButtonStyle.Primary" Click="@(() => NavigateTo("/warehouses"))" />
+                </RadzenStack>
+            </RadzenCard>
+        </RadzenColumn>
+
+        <RadzenColumn Size="12" SizeMD="6">
+            <RadzenCard Style="height: 200px;">
+                <RadzenStack Gap="1rem">
+                    <RadzenText TextStyle="TextStyle.H5">
+                        <span class="bi bi-speedometer2" style="margin-right: 0.5rem;"></span>
+                        Trading Dashboard
+                    </RadzenText>
+                    <RadzenText TextStyle="TextStyle.Body2">
+                        View comprehensive analytics, market data, and performance metrics.
+                    </RadzenText>
+                    <RadzenButton Text="Open Dashboard" ButtonStyle="ButtonStyle.Primary" Click="@(() => NavigateTo("/dashboard"))" />
+                </RadzenStack>
+            </RadzenCard>
+        </RadzenColumn>
+    </RadzenRow>
+
+    <RadzenRow>
+        <RadzenColumn Size="12">
+            <RadzenCard>
+                <RadzenText TextStyle="TextStyle.H5">Quick Links</RadzenText>
+                <RadzenStack Orientation="Orientation.Horizontal" Gap="1rem" Wrap="FlexWrap.Wrap" Style="margin-top: 1rem;">
+                    <RadzenButton Text="Inspections" ButtonStyle="ButtonStyle.Light" Click="@(() => NavigateTo("/inspections"))" />
+                    <RadzenButton Text="Settlements" ButtonStyle="ButtonStyle.Light" Click="@(() => NavigateTo("/settlements"))" />
+                    <RadzenButton Text="Warrants" ButtonStyle="ButtonStyle.Light" Click="@(() => NavigateTo("/warrants"))" />
+                </RadzenStack>
+            </RadzenCard>
+        </RadzenColumn>
+    </RadzenRow>
+</RadzenStack>
+
+@code {
+    [Inject]
+    private NavigationManager? Navigation { get; set; }
+
+    private void NavigateTo(string url)
+    {
+        Navigation?.NavigateTo(url);
+    }
+}
