@@ -155,6 +155,7 @@ dotnet build -f net9.0-maccatalyst -t:Run
 MobileApp/
 ├── Pages/              # Native XAML pages
 │   ├── HomePage.xaml
+│   ├── OrderPlacementPage.xaml  # NEW: Order placement
 │   ├── BuyersPage.xaml
 │   ├── TradesPage.xaml
 │   └── ...
@@ -267,7 +268,15 @@ dotnet build
 
 - [ ] App launches successfully
 - [ ] Home page displays correctly
+- [ ] **Quick "Place Order" button works on home page**
 - [ ] Navigation menu (flyout) works
+- [ ] **Can navigate to Place Order page**
+- [ ] **Available minerals load correctly**
+- [ ] **Can select a mineral and view order form**
+- [ ] **Quantity validation works**
+- [ ] **Total cost calculates correctly**
+- [ ] **Can place an order successfully**
+- [ ] **Order creates a trade record**
 - [ ] Can navigate to Buyers page
 - [ ] Can navigate to Trades page
 - [ ] Can navigate to Dashboard page

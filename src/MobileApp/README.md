@@ -5,10 +5,11 @@ A .NET MAUI native mobile application for trading minerals on the Zambia Metal E
 ## Overview
 
 This mobile application provides a comprehensive native platform for buyers to:
+- **Place orders** for minerals directly from the mobile app
+- Browse available minerals with detailed specifications
 - Register and manage buyer profiles
 - Complete KYC (Know Your Customer) processes
-- Browse available minerals
-- Execute trades
+- Execute trades and track order status
 - Track warehouse operations
 - Monitor settlements and inspections
 - View trading dashboards and analytics
@@ -33,6 +34,7 @@ This mobile application provides a comprehensive native platform for buyers to:
 MobileApp/
 ├── Pages/               # Native XAML pages
 │   ├── HomePage.xaml
+│   ├── OrderPlacementPage.xaml  # NEW: Dedicated order placement
 │   ├── BuyersPage.xaml
 │   ├── TradesPage.xaml
 │   ├── DashboardPage.xaml
@@ -52,6 +54,26 @@ MobileApp/
 ```
 
 ## Key Features
+
+### Order Placement (NEW) 🛒
+- **Browse available minerals** with detailed information:
+  - Seller company name
+  - Metal type (Copper, Gold, Cobalt, etc.)
+  - Quality grade and specifications
+  - Available quantity in metric tons
+  - Price per metric ton
+  - Special notes and details
+- **Interactive order form**:
+  - Select mineral from available listings
+  - Enter order quantity with increment/decrement buttons
+  - Automatic validation against available quantity
+  - Real-time total cost calculation
+  - Delivery date selection
+  - Optional order notes
+- **Order confirmation** with complete order summary
+- **Automatic trade creation** from placed orders
+- **Inventory tracking** - updates listing status when minerals are sold
+- **Direct navigation** from home page with prominent button
 
 ### Buyer Management
 - Register new buyers
@@ -163,6 +185,7 @@ The app uses mock services for development. To connect to a real backend:
 
 The app uses **Shell Navigation** with a flyout menu providing access to:
 - Home
+- **Place Order** (NEW - Featured prominently)
 - Buyers
 - Trades
 - Dashboard
@@ -170,6 +193,11 @@ The app uses **Shell Navigation** with a flyout menu providing access to:
 - Warrants
 - Inspections
 - Settlements
+
+### Quick Access to Order Placement
+The "Place Order" feature is accessible through:
+1. **Flyout Menu**: "Place Order" item in the navigation drawer
+2. **Home Page Button**: Large, prominent button on the home page for quick access
 
 ## Development Notes
 
