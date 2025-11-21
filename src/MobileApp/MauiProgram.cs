@@ -40,5 +40,9 @@ public static class MauiProgram
         services.AddSingleton<IMarginService, MockMarginService>();
         services.AddSingleton<IMonitoringService, MockMonitoringService>();
         services.AddSingleton<IMonthlyProcessingReportService, MockMonthlyProcessingReportService>();
+        services.AddSingleton<IMineralListingService, MockMineralListingService>();
+        
+        // Register pages
+        services.AddTransient<Pages.OrderPlacementPage>();
     }
 }

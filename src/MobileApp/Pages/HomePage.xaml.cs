@@ -12,6 +12,11 @@ public partial class HomePage : ContentPage
         await Shell.Current.GoToAsync(Routes.Buyers);
     }
 
+    private async void OnPlaceOrderClicked(object sender, EventArgs e)
+    {
+        await Shell.Current.GoToAsync(Routes.PlaceOrder);
+    }
+
     private async void OnTradesClicked(object sender, EventArgs e)
     {
         await Shell.Current.GoToAsync(Routes.Trades);
