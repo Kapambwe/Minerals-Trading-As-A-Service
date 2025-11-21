@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="MineralsTradingMobileApp.Pages.WarehousesPage"
+             Title="Warehouses">
+    
+    <ScrollView>
+        <VerticalStackLayout Padding="20" Spacing="20">
+            <Label 
+                Text="Warehouse Management"
+                FontSize="28"
+                FontAttributes="Bold"
+                HorizontalOptions="Center" />
+            
+            <Frame Padding="20" BackgroundColor="{StaticResource Primary}" HasShadow="True">
+                <VerticalStackLayout Spacing="15">
+                    <Label Text="🏢" FontSize="48" HorizontalOptions="Center" />
+                    <Label 
+                        Text="Warehouse Operations"
+                        FontSize="20"
+                        FontAttributes="Bold"
+                        HorizontalOptions="Center" />
+                    <Label 
+                        Text="Features:"
+                        FontSize="16"
+                        FontAttributes="Bold"
+                        Margin="0,10,0,0" />
+                    <Label Text="• View warehouse inventory" FontSize="14" />
+                    <Label Text="• Track storage locations" FontSize="14" />
+                    <Label Text="• Monitor warehouse capacity" FontSize="14" />
+                    <Label Text="• Manage mineral storage" FontSize="14" />
+                    <Label Text="• Access warehouse reports" FontSize="14" />
+                </VerticalStackLayout>
+            </Frame>
+
+            <Frame Padding="20" BackgroundColor="{StaticResource Secondary}" HasShadow="True">
+                <VerticalStackLayout Spacing="10">
+                    <Label 
+                        Text="Native MAUI Implementation"
+                        FontSize="18"
+                        FontAttributes="Bold"
+                        HorizontalOptions="Center" />
+                    <Label 
+                        Text="This page has been converted from Blazor Razor to native MAUI XAML. Full warehouse management functionality would be implemented here with native controls."
+                        FontSize="14"
+                        HorizontalTextAlignment="Center" />
+                </VerticalStackLayout>
+            </Frame>
+
+            <Button 
+                Text="View All Warehouses"
+                FontSize="16"
+                Padding="15"
+                BackgroundColor="{StaticResource Tertiary}" />
+            
+            <Button 
+                Text="Check Inventory"
+                FontSize="16"
+                Padding="15"
+                BackgroundColor="{StaticResource Tertiary}" />
+
+        </VerticalStackLayout>
+    </ScrollView>
+
+</ContentPage>

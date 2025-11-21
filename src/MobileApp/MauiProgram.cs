@@ -1,5 +1,4 @@
 using Microsoft.Extensions.Logging;
-using Radzen;
 using Platform.Trading.Management.Services.Mock;
 using Platform.Trading.Management.Services.Interfaces;
 
@@ -18,15 +17,9 @@ public static class MauiProgram
                 // fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
             });
 
-        builder.Services.AddMauiBlazorWebView();
-
 #if DEBUG
-        builder.Services.AddBlazorWebViewDeveloperTools();
         builder.Logging.AddDebug();
 #endif
-
-        // Add Radzen services
-        builder.Services.AddRadzenComponents();
 
         // Register services from Platform.Trading.Management
         RegisterServices(builder.Services);

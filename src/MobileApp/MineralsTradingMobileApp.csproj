@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk.Razor">
+<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
         <TargetFrameworks>net9.0-android;net9.0-ios;net9.0-maccatalyst</TargetFrameworks>
@@ -59,12 +59,10 @@
     <ItemGroup>
         <PackageReference Include="Microsoft.Maui.Controls" Version="9.0.10" />
         <PackageReference Include="Microsoft.Maui.Controls.Compatibility" Version="9.0.10" />
-        <PackageReference Include="Microsoft.AspNetCore.Components.WebView.Maui" Version="9.0.10" />
         <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="9.0.0" />
-        <PackageReference Include="Radzen.Blazor" Version="5.9.0" />
     </ItemGroup>
 
-    <!-- Project reference to shared Razor component library -->
+    <!-- Project reference to shared library -->
     <!-- Note: This relative path assumes MobileApp is in src/MobileApp and Platform.Trading.Management is in src/Platform.Trading.Management -->
     <ItemGroup>
       <ProjectReference Include="..\Platform.Trading.Management\Platform.Trading.Management.csproj" />
