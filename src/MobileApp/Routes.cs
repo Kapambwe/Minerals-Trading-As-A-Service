@@ -13,4 +13,8 @@ public static class Routes
     public const string Warrants = "//warrants";
     public const string Inspections = "//inspections";
     public const string Settlements = "//settlements";
+    
+    // Note: XAML Shell routes use simple strings like "home", "buyers", etc.
+    // These constants use the full navigation path format with "//" prefix
+    // for use in GoToAsync() calls from C# code.
 }
