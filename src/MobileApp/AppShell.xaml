@@ -15,6 +15,14 @@
             Route="home" />
     </FlyoutItem>
 
+    <!-- Place Order Page -->
+    <FlyoutItem Title="Place Order">
+        <ShellContent
+            Title="Place Order"
+            ContentTemplate="{DataTemplate local:OrderPlacementPage}"
+            Route="placeorder" />
+    </FlyoutItem>
+
     <!-- Buyers Page -->
     <FlyoutItem Title="Buyers">
         <ShellContent

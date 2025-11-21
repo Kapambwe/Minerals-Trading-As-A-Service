@@ -6,6 +6,7 @@ namespace MineralsTradingMobileApp;
 public static class Routes
 {
     public const string Home = "//home";
+    public const string PlaceOrder = "//placeorder";
     public const string Buyers = "//buyers";
     public const string Trades = "//trades";
     public const string Dashboard = "//dashboard";
