@@ -8,7 +8,7 @@
     FlyoutBackgroundColor="{StaticResource Primary}">
 
     <!-- Home Page -->
-    <FlyoutItem Title="Home" Icon="home.png">
+    <FlyoutItem Title="Home">
         <ShellContent
             Title="Home"
             ContentTemplate="{DataTemplate local:HomePage}"
@@ -16,7 +16,7 @@
     </FlyoutItem>
 
     <!-- Buyers Page -->
-    <FlyoutItem Title="Buyers" Icon="people.png">
+    <FlyoutItem Title="Buyers">
         <ShellContent
             Title="Buyers"
             ContentTemplate="{DataTemplate local:BuyersPage}"
@@ -24,7 +24,7 @@
     </FlyoutItem>
 
     <!-- Trades Page -->
-    <FlyoutItem Title="Trades" Icon="trade.png">
+    <FlyoutItem Title="Trades">
         <ShellContent
             Title="Trades"
             ContentTemplate="{DataTemplate local:TradesPage}"
@@ -32,7 +32,7 @@
     </FlyoutItem>
 
     <!-- Dashboard Page -->
-    <FlyoutItem Title="Dashboard" Icon="dashboard.png">
+    <FlyoutItem Title="Dashboard">
         <ShellContent
             Title="Dashboard"
             ContentTemplate="{DataTemplate local:DashboardPage}"
@@ -40,7 +40,7 @@
     </FlyoutItem>
 
     <!-- Warehouses Page -->
-    <FlyoutItem Title="Warehouses" Icon="warehouse.png">
+    <FlyoutItem Title="Warehouses">
         <ShellContent
             Title="Warehouses"
             ContentTemplate="{DataTemplate local:WarehousesPage}"
@@ -48,7 +48,7 @@
     </FlyoutItem>
 
     <!-- Warrants Page -->
-    <FlyoutItem Title="Warrants" Icon="document.png">
+    <FlyoutItem Title="Warrants">
         <ShellContent
             Title="Warrants"
             ContentTemplate="{DataTemplate local:WarrantsPage}"
@@ -56,7 +56,7 @@
     </FlyoutItem>
 
     <!-- Inspections Page -->
-    <FlyoutItem Title="Inspections" Icon="clipboard.png">
+    <FlyoutItem Title="Inspections">
         <ShellContent
             Title="Inspections"
             ContentTemplate="{DataTemplate local:InspectionsPage}"
@@ -64,7 +64,7 @@
     </FlyoutItem>
 
     <!-- Settlements Page -->
-    <FlyoutItem Title="Settlements" Icon="cash.png">
+    <FlyoutItem Title="Settlements">
         <ShellContent
             Title="Settlements"
             ContentTemplate="{DataTemplate local:SettlementsPage}"

@@ -16,7 +16,7 @@
                 <VerticalStackLayout Spacing="15">
                     <Label Text="👥" FontSize="48" HorizontalOptions="Center" />
                     <Label 
-                        Text="Buyer Registration &amp; Management"
+                        Text="Buyer Registration & Management"
                         FontSize="20"
                         FontAttributes="Bold"
                         HorizontalOptions="Center" />

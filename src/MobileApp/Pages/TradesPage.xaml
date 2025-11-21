@@ -16,7 +16,7 @@
                 <VerticalStackLayout Spacing="15">
                     <Label Text="⇄" FontSize="48" HorizontalOptions="Center" />
                     <Label 
-                        Text="Trade Execution &amp; Monitoring"
+                        Text="Trade Execution & Monitoring"
                         FontSize="20"
                         FontAttributes="Bold"
                         HorizontalOptions="Center" />
