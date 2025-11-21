@@ -81,6 +81,8 @@ public partial class OrderPlacementPage : ContentPage
         {
             if (_selectedMineral != null && quantity > _selectedMineral.QuantityAvailable)
             {
+                // Show validation message instead of silently changing
+                DisplayAlert("Quantity Limit", $"Maximum available quantity is {_selectedMineral.QuantityAvailable} MT. Your quantity has been adjusted.", "OK");
                 quantity = _selectedMineral.QuantityAvailable;
                 QuantityEntry.Text = quantity.ToString();
             }
@@ -129,7 +131,13 @@ public partial class OrderPlacementPage : ContentPage
         BuyerNameEntry.Text = string.Empty;
         NotesEditor.Text = string.Empty;
         DeliveryDatePicker.Date = DateTime.Now.AddDays(30);
-        MineralsCollectionView.SelectedItem = null;
+        
+        // Properly clear selection
+        if (MineralsCollectionView.SelectedItem != null)
+        {
+            MineralsCollectionView.SelectedItem = null;
+        }
+        
         OrderDetailsFrame.IsVisible = false;
         _selectedMineral = null;
     }
@@ -175,7 +183,7 @@ public partial class OrderPlacementPage : ContentPage
             // Create trade from order
             var trade = new Trade
             {
-                TradeNumber = $"ORD{DateTime.Now:yyyyMMddHHmmss}",
+                TradeNumber = $"ORD-{Guid.NewGuid().ToString("N")[..12].ToUpper()}",
                 TradeDate = DateTime.Now,
                 BuyerName = BuyerNameEntry.Text,
                 SellerName = _selectedMineral.SellerCompanyName,
@@ -190,7 +198,9 @@ public partial class OrderPlacementPage : ContentPage
 
             var createdTrade = await _tradeService.CreateTradeAsync(trade);
 
-            // Update mineral listing status if fully purchased
+            // Only mark as sold if the entire quantity is purchased
+            // Note: In a real system, you would update the available quantity
+            // For now, we only mark as "Sold" when fully depleted
             if (_currentQuantity >= _selectedMineral.QuantityAvailable)
             {
                 await _mineralListingService.UpdateListingStatusAsync(_selectedMineral.Id, "Sold");
