@@ -1,0 +1,204 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="MiningTradingClientApp.Views.PortfolioPage"
+             Title="Portfolio">
+    
+    <ScrollView>
+        <VerticalStackLayout Padding="20" Spacing="20">
+            
+            <Label Text="My Portfolio" 
+                   Style="{StaticResource HeadlineStyle}" />
+
+            <!-- Portfolio Value Card -->
+            <Frame Style="{StaticResource CardStyle}">
+                <VerticalStackLayout Spacing="16">
+                    <Label Text="Total Portfolio Value" 
+                           Style="{StaticResource CaptionStyle}" />
+                    
+                    <Label Text="$12,543.50" 
+                           Style="{StaticResource PriceStyle}"
+                           FontSize="36" />
+                    
+                    <HorizontalStackLayout Spacing="12">
+                        <Label Text="+$243.50" 
+                               Style="{StaticResource PriceChangePositiveStyle}"
+                               FontSize="18" />
+                        <Label Text="(+1.98%)" 
+                               Style="{StaticResource PriceChangePositiveStyle}"
+                               FontSize="18" />
+                        <Label Text="Today" 
+                               Style="{StaticResource SmallTextStyle}"
+                               VerticalOptions="Center" />
+                    </HorizontalStackLayout>
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- Holdings Section -->
+            <VerticalStackLayout Spacing="12">
+                <Label Text="Your Holdings" 
+                       Style="{StaticResource SubtitleStyle}"
+                       Margin="0,10,0,0" />
+
+                <!-- Mock Holdings -->
+                <Frame Style="{StaticResource CardStyle}">
+                    <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+                        <Frame Grid.Column="0"
+                              WidthRequest="50"
+                              HeightRequest="50"
+                              CornerRadius="25"
+                              Padding="0"
+                              BackgroundColor="{StaticResource BackgroundLight}"
+                              HasShadow="False">
+                            <Label Text="💎" 
+                                  FontSize="24"
+                                  HorizontalOptions="Center"
+                                  VerticalOptions="Center" />
+                        </Frame>
+
+                        <VerticalStackLayout Grid.Column="1" Spacing="4" VerticalOptions="Center">
+                            <Label Text="Zambian Emerald" 
+                                  Style="{StaticResource BodyStyle}"
+                                  FontAttributes="Bold" />
+                            <Label Text="2.5 kg" 
+                                  Style="{StaticResource CaptionStyle}" />
+                        </VerticalStackLayout>
+
+                        <VerticalStackLayout Grid.Column="2" Spacing="4" HorizontalOptions="End" VerticalOptions="Center">
+                            <Label Text="$3,750.00" 
+                                  Style="{StaticResource BodyStyle}"
+                                  FontAttributes="Bold"
+                                  HorizontalTextAlignment="End" />
+                            <Label Text="+5.2%" 
+                                  Style="{StaticResource PriceChangePositiveStyle}"
+                                  FontSize="14"
+                                  HorizontalTextAlignment="End" />
+                        </VerticalStackLayout>
+                    </Grid>
+                </Frame>
+
+                <Frame Style="{StaticResource CardStyle}">
+                    <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+                        <Frame Grid.Column="0"
+                              WidthRequest="50"
+                              HeightRequest="50"
+                              CornerRadius="25"
+                              Padding="0"
+                              BackgroundColor="{StaticResource BackgroundLight}"
+                              HasShadow="False">
+                            <Label Text="🪨" 
+                                  FontSize="24"
+                                  HorizontalOptions="Center"
+                                  VerticalOptions="Center" />
+                        </Frame>
+
+                        <VerticalStackLayout Grid.Column="1" Spacing="4" VerticalOptions="Center">
+                            <Label Text="Copper Ore" 
+                                  Style="{StaticResource BodyStyle}"
+                                  FontAttributes="Bold" />
+                            <Label Text="500 kg" 
+                                  Style="{StaticResource CaptionStyle}" />
+                        </VerticalStackLayout>
+
+                        <VerticalStackLayout Grid.Column="2" Spacing="4" HorizontalOptions="End" VerticalOptions="Center">
+                            <Label Text="$4,250.00" 
+                                  Style="{StaticResource BodyStyle}"
+                                  FontAttributes="Bold"
+                                  HorizontalTextAlignment="End" />
+                            <Label Text="-2.1%" 
+                                  Style="{StaticResource PriceChangeNegativeStyle}"
+                                  FontSize="14"
+                                  HorizontalTextAlignment="End" />
+                        </VerticalStackLayout>
+                    </Grid>
+                </Frame>
+
+                <Frame Style="{StaticResource CardStyle}">
+                    <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+                        <Frame Grid.Column="0"
+                              WidthRequest="50"
+                              HeightRequest="50"
+                              CornerRadius="25"
+                              Padding="0"
+                              BackgroundColor="{StaticResource BackgroundLight}"
+                              HasShadow="False">
+                            <Label Text="🥇" 
+                                  FontSize="24"
+                                  HorizontalOptions="Center"
+                                  VerticalOptions="Center" />
+                        </Frame>
+
+                        <VerticalStackLayout Grid.Column="1" Spacing="4" VerticalOptions="Center">
+                            <Label Text="Gold Nugget" 
+                                  Style="{StaticResource BodyStyle}"
+                                  FontAttributes="Bold" />
+                            <Label Text="0.5 kg" 
+                                  Style="{StaticResource CaptionStyle}" />
+                        </VerticalStackLayout>
+
+                        <VerticalStackLayout Grid.Column="2" Spacing="4" HorizontalOptions="End" VerticalOptions="Center">
+                            <Label Text="$32,500.00" 
+                                  Style="{StaticResource BodyStyle}"
+                                  FontAttributes="Bold"
+                                  HorizontalTextAlignment="End" />
+                            <Label Text="+12.5%" 
+                                  Style="{StaticResource PriceChangePositiveStyle}"
+                                  FontSize="14"
+                                  HorizontalTextAlignment="End" />
+                        </VerticalStackLayout>
+                    </Grid>
+                </Frame>
+            </VerticalStackLayout>
+
+            <!-- Order History -->
+            <VerticalStackLayout Spacing="12" Margin="0,20,0,0">
+                <Label Text="Recent Orders" 
+                       Style="{StaticResource SubtitleStyle}" />
+
+                <CollectionView x:Name="OrderHistoryCollection"
+                               SelectionMode="None">
+                    <CollectionView.ItemsLayout>
+                        <LinearItemsLayout Orientation="Vertical" ItemSpacing="12" />
+                    </CollectionView.ItemsLayout>
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate>
+                            <Frame Style="{StaticResource CardStyle}">
+                                <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto" RowSpacing="8">
+                                    <Label Grid.Row="0" Grid.Column="0"
+                                          Text="{Binding MineralName}"
+                                          Style="{StaticResource BodyStyle}"
+                                          FontAttributes="Bold" />
+                                    <Label Grid.Row="0" Grid.Column="1"
+                                          Text="{Binding Status}"
+                                          Style="{StaticResource CaptionStyle}"
+                                          TextColor="{StaticResource RobinhoodGreen}"
+                                          HorizontalTextAlignment="End" />
+
+                                    <Label Grid.Row="1" Grid.Column="0"
+                                          Text="{Binding Quantity, StringFormat='{0:N2} kg'}"
+                                          Style="{StaticResource CaptionStyle}" />
+                                    <Label Grid.Row="1" Grid.Column="1"
+                                          Text="{Binding PriceAtOrder, StringFormat='{0:C}'}"
+                                          Style="{StaticResource BodyStyle}"
+                                          HorizontalTextAlignment="End" />
+
+                                    <Label Grid.Row="2" Grid.Column="0"
+                                          Text="{Binding OrderDate, StringFormat='{0:MMM dd, yyyy}'}"
+                                          Style="{StaticResource SmallTextStyle}" />
+                                </Grid>
+                            </Frame>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
+            </VerticalStackLayout>
+
+            <!-- Browse Markets Button -->
+            <Button Text="Browse Markets"
+                   Style="{StaticResource PrimaryButtonStyle}"
+                   Clicked="OnBrowseMarketsClicked"
+                   Margin="0,20,0,20" />
+
+        </VerticalStackLayout>
+    </ScrollView>
+    
+</ContentPage>

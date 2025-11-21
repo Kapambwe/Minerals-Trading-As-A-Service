@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<?xaml-comp compile="true" ?>
+<ResourceDictionary 
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml">
+
+    <!-- Robinhood-inspired color palette -->
+    
+    <!-- Primary Colors -->
+    <Color x:Key="RobinhoodGreen">#00C853</Color>
+    <Color x:Key="RobinhoodRed">#FF3B30</Color>
+    <Color x:Key="RobinhoodDarkGreen">#00A843</Color>
+    
+    <!-- Background Colors (Dark Theme) -->
+    <Color x:Key="BackgroundDark">#1C1C1E</Color>
+    <Color x:Key="BackgroundMedium">#2C2C2E</Color>
+    <Color x:Key="BackgroundLight">#3A3A3C</Color>
+    
+    <!-- Text Colors -->
+    <Color x:Key="TextPrimary">#FFFFFF</Color>
+    <Color x:Key="TextSecondary">#98989F</Color>
+    <Color x:Key="TextTertiary">#636366</Color>
+    
+    <!-- Accent Colors -->
+    <Color x:Key="AccentColor">#00C853</Color>
+    <Color x:Key="AccentLight">#69F0AE</Color>
+    <Color x:Key="AccentDark">#00A843</Color>
+    
+    <!-- Status Colors -->
+    <Color x:Key="SuccessColor">#00C853</Color>
+    <Color x:Key="ErrorColor">#FF3B30</Color>
+    <Color x:Key="WarningColor">#FF9500</Color>
+    <Color x:Key="InfoColor">#007AFF</Color>
+    
+    <!-- Border and Divider Colors -->
+    <Color x:Key="BorderColor">#3A3A3C</Color>
+    <Color x:Key="DividerColor">#2C2C2E</Color>
+    
+    <!-- Card and Surface Colors -->
+    <Color x:Key="CardBackground">#2C2C2E</Color>
+    <Color x:Key="SurfaceColor">#3A3A3C</Color>
+    
+</ResourceDictionary>

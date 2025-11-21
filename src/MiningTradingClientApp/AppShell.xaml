@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<Shell
+    x:Class="MiningTradingClientApp.AppShell"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:views="clr-namespace:MiningTradingClientApp.Views"
+    Shell.FlyoutBehavior="Disabled"
+    Shell.NavBarIsVisible="False">
+
+    <!-- Robinhood-style bottom tab bar -->
+    <TabBar>
+        <ShellContent
+            Title="Home"
+            Icon="home.png"
+            ContentTemplate="{DataTemplate views:HomePage}"
+            Route="home" />
+
+        <ShellContent
+            Title="Markets"
+            Icon="chart.png"
+            ContentTemplate="{DataTemplate views:MineralsPage}"
+            Route="minerals" />
+
+        <ShellContent
+            Title="Portfolio"
+            Icon="wallet.png"
+            ContentTemplate="{DataTemplate views:PortfolioPage}"
+            Route="portfolio" />
+    </TabBar>
+
+</Shell>
