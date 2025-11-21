@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="MiningTradingClientApp.Views.MineralsPage"
+             Title="Markets">
+    
+    <Grid RowDefinitions="Auto,*">
+        
+        <!-- Search Bar -->
+        <Frame Grid.Row="0" 
+               Padding="16"
+               BackgroundColor="{StaticResource BackgroundDark}"
+               HasShadow="False">
+            <SearchBar x:Name="MineralSearchBar"
+                      Placeholder="Search minerals..."
+                      Style="{StaticResource SearchBarStyle}"
+                      TextChanged="OnSearchTextChanged" />
+        </Frame>
+
+        <!-- Minerals List -->
+        <ScrollView Grid.Row="1">
+            <VerticalStackLayout Padding="16" Spacing="12">
+                
+                <Label Text="Available Minerals" 
+                       Style="{StaticResource TitleStyle}"
+                       Margin="0,0,0,10" />
+
+                <CollectionView x:Name="MineralsCollection"
+                               SelectionMode="None">
+                    <CollectionView.ItemsLayout>
+                        <LinearItemsLayout Orientation="Vertical" 
+                                          ItemSpacing="12" />
+                    </CollectionView.ItemsLayout>
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate>
+                            <Frame Style="{StaticResource MineralCardStyle}">
+                                <Frame.GestureRecognizers>
+                                    <TapGestureRecognizer Tapped="OnMineralSelected"
+                                                         CommandParameter="{Binding .}" />
+                                </Frame.GestureRecognizers>
+                                
+                                <Grid Padding="16" RowDefinitions="Auto,Auto,Auto" ColumnDefinitions="*,Auto" RowSpacing="8">
+                                    
+                                    <!-- Mineral Name and Verification Badge -->
+                                    <HorizontalStackLayout Grid.Row="0" Grid.Column="0" Spacing="8">
+                                        <Label Text="{Binding Name}" 
+                                              Style="{StaticResource SubtitleStyle}" />
+                                        <Label Text="✓" 
+                                              IsVisible="{Binding IsVerified}"
+                                              TextColor="{StaticResource RobinhoodGreen}"
+                                              FontSize="16"
+                                              VerticalOptions="Center" />
+                                    </HorizontalStackLayout>
+
+                                    <!-- Price -->
+                                    <VerticalStackLayout Grid.Row="0" Grid.Column="1" Grid.RowSpan="2" 
+                                                        HorizontalOptions="End"
+                                                        VerticalOptions="Center">
+                                        <Label Text="{Binding Price, StringFormat='{0:C}'}" 
+                                              Style="{StaticResource PriceStyle}"
+                                              FontSize="22"
+                                              HorizontalTextAlignment="End" />
+                                        <Label Text="per kg" 
+                                              Style="{StaticResource SmallTextStyle}"
+                                              HorizontalTextAlignment="End" />
+                                    </VerticalStackLayout>
+
+                                    <!-- Mineral Details -->
+                                    <VerticalStackLayout Grid.Row="1" Grid.Column="0" Spacing="4">
+                                        <Label Text="{Binding Origin}" 
+                                              Style="{StaticResource CaptionStyle}" />
+                                        <Label Text="{Binding Seller}" 
+                                              Style="{StaticResource CaptionStyle}" />
+                                    </VerticalStackLayout>
+
+                                    <!-- Additional Info -->
+                                    <Grid Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2" 
+                                          ColumnDefinitions="*,*" ColumnSpacing="12"
+                                          Margin="0,8,0,0">
+                                        <BoxView Grid.Column="0" Grid.ColumnSpan="2" 
+                                                Style="{StaticResource DividerStyle}"
+                                                Margin="0,0,0,8" />
+                                        
+                                        <HorizontalStackLayout Grid.Column="0" Spacing="4">
+                                            <Label Text="Weight:" 
+                                                  Style="{StaticResource SmallTextStyle}" />
+                                            <Label Text="{Binding Weight, StringFormat='{0:N2} kg'}" 
+                                                  Style="{StaticResource SmallTextStyle}"
+                                                  TextColor="{StaticResource TextSecondary}" />
+                                        </HorizontalStackLayout>
+
+                                        <HorizontalStackLayout Grid.Column="1" Spacing="4" HorizontalOptions="End">
+                                            <Label Text="Listed:" 
+                                                  Style="{StaticResource SmallTextStyle}" />
+                                            <Label Text="{Binding DateListed, StringFormat='{0:MMM dd}'}" 
+                                                  Style="{StaticResource SmallTextStyle}"
+                                                  TextColor="{StaticResource TextSecondary}" />
+                                        </HorizontalStackLayout>
+                                    </Grid>
+
+                                    <!-- Buy Button -->
+                                    <Button Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2"
+                                           Text="Buy Now"
+                                           Style="{StaticResource BuyButtonStyle}"
+                                           Clicked="OnBuyNowClicked"
+                                           CommandParameter="{Binding .}"
+                                           Margin="0,12,0,0" />
+                                </Grid>
+                            </Frame>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
+
+                <!-- Empty State -->
+                <VerticalStackLayout x:Name="EmptyStateView" 
+                                    IsVisible="False"
+                                    Spacing="16"
+                                    Padding="40"
+                                    VerticalOptions="Center">
+                    <Label Text="No minerals found" 
+                          Style="{StaticResource SubtitleStyle}"
+                          HorizontalOptions="Center" />
+                    <Label Text="Try adjusting your search" 
+                          Style="{StaticResource CaptionStyle}"
+                          HorizontalOptions="Center" />
+                </VerticalStackLayout>
+
+            </VerticalStackLayout>
+        </ScrollView>
+        
+    </Grid>
+    
+</ContentPage>
