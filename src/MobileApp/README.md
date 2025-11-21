@@ -1,10 +1,10 @@
 # Minerals Trading Mobile App
 
-A .NET MAUI Blazor Hybrid mobile application for trading minerals on the Zambia Metal Exchange, specifically designed for buyers.
+A .NET MAUI native mobile application for trading minerals on the Zambia Metal Exchange, specifically designed for buyers.
 
 ## Overview
 
-This mobile application provides a comprehensive platform for buyers to:
+This mobile application provides a comprehensive native platform for buyers to:
 - Register and manage buyer profiles
 - Complete KYC (Know Your Customer) processes
 - Browse available minerals
@@ -15,10 +15,10 @@ This mobile application provides a comprehensive platform for buyers to:
 
 ## Technology Stack
 
-- **.NET MAUI 9.0**: Cross-platform mobile framework
-- **Blazor Hybrid**: Reuses existing Razor components from Platform.Trading.Management
-- **Radzen Blazor**: UI component library
+- **.NET MAUI 9.0**: Cross-platform mobile framework with native UI
+- **XAML**: Native markup for UI definition
 - **C# 12**: Programming language
+- **Shell Navigation**: Native navigation pattern
 
 ## Supported Platforms
 
@@ -31,21 +31,24 @@ This mobile application provides a comprehensive platform for buyers to:
 
 ```
 MobileApp/
-├── Components/
-│   ├── Layout/          # Layout components (MainLayout, NavMenu)
-│   ├── Pages/           # Page components (Home, Buyers, Trades, etc.)
-│   └── Routes.razor     # Routing configuration
+├── Pages/               # Native XAML pages
+│   ├── HomePage.xaml
+│   ├── BuyersPage.xaml
+│   ├── TradesPage.xaml
+│   ├── DashboardPage.xaml
+│   ├── WarehousesPage.xaml
+│   ├── WarrantsPage.xaml
+│   ├── InspectionsPage.xaml
+│   └── SettlementsPage.xaml
 ├── Platforms/           # Platform-specific code
 │   ├── Android/
 │   ├── iOS/
 │   ├── MacCatalyst/
 │   └── Windows/
 ├── Resources/           # App resources (icons, splash screens, fonts)
-├── wwwroot/            # Static web assets
 ├── App.xaml            # Application definition
-├── MainPage.xaml       # Main page with BlazorWebView
+├── AppShell.xaml       # Shell navigation structure
 └── MauiProgram.cs      # App configuration and services
-
 ```
 
 ## Key Features
@@ -76,6 +79,14 @@ MobileApp/
 - Real-time market data
 - Trading analytics
 - Performance metrics
+
+## Architecture
+
+This app uses **Native .NET MAUI** with XAML pages, providing:
+- Native performance with platform-specific controls
+- Direct access to platform APIs
+- Optimized UI for each platform
+- Shell-based navigation
 
 ## Building the Application
 
@@ -144,38 +155,46 @@ The app uses mock services for development. To connect to a real backend:
 ## Dependencies
 
 - **Microsoft.Maui.Controls**: 9.0.10
-- **Microsoft.AspNetCore.Components.WebView.Maui**: 9.0.10
-- **Radzen.Blazor**: 5.9.0
+- **Microsoft.Maui.Controls.Compatibility**: 9.0.10
+- **Microsoft.Extensions.Logging.Debug**: 9.0.0
 - **Platform.Trading.Management**: Local project reference
 
-## Component Reuse
+## Navigation
 
-This mobile app reuses existing Razor components from the `Platform.Trading.Management` project:
-- BuyerManagement.razor
-- TradeManagement.razor
-- TradingDashboard.razor
-- WarehouseManagement.razor
-- WarrantManagement.razor
-- InspectionManagement.razor
-- SettlementManagement.razor
-
-All dialogs and data models are also shared, ensuring consistency across web and mobile platforms.
+The app uses **Shell Navigation** with a flyout menu providing access to:
+- Home
+- Buyers
+- Trades
+- Dashboard
+- Warehouses
+- Warrants
+- Inspections
+- Settlements
 
 ## Development Notes
 
-- The app uses BlazorWebView to host Blazor components in a native mobile shell
-- Navigation is handled through Blazor Router
-- UI styling uses Radzen Blazor components and Bootstrap
-- Platform-specific features can be accessed through MAUI APIs
+- Native XAML pages for optimal performance
+- Shell-based navigation pattern
+- Platform-specific UI optimizations available
+- Direct access to native platform features
 
 ## Future Enhancements
 
-- Offline support
+- Full native UI implementation for each page
+- Offline support with local database
 - Push notifications for trade updates
 - Biometric authentication
 - QR code scanning for warehouse operations
 - Advanced charting and analytics
 - Multi-language support
+
+## Conversion from Blazor Hybrid
+
+This app was converted from a Blazor Hybrid architecture to Native MAUI for:
+- Better performance
+- Native platform controls
+- Reduced dependencies
+- Platform-specific optimizations
 
 ## License
 

@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<Shell
+    x:Class="MineralsTradingMobileApp.AppShell"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:local="clr-namespace:MineralsTradingMobileApp.Pages"
+    Title="Minerals Trading"
+    FlyoutBackgroundColor="{StaticResource Primary}">
+
+    <!-- Home Page -->
+    <FlyoutItem Title="Home" Icon="home.png">
+        <ShellContent
+            Title="Home"
+            ContentTemplate="{DataTemplate local:HomePage}"
+            Route="home" />
+    </FlyoutItem>
+
+    <!-- Buyers Page -->
+    <FlyoutItem Title="Buyers" Icon="people.png">
+        <ShellContent
+            Title="Buyers"
+            ContentTemplate="{DataTemplate local:BuyersPage}"
+            Route="buyers" />
+    </FlyoutItem>
+
+    <!-- Trades Page -->
+    <FlyoutItem Title="Trades" Icon="trade.png">
+        <ShellContent
+            Title="Trades"
+            ContentTemplate="{DataTemplate local:TradesPage}"
+            Route="trades" />
+    </FlyoutItem>
+
+    <!-- Dashboard Page -->
+    <FlyoutItem Title="Dashboard" Icon="dashboard.png">
+        <ShellContent
+            Title="Dashboard"
+            ContentTemplate="{DataTemplate local:DashboardPage}"
+            Route="dashboard" />
+    </FlyoutItem>
+
+    <!-- Warehouses Page -->
+    <FlyoutItem Title="Warehouses" Icon="warehouse.png">
+        <ShellContent
+            Title="Warehouses"
+            ContentTemplate="{DataTemplate local:WarehousesPage}"
+            Route="warehouses" />
+    </FlyoutItem>
+
+    <!-- Warrants Page -->
+    <FlyoutItem Title="Warrants" Icon="document.png">
+        <ShellContent
+            Title="Warrants"
+            ContentTemplate="{DataTemplate local:WarrantsPage}"
+            Route="warrants" />
+    </FlyoutItem>
+
+    <!-- Inspections Page -->
+    <FlyoutItem Title="Inspections" Icon="clipboard.png">
+        <ShellContent
+            Title="Inspections"
+            ContentTemplate="{DataTemplate local:InspectionsPage}"
+            Route="inspections" />
+    </FlyoutItem>
+
+    <!-- Settlements Page -->
+    <FlyoutItem Title="Settlements" Icon="cash.png">
+        <ShellContent
+            Title="Settlements"
+            ContentTemplate="{DataTemplate local:SettlementsPage}"
+            Route="settlements" />
+    </FlyoutItem>
+
+</Shell>

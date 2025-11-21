@@ -153,13 +153,14 @@ dotnet build -f net9.0-maccatalyst -t:Run
 
 ```
 MobileApp/
-├── Components/          # Blazor components
-│   ├── Layout/         # MainLayout, NavMenu
-│   ├── Pages/          # Page components
-│   └── Routes.razor    # Routing
+├── Pages/              # Native XAML pages
+│   ├── HomePage.xaml
+│   ├── BuyersPage.xaml
+│   ├── TradesPage.xaml
+│   └── ...
 ├── Platforms/          # Platform-specific code
 ├── Resources/          # Images, icons, styles
-├── wwwroot/           # Static web assets
+├── AppShell.xaml      # Shell navigation
 └── MauiProgram.cs     # App configuration
 ```
 
@@ -167,10 +168,9 @@ MobileApp/
 
 - **MauiProgram.cs**: App initialization, service registration
 - **App.xaml/cs**: Application lifecycle
-- **MainPage.xaml**: Main page with BlazorWebView
-- **Components/Routes.razor**: Route definitions
-- **Components/Layout/NavMenu.razor**: Navigation menu
-- **Components/Pages/*.razor**: Page components
+- **AppShell.xaml**: Shell navigation structure with flyout menu
+- **Pages/*.xaml**: Native XAML page definitions
+- **Pages/*.xaml.cs**: Page code-behind files
 
 ## Configuration
 
@@ -207,7 +207,6 @@ Modify app properties in `MineralsTradingMobileApp.csproj`:
 Already enabled in debug mode:
 ```csharp
 #if DEBUG
-    builder.Services.AddBlazorWebViewDeveloperTools();
     builder.Logging.AddDebug();
 #endif
 ```
@@ -219,9 +218,9 @@ Already enabled in debug mode:
 - **Windows**: Use Visual Studio Output window
 - **Console**: Check debug output in terminal
 
-### Debugging Blazor Components
+### Debugging XAML Pages
 
-1. Set breakpoints in .razor.cs files or @code blocks
+1. Set breakpoints in .xaml.cs code-behind files
 2. Press F5 to start debugging
 3. Debug as you would a normal .NET app
 
@@ -262,25 +261,18 @@ cd ../Platform.Trading.Management
 dotnet build
 ```
 
-### Issue: Radzen components not showing correctly
-```
-Solution: Check that Radzen CSS is loaded in index.html
-<link rel="stylesheet" href="_content/Radzen.Blazor/css/material-base.css">
-```
-
 ## Testing the App
 
 ### Manual Testing Checklist
 
 - [ ] App launches successfully
 - [ ] Home page displays correctly
-- [ ] Navigation menu works
+- [ ] Navigation menu (flyout) works
 - [ ] Can navigate to Buyers page
 - [ ] Can navigate to Trades page
 - [ ] Can navigate to Dashboard page
 - [ ] Can navigate to other pages
-- [ ] Components from Platform.Trading.Management render correctly
-- [ ] Radzen components work as expected
+- [ ] Native XAML pages render correctly
 - [ ] App responds to orientation changes (mobile)
 
 ### Performance Testing
@@ -318,8 +310,8 @@ Monitor:
 ## Resources
 
 - [.NET MAUI Documentation](https://docs.microsoft.com/dotnet/maui/)
-- [Blazor Hybrid Documentation](https://docs.microsoft.com/aspnet/core/blazor/hybrid/)
-- [Radzen Blazor Components](https://blazor.radzen.com/)
+- [MAUI XAML Documentation](https://docs.microsoft.com/dotnet/maui/xaml/)
+- [MAUI Shell Navigation](https://docs.microsoft.com/dotnet/maui/fundamentals/shell/)
 - [MAUI GitHub Repository](https://github.com/dotnet/maui)
 
 ## Support
