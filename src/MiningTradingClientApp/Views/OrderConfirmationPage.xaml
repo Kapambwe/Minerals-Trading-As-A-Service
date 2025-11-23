@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="MiningTradingClientApp.Views.OrderConfirmationPage"
+             Title="Order Confirmed">
+    
+    <ScrollView>
+        <VerticalStackLayout Padding="20" Spacing="30" VerticalOptions="Center">
+            
+            <!-- Success Icon -->
+            <Label Text="✓" 
+                   FontSize="80"
+                   TextColor="{StaticResource RobinhoodGreen}"
+                   HorizontalOptions="Center" />
+
+            <Label Text="Order Confirmed!" 
+                   Style="{StaticResource HeadlineStyle}"
+                   HorizontalOptions="Center"
+                   HorizontalTextAlignment="Center" />
+
+            <Label Text="Your order has been successfully placed. You will receive a confirmation email shortly."
+                   Style="{StaticResource BodyStyle}"
+                   HorizontalOptions="Center"
+                   HorizontalTextAlignment="Center"
+                   Margin="20,0" />
+
+            <!-- Order Details Card -->
+            <Frame Style="{StaticResource CardStyle}">
+                <VerticalStackLayout Spacing="16">
+                    <Label Text="Order Details" 
+                           Style="{StaticResource SubtitleStyle}" />
+                    
+                    <BoxView Style="{StaticResource DividerStyle}" />
+
+                    <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="12">
+                        <Label Grid.Row="0" Grid.Column="0"
+                               Text="Mineral:" 
+                               Style="{StaticResource CaptionStyle}" />
+                        <Label Grid.Row="0" Grid.Column="1"
+                               x:Name="MineralNameLabel"
+                               Text="-"
+                               Style="{StaticResource BodyStyle}"
+                               HorizontalTextAlignment="End" />
+
+                        <Label Grid.Row="1" Grid.Column="0"
+                               Text="Quantity:" 
+                               Style="{StaticResource CaptionStyle}" />
+                        <Label Grid.Row="1" Grid.Column="1"
+                               x:Name="QuantityLabel"
+                               Text="-"
+                               Style="{StaticResource BodyStyle}"
+                               HorizontalTextAlignment="End" />
+
+                        <Label Grid.Row="2" Grid.Column="0"
+                               Text="Buyer:" 
+                               Style="{StaticResource CaptionStyle}" />
+                        <Label Grid.Row="2" Grid.Column="1"
+                               x:Name="BuyerLabel"
+                               Text="-"
+                               Style="{StaticResource BodyStyle}"
+                               HorizontalTextAlignment="End" />
+
+                        <Label Grid.Row="3" Grid.Column="0"
+                               Text="Total:" 
+                               Style="{StaticResource SubtitleStyle}" />
+                        <Label Grid.Row="3" Grid.Column="1"
+                               x:Name="TotalLabel"
+                               Text="$0.00"
+                               Style="{StaticResource PriceStyle}"
+                               FontSize="22"
+                               TextColor="{StaticResource RobinhoodGreen}"
+                               HorizontalTextAlignment="End" />
+                    </Grid>
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- Action Buttons -->
+            <VerticalStackLayout Spacing="12" Margin="0,20,0,0">
+                <Button Text="View Markets"
+                       Style="{StaticResource PrimaryButtonStyle}"
+                       Clicked="OnViewMarketsClicked" />
+                
+                <Button Text="Go to Portfolio"
+                       Style="{StaticResource SecondaryButtonStyle}"
+                       Clicked="OnViewPortfolioClicked" />
+            </VerticalStackLayout>
+
+        </VerticalStackLayout>
+    </ScrollView>
+    
+</ContentPage>

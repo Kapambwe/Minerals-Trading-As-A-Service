@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="MineralsTradingMobileApp.Pages.HomePage"
+             Title="Home">
+    
+    <ScrollView>
+        <VerticalStackLayout Padding="20" Spacing="20">
+            
+            <!-- Welcome Section -->
+            <Label 
+                Text="Welcome to Minerals Trading Mobile"
+                FontSize="24"
+                FontAttributes="Bold"
+                HorizontalOptions="Center" />
+            
+            <Label 
+                Text="Your mobile platform for copper trading on the Zambia Metal Exchange"
+                FontSize="16"
+                HorizontalOptions="Center"
+                HorizontalTextAlignment="Center" />
+
+            <!-- Quick Place Order Button -->
+            <Button 
+                Text="🛒 Place Mineral Order"
+                FontSize="20"
+                FontAttributes="Bold"
+                HeightRequest="60"
+                BackgroundColor="{StaticResource Tertiary}"
+                Clicked="OnPlaceOrderClicked"
+                Margin="0,10,0,0" />
+
+            <!-- Cards Grid -->
+            <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="*,*" RowSpacing="15" ColumnSpacing="15" Margin="0,20,0,0">
+                
+                <!-- Buyer Management Card -->
+                <Frame Grid.Row="0" Grid.Column="0" Padding="15" BackgroundColor="{StaticResource Primary}" HasShadow="True">
+                    <VerticalStackLayout Spacing="10">
+                        <Label Text="👥" FontSize="32" HorizontalOptions="Center" />
+                        <Label Text="Buyer Management" FontSize="18" FontAttributes="Bold" HorizontalOptions="Center" HorizontalTextAlignment="Center" />
+                        <Label Text="Register and manage buyer profiles, complete KYC processes" FontSize="14" HorizontalOptions="Center" HorizontalTextAlignment="Center" />
+                        <Button Text="Manage Buyers" Clicked="OnBuyersClicked" BackgroundColor="{StaticResource Secondary}" />
+                    </VerticalStackLayout>
+                </Frame>
+
+                <!-- Trade Execution Card -->
+                <Frame Grid.Row="0" Grid.Column="1" Padding="15" BackgroundColor="{StaticResource Primary}" HasShadow="True">
+                    <VerticalStackLayout Spacing="10">
+                        <Label Text="⇄" FontSize="32" HorizontalOptions="Center" />
+                        <Label Text="Trade Execution" FontSize="18" FontAttributes="Bold" HorizontalOptions="Center" HorizontalTextAlignment="Center" />
+                        <Label Text="Browse minerals, execute trades, and track status" FontSize="14" HorizontalOptions="Center" HorizontalTextAlignment="Center" />
+                        <Button Text="View Trades" Clicked="OnTradesClicked" BackgroundColor="{StaticResource Secondary}" />
+                    </VerticalStackLayout>
+                </Frame>
+
+                <!-- Warehouse Operations Card -->
+                <Frame Grid.Row="1" Grid.Column="0" Padding="15" BackgroundColor="{StaticResource Primary}" HasShadow="True">
+                    <VerticalStackLayout Spacing="10">
+                        <Label Text="🏢" FontSize="32" HorizontalOptions="Center" />
+                        <Label Text="Warehouse Operations" FontSize="18" FontAttributes="Bold" HorizontalOptions="Center" HorizontalTextAlignment="Center" />
+                        <Label Text="Monitor inventory, track storage locations" FontSize="14" HorizontalOptions="Center" HorizontalTextAlignment="Center" />
+                        <Button Text="View Warehouses" Clicked="OnWarehousesClicked" BackgroundColor="{StaticResource Secondary}" />
+                    </VerticalStackLayout>
+                </Frame>
+
+                <!-- Trading Dashboard Card -->
+                <Frame Grid.Row="1" Grid.Column="1" Padding="15" BackgroundColor="{StaticResource Primary}" HasShadow="True">
+                    <VerticalStackLayout Spacing="10">
+                        <Label Text="📊" FontSize="32" HorizontalOptions="Center" />
+                        <Label Text="Trading Dashboard" FontSize="18" FontAttributes="Bold" HorizontalOptions="Center" HorizontalTextAlignment="Center" />
+                        <Label Text="View analytics, market data, performance" FontSize="14" HorizontalOptions="Center" HorizontalTextAlignment="Center" />
+                        <Button Text="Open Dashboard" Clicked="OnDashboardClicked" BackgroundColor="{StaticResource Secondary}" />
+                    </VerticalStackLayout>
+                </Frame>
+            </Grid>
+
+            <!-- Quick Links Section -->
+            <Frame Padding="15" BackgroundColor="{StaticResource Primary}" HasShadow="True" Margin="0,10,0,0">
+                <VerticalStackLayout Spacing="10">
+                    <Label Text="Quick Links" FontSize="18" FontAttributes="Bold" />
+                    <FlexLayout Direction="Row" Wrap="Wrap" JustifyContent="Start" AlignItems="Start">
+                        <Button Text="Inspections" Clicked="OnInspectionsClicked" Margin="5" />
+                        <Button Text="Settlements" Clicked="OnSettlementsClicked" Margin="5" />
+                        <Button Text="Warrants" Clicked="OnWarrantsClicked" Margin="5" />
+                    </FlexLayout>
+                </VerticalStackLayout>
+            </Frame>
+
+        </VerticalStackLayout>
+    </ScrollView>
+
+</ContentPage>

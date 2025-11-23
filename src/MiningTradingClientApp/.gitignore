@@ -1,0 +1,67 @@
+# MAUI-specific build outputs
+bin/
+obj/
+.vs/
+
+# User-specific files
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Build results
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
+[Bb]in/
+[Oo]bj/
+
+# Visual Studio cache/options
+.vs/
+.vscode/
+
+# Platform-specific build outputs
+Platforms/**/bin/
+Platforms/**/obj/
+
+# Android
+*.apk
+*.aab
+*.dex
+*.class
+*.jks
+
+# iOS
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# macOS
+*.app
+
+# Windows
+*.appx
+*.appxbundle
+*.msix
+*.msixbundle
+
+# User preferences
+appsettings.Development.json
+appsettings.*.json
+
+# NuGet Packages
+*.nupkg
+packages/
+*.nuget.props
+*.nuget.targets
+
+# Rider
+.idea/
+*.sln.iml
+
+# Mac
+.DS_Store
