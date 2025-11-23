@@ -13,7 +13,7 @@ public class MockTradeService : ITradeService
         {
             new Trade
             {
-                Id = "TRD001",
+                Id = "a1b2c3d4-e5f6-7890-1234-567890abcdef",
                 TradeNumber = "ZME-2025-001",
                 TradeDate = DateTime.Now.AddDays(-30),
                 BuyerName = "Konkola Copper Mines",
@@ -31,7 +31,7 @@ public class MockTradeService : ITradeService
             },
             new Trade
             {
-                Id = "TRD002",
+                Id = "b2c3d4e5-f6a7-8901-2345-67890abcdef0",
                 TradeNumber = "ZME-2025-002",
                 TradeDate = DateTime.Now.AddDays(-25),
                 BuyerName = "Mopani Copper Mines",
@@ -49,7 +49,7 @@ public class MockTradeService : ITradeService
             },
             new Trade
             {
-                Id = "TRD003",
+                Id = "c3d4e5f6-a7b8-9012-3456-7890abcdef01",
                 TradeNumber = "ZME-2025-003",
                 TradeDate = DateTime.Now.AddDays(-20),
                 BuyerName = "ZCCM Investments Holdings",
@@ -67,7 +67,7 @@ public class MockTradeService : ITradeService
             },
             new Trade
             {
-                Id = "TRD004",
+                Id = "d4e5f6a7-b8c9-0123-4567-890abcdef012",
                 TradeNumber = "ZME-2025-004",
                 TradeDate = DateTime.Now.AddDays(-15),
                 BuyerName = "Chambishi Metals",
@@ -84,7 +84,7 @@ public class MockTradeService : ITradeService
             },
             new Trade
             {
-                Id = "TRD005",
+                Id = "e5f6a7b8-c9d0-1234-5678-90abcdef0123",
                 TradeNumber = "ZME-2025-005",
                 TradeDate = DateTime.Now.AddDays(-10),
                 BuyerName = "Lubambe Copper Mine",
@@ -101,7 +101,7 @@ public class MockTradeService : ITradeService
             },
             new Trade
             {
-                Id = "TRD006",
+                Id = "f6a7b8c9-d0e1-2345-6789-0abcdef01234",
                 TradeNumber = "ZME-2025-006",
                 TradeDate = DateTime.Now.AddDays(-60),
                 BuyerName = "Kafue Copper Smelter",
@@ -119,7 +119,7 @@ public class MockTradeService : ITradeService
             },
             new Trade
             {
-                Id = "TRD007",
+                Id = "a0b1c2d3-e4f5-6789-0123-456789abcdef",
                 TradeNumber = "ZME-2025-007",
                 TradeDate = DateTime.Now.AddDays(-5),
                 BuyerName = "NFC Africa Mining",
@@ -151,8 +151,7 @@ public class MockTradeService : ITradeService
 
     public Task<Trade> CreateTradeAsync(Trade trade)
     {
-        trade.Id = $"TRD{_trades.Count + 1:D3}";
-        trade.TradeNumber = $"ZME-2025-{_trades.Count + 1:D3}";
+        trade.Id = Guid.NewGuid().ToString();
         trade.TotalValue = trade.Quantity * trade.PricePerTon;
         _trades.Add(trade);
         return Task.FromResult(trade);
@@ -203,3 +202,4 @@ public class MockTradeService : ITradeService
         return Task.FromResult(trade!);
     }
 }
+

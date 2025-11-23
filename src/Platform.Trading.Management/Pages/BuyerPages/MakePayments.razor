@@ -1,0 +1,8 @@
+@page "/buyer/payments/{TradeId}"
+
+<PaymentForm TradeId="@TradeId" />
+
+@code {
+    [Parameter]
+    public string TradeId { get; set; } = string.Empty;
+}

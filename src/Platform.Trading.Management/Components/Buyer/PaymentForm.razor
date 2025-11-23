@@ -1,0 +1,60 @@
+@inject IPaymentService PaymentService
+@inject NavigationManager NavigationManager
+
+<h3>Make a Payment</h3>
+
+@if (string.IsNullOrEmpty(TradeId))
+{
+    <RadzenText Text="Please select a trade to make a payment." TagName="TagName.P" />
+}
+else
+{
+    <RadzenCard>
+        <EditForm Model="@Payment" OnValidSubmit="HandleValidSubmit">
+            <DataAnnotationsValidator />
+            <RadzenValidationSummary />
+
+            <div class="row mb-3">
+                <div class="col-md-4">
+                    <RadzenLabel Text="Amount:" Component="amount" />
+                </div>
+                <div class="col-md-8">
+                    <RadzenNumeric TValue="decimal" id="amount" class="w-100" @bind-Value="@Payment.Amount" />
+                    <RadzenRequiredValidator Component="amount" Text="Amount is required" />
+                </div>
+            </div>
+            <div class="row mb-3">
+                <div class="col-md-4">
+                    <RadzenLabel Text="Description:" Component="description" />
+                </div>
+                <div class="col-md-8">
+                    <RadzenTextArea id="description" class="w-100" @bind-Value="@Payment.Description" />
+                    <RadzenRequiredValidator Component="description" Text="Description is required" />
+                    <RadzenLengthValidator Component="description" Max="500" Text="Description cannot exceed 500 characters" />
+                </div>
+            </div>
+
+            <RadzenButton ButtonType="ButtonType.Submit" Text="Submit Payment" Icon="payment" />
+        </EditForm>
+    </RadzenCard>
+}
+
+@code {
+    [Parameter]
+    public string TradeId { get; set; } = string.Empty;
+
+    private Payment Payment = new Payment();
+
+    protected override void OnInitialized()
+    {
+        Payment.TradeId = TradeId;
+        Payment.PaymentDate = DateTime.Now;
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        await PaymentService.AddPaymentAsync(Payment);
+        // Optionally, navigate back to the trade details or a payment history page
+        NavigationManager.NavigateTo($"/buyer/contract/{TradeId}");
+    }
+}

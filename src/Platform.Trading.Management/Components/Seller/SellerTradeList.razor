@@ -1,0 +1,57 @@
+@inject ITradeService TradeService
+@inject NavigationManager NavigationManager
+
+<h3>Your Sales Trades</h3>
+
+@if (Trades == null)
+{
+    <RadzenText Text="Loading trades..." TagName="TagName.P" />
+}
+else if (!Trades.Any())
+{
+    <RadzenText Text="No sales trades found." TagName="TagName.P" />
+}
+else
+{
+    <RadzenDataGrid Data="@Trades" TItem="Trade" AllowFiltering="true" AllowPaging="true" PageSize="10" AllowSorting="true">
+        <Columns>
+            <RadzenDataGridColumn TItem="Trade" Property="TradeNumber" Title="Trade Number" />
+            <RadzenDataGridColumn TItem="Trade" Property="MetalType" Title="Metal Type" />
+            <RadzenDataGridColumn TItem="Trade" Property="Quantity" Title="Quantity" />
+            <RadzenDataGridColumn TItem="Trade" Property="TotalValue" Title="Total Value">
+                <Template Context="trade">
+                    @trade.TotalValue.ToString("C")
+                </Template>
+            </RadzenDataGridColumn>
+            <RadzenDataGridColumn TItem="Trade" Property="Status" Title="Status" />
+            <RadzenDataGridColumn TItem="Trade" Property="BuyerName" Title="Buyer" />
+            <RadzenDataGridColumn TItem="Trade" Context="trade" Filterable="false" Sortable="false" TextAlign="TextAlign.Center" Width="100px">
+                <Template Context="trade">
+                    <RadzenButton Icon="info" ButtonStyle="ButtonStyle.Info" Variant="Variant.Flat" Shade="Shade.Lighter" Click="@(() => ViewTradeDetails(trade.Id))" />
+                </Template>
+            </RadzenDataGridColumn>
+        </Columns>
+    </RadzenDataGrid>
+}
+
+@code {
+    // In a real application, SellerId would likely come from authentication context
+    // For mock purposes, we'll use a hardcoded ID or pass it as a parameter.
+    // [Parameter]
+    // public Guid SellerId { get; set; }
+
+    private IEnumerable<Trade>? Trades;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // For demonstration, filtering by a known seller name from mock data.
+        // In a real app, you'd have a service method like GetTradesBySellerIdAsync(SellerId)
+        var allTrades = await TradeService.GetAllTradesAsync();
+        Trades = allTrades.Where(t => t.SellerName == "First Quantum Minerals Zambia" || t.SellerName == "Kansanshi Mining" || t.SellerName == "Barrick Lumwana Mining" || t.SellerName == "Nkana Smelter Operations" || t.SellerName == "Chibuluma Mines" || t.SellerName == "Mufulira Mine" || t.SellerName == "Sentinel Mining Zambia");
+    }
+
+    private void ViewTradeDetails(string tradeId)
+    {
+        NavigationManager.NavigateTo($"/seller/trades/{tradeId}");
+    }
+}

@@ -1,0 +1,40 @@
+@inject IWarrantService WarrantService
+
+@if (Warrant == null)
+{
+    <RadzenText Text="Loading warrant details..." TagName="TagName.P" />
+}
+else
+{
+    <RadzenCard>
+        <RadzenText Text="@($"Warrant #{Warrant.WarrantNumber}")" TagName="TagName.H3" />
+        <RadzenText Text="@($"{Warrant.MetalType} Warrant")" TagName="TagName.H5" Class="mt-3" />
+        <RadzenText Text="@($"<b>Trade ID:</b> {Warrant.TradeId}")" TagName="TagName.P" />
+        <RadzenText Text="@($"<b>Warehouse:</b> {Warrant.WarehouseName}")" TagName="TagName.P" />
+        <RadzenText Text="@($"<b>Quantity:</b> {Warrant.Quantity} tons")" TagName="TagName.P" />
+        <RadzenText Text="@($"<b>Current Owner:</b> {Warrant.CurrentOwner}")" TagName="TagName.P" />
+        <RadzenText Text="@($"<b>Previous Owner:</b> {Warrant.PreviousOwner}")" TagName="TagName.P" />
+        <RadzenText Text="@($"<b>Issue Date:</b> {Warrant.IssueDate.ToShortDateString()}")" TagName="TagName.P" />
+        <RadzenText Text="@($"<b>Transfer Date:</b> {Warrant.TransferDate?.ToShortDateString()}")" TagName="TagName.P" />
+        <RadzenText Text="@($"<b>Quality Grade:</b> {Warrant.QualityGrade}")" TagName="TagName.P" />
+        <RadzenText Text="@($"<b>Lot Number:</b> {Warrant.LotNumber}")" TagName="TagName.P" />
+        <RadzenText Text="@($"<b>Status:</b> {Warrant.Status}")" TagName="TagName.P" />
+        <RadzenText Text="@($"<b>Active:</b> {(Warrant.IsActive ? "Yes" : "No")}")" TagName="TagName.P" />
+        <RadzenText Text="@($"<b>Notes:</b> {Warrant.Notes}")" TagName="TagName.P" />
+    </RadzenCard>
+}
+
+@code {
+    [Parameter]
+    public string WarrantId { get; set; } = string.Empty;
+
+    private Warrant? Warrant;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (!string.IsNullOrEmpty(WarrantId))
+        {
+            Warrant = await WarrantService.GetWarrantByIdAsync(WarrantId);
+        }
+    }
+}

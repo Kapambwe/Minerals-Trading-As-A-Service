@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:viewmodels="clr-namespace:MiningTradingMobileApp.ViewModels"
+             x:Class="MiningTradingMobileApp.Views.BuyerPages.ContractDetails"
+             x:DataType="viewmodels:ContractDetailsViewModel">
+    <VerticalStackLayout>
+        <ActivityIndicator IsRunning="{Binding Trade, Converter={StaticResource NullToBoolConverter}}" IsVisible="{Binding Trade, Converter={StaticResource NullToBoolConverter}}" />
+        <Frame IsVisible="{Binding Trade, Converter={StaticResource NotNullToBoolConverter}}" CornerRadius="10" Padding="15" Margin="10" HasShadow="True">
+            <VerticalStackLayout Spacing="5">
+                <Label Text="{Binding Trade.TradeNumber, StringFormat='Trade #{0}'}" FontSize="Large" FontAttributes="Bold" />
+                <Label Text="{Binding Trade.MetalType, StringFormat='{0} Trade'}" FontSize="Medium" Margin="0,5,0,0" />
+                <Label Text="{Binding Trade.BuyerName, StringFormat='Buyer: {0}'}" />
+                <Label Text="{Binding Trade.SellerName, StringFormat='Seller: {0}'}" />
+                <Label Text="{Binding Trade.Quantity, StringFormat='Quantity: {0} tons'}" />
+                <Label Text="{Binding Trade.PricePerTon, StringFormat='Price per Ton: {0:C}'}" />
+                <Label Text="{Binding Trade.TotalValue, StringFormat='Total Value: {0:C}'}" />
+                <Label Text="{Binding Trade.DeliveryDate, StringFormat='Delivery Date: {0:d}'}" />
+                <Label Text="{Binding Trade.Status, StringFormat='Status: {0}'}" />
+                <Label Text="{Binding Trade.IsNovated, StringFormat='Novated: {0}'}" />
+                <Label IsVisible="{Binding Trade.IsNovated}" Text="{Binding Trade.NovationDate, StringFormat='Novation Date: {0:d}'}" />
+                <Label IsVisible="{Binding Trade.IsNovated}" Text="{Binding Trade.ClearingHouse, StringFormat='Clearing House: {0}'}" />
+                <Label Text="{Binding Trade.Notes, StringFormat='Notes: {0}'}" />
+            </VerticalStackLayout>
+        </Frame>
+    </VerticalStackLayout>
+</ContentView>

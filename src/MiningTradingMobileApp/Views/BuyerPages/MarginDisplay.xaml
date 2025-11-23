@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:viewmodels="clr-namespace:MiningTradingMobileApp.ViewModels"
+             xmlns:models="clr-namespace:MiningTradingMobileApp.Models"
+             x:Class="MiningTradingMobileApp.Views.BuyerPages.MarginDisplay"
+             x:DataType="viewmodels:MarginDisplayViewModel">
+    <ContentView.BindingContext>
+        <viewmodels:MarginDisplayViewModel />
+    </ContentView.BindingContext>
+    <VerticalStackLayout Spacing="10">
+        <Label Text="Current Margins" FontSize="Medium" FontAttributes="Bold" />
+        <ActivityIndicator IsRunning="{Binding IsLoadingMargins}" IsVisible="{Binding IsLoadingMargins}" />
+        <CollectionView ItemsSource="{Binding Margins}" IsVisible="{!Binding IsLoadingMargins}">
+            <CollectionView.EmptyView>
+                <Label Text="No margins found for this trade." HorizontalOptions="Center" VerticalOptions="Center" />
+            </CollectionView.EmptyView>
+            <CollectionView.ItemTemplate>
+                <DataTemplate x:DataType="models:Margin">
+                    <Frame CornerRadius="5" Margin="5" Padding="10" HasShadow="True">
+                        <Grid ColumnDefinitions="Auto, *">
+                            <Label Grid.Column="0" Text="Party:" FontAttributes="Bold" />
+                            <Label Grid.Column="1" Text="{Binding PartyName}" />
+                            <Label Grid.Row="1" Grid.Column="0" Text="Initial Margin:" FontAttributes="Bold" />
+                            <Label Grid.Row="1" Grid.Column="1" Text="{Binding InitialMargin, StringFormat='{0:C}'}" />
+                            <Label Grid.Row="2" Grid.Column="0" Text="Variation Margin:" FontAttributes="Bold" />
+                            <Label Grid.Row="2" Grid.Column="1" Text="{Binding VariationMargin, StringFormat='{0:C}'}" />
+                            <Label Grid.Row="3" Grid.Column="0" Text="Total Margin:" FontAttributes="Bold" />
+                            <Label Grid.Row="3" Grid.Column="1" Text="{Binding TotalMargin, StringFormat='{0:C}'}" />
+                            <Label Grid.Row="4" Grid.Column="0" Text="Status:" FontAttributes="Bold" />
+                            <Label Grid.Row="4" Grid.Column="1" Text="{Binding Status}" />
+                        </Grid>
+                    </Frame>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+        </CollectionView>
+
+        <Label Text="Margin Requests" FontSize="Medium" FontAttributes="Bold" Margin="0,20,0,0" />
+        <ActivityIndicator IsRunning="{Binding IsLoadingMarginRequests}" IsVisible="{Binding IsLoadingMarginRequests}" />
+        <CollectionView ItemsSource="{Binding MarginRequests}" IsVisible="{!Binding IsLoadingMarginRequests}">
+            <CollectionView.EmptyView>
+                <Label Text="No margin requests found for this trade." HorizontalOptions="Center" VerticalOptions="Center" />
+            </CollectionView.EmptyView>
+            <CollectionView.ItemTemplate>
+                <DataTemplate x:DataType="models:MarginRequest">
+                    <Frame CornerRadius="5" Margin="5" Padding="10" HasShadow="True">
+                        <Grid ColumnDefinitions="Auto, *">
+                            <Label Grid.Column="0" Text="Requested Amount:" FontAttributes="Bold" />
+                            <Label Grid.Column="1" Text="{Binding RequestedAmount, StringFormat='{0:C}'}" />
+                            <Label Grid.Row="1" Grid.Column="0" Text="Request Date:" FontAttributes="Bold" />
+                            <Label Grid.Row="1" Grid.Column="1" Text="{Binding RequestDate, StringFormat='{0:d}'}" />
+                            <Label Grid.Row="2" Grid.Column="0" Text="Status:" FontAttributes="Bold" />
+                            <Label Grid.Row="2" Grid.Column="1" Text="{Binding Status}" />
+                        </Grid>
+                    </Frame>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+        </CollectionView>
+    </VerticalStackLayout>
+</ContentView>

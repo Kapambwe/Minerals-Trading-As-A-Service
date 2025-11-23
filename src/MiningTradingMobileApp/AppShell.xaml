@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<Shell
+    x:Class="MiningTradingMobileApp.AppShell"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:local="clr-namespace:MiningTradingMobileApp"
+    Title="MiningTradingMobileApp">
+
+    <TabBar>
+        <Tab Title="Buyer" Icon="buyer_icon.png">
+            <ShellContent
+                Title="View Trades"
+                ContentTemplate="{DataTemplate MiningTradingMobileApp.Views.BuyerPages.TradeList}"
+                Route="BuyerTrades" />
+            <ShellContent
+                Title="Track Contract"
+                ContentTemplate="{DataTemplate MiningTradingMobileApp.Views.BuyerPages.TrackContract}"
+                Route="BuyerTrackContract" />
+            <ShellContent
+                Title="View Margins"
+                ContentTemplate="{DataTemplate MiningTradingMobileApp.Views.BuyerPages.ViewMargins}"
+                Route="BuyerMargins" />
+            <ShellContent
+                Title="Make Payments"
+                ContentTemplate="{DataTemplate MiningTradingMobileApp.Views.BuyerPages.MakePayments}"
+                Route="BuyerMakePayments" />
+            <ShellContent
+                Title="Warrant Status"
+                ContentTemplate="{DataTemplate MiningTradingMobileApp.Views.BuyerPages.WarrantStatus}"
+                Route="BuyerWarrantStatus" />
+        </Tab>
+        <Tab Title="Seller" Icon="seller_icon.png">
+            <ShellContent
+                Title="Mineral Listings"
+                ContentTemplate="{DataTemplate MiningTradingMobileApp.Views.SellerPages.MineralListingList}"
+                Route="SellerMineralListings" />
+            <ShellContent
+                Title="Trade Management"
+                ContentTemplate="{DataTemplate MiningTradingMobileApp.Views.SellerPages.SellerTradeList}"
+                Route="SellerTradeManagement" />
+            <ShellContent
+                Title="Settlement Overview"
+                ContentTemplate="{DataTemplate MiningTradingMobileApp.Views.SellerPages.SettlementList}"
+                Route="SellerSettlementOverview" />
+            <ShellContent
+                Title="Warrant Management"
+                ContentTemplate="{DataTemplate MiningTradingMobileApp.Views.SellerPages.SellerWarrantList}"
+                Route="SellerWarrantManagement" />
+        </Tab>
+    </TabBar>
+
+</Shell>

@@ -1,0 +1,8 @@
+@page "/buyer/margins/{TradeId}"
+
+<MarginDisplay TradeId="@TradeId" />
+
+@code {
+    [Parameter]
+    public string TradeId { get; set; } = string.Empty;
+}

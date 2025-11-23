@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:viewmodels="clr-namespace:MiningTradingMobileApp.ViewModels"
+             x:Class="MiningTradingMobileApp.Views.BuyerPages.PaymentForm"
+             x:DataType="viewmodels:PaymentFormViewModel">
+    <ContentView.BindingContext>
+        <viewmodels:PaymentFormViewModel />
+    </ContentView.BindingContext>
+    <VerticalStackLayout Spacing="10" Padding="10">
+        <Label Text="Make a Payment" FontSize="Large" FontAttributes="Bold" />
+
+        <Grid ColumnDefinitions="Auto, *" RowDefinitions="Auto,Auto,Auto" RowSpacing="5">
+            <Label Grid.Row="0" Grid.Column="0" Text="Amount:" VerticalOptions="Center" />
+            <Entry Grid.Row="0" Grid.Column="1" Placeholder="Enter amount" Keyboard="Numeric" Text="{Binding Amount}" />
+
+            <Label Grid.Row="1" Grid.Column="0" Text="Description:" VerticalOptions="Center" />
+            <Editor Grid.Row="1" Grid.Column="1" Placeholder="Enter description" AutoSize="TextChanges" Text="{Binding Description}" />
+        </Grid>
+
+        <Button Text="Submit Payment" Command="{Binding SubmitPaymentCommand}" HorizontalOptions="Center" Margin="0,20,0,0" />
+    </VerticalStackLayout>
+</ContentView>

@@ -1,0 +1,59 @@
+@inject ISettlementService SettlementService
+@inject NavigationManager NavigationManager
+
+<h3>Your Settlements</h3>
+
+@if (Settlements == null)
+{
+    <RadzenText Text="Loading settlements..." TagName="TagName.P" />
+}
+else if (!Settlements.Any())
+{
+    <RadzenText Text="No settlements found." TagName="TagName.P" />
+}
+else
+{
+    <RadzenDataGrid Data="@Settlements" TItem="Settlement" AllowFiltering="true" AllowPaging="true" PageSize="10" AllowSorting="true">
+        <Columns>
+            <RadzenDataGridColumn TItem="Settlement" Property="SettlementDate" Title="Settlement Date">
+                <Template Context="settlement">
+                    @settlement.SettlementDate.ToShortDateString()
+                </Template>
+            </RadzenDataGridColumn>
+            <RadzenDataGridColumn TItem="Settlement" Property="TradeId" Title="Trade ID" />
+            <RadzenDataGridColumn TItem="Settlement" Property="SettlementAmount" Title="Amount">
+                <Template Context="settlement">
+                    @settlement.SettlementAmount.ToString("C")
+                </Template>
+            </RadzenDataGridColumn>
+            <RadzenDataGridColumn TItem="Settlement" Property="SettlementType" Title="Type" />
+            <RadzenDataGridColumn TItem="Settlement" Property="Status" Title="Status" />
+            <RadzenDataGridColumn TItem="Settlement" Context="settlement" Filterable="false" Sortable="false" TextAlign="TextAlign.Center" Width="100px">
+                <Template Context="settlement">
+                    <RadzenButton Icon="info" ButtonStyle="ButtonStyle.Info" Variant="Variant.Flat" Shade="Shade.Lighter" Click="@(() => ViewSettlementDetails(settlement.Id))" />
+                </Template>
+            </RadzenDataGridColumn>
+        </Columns>
+    </RadzenDataGrid>
+}
+
+@code {
+    // In a real application, SellerId would likely come from authentication context
+    // For mock purposes, we'll use a hardcoded ID or pass it as a parameter.
+    // [Parameter]
+    // public Guid SellerId { get; set; }
+
+    private IEnumerable<Settlement>? Settlements;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // For demonstration, we'll fetch all settlements. In a real app, you'd filter by seller.
+        Settlements = await SettlementService.GetAllSettlementsAsync();
+    }
+
+    private void ViewSettlementDetails(string settlementId)
+    {
+        // Navigate to a detail page for the settlement
+        NavigationManager.NavigateTo($"/seller/settlements/{settlementId}");
+    }
+}

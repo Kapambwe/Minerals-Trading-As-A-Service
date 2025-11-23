@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:viewmodels="clr-namespace:MiningTradingMobileApp.ViewModels"
+             xmlns:models="clr-namespace:MiningTradingMobileApp.Models"
+             x:Class="MiningTradingMobileApp.Views.SellerPages.SellerWarrantList"
+             x:DataType="viewmodels:SellerWarrantListViewModel">
+    <ContentView.BindingContext>
+        <viewmodels:SellerWarrantListViewModel />
+    </ContentView.BindingContext>
+    <VerticalStackLayout Spacing="10">
+        <Label Text="Your Warrants" FontSize="Large" FontAttributes="Bold" />
+        <ActivityIndicator IsRunning="{Binding IsLoading}" IsVisible="{Binding IsLoading}" />
+        <CollectionView ItemsSource="{Binding Warrants}" IsVisible="{!Binding IsLoading}">
+            <CollectionView.EmptyView>
+                <Label Text="No warrants found." HorizontalOptions="Center" VerticalOptions="Center" />
+            </CollectionView.EmptyView>
+            <CollectionView.ItemTemplate>
+                <DataTemplate x:DataType="models:Warrant">
+                    <Frame CornerRadius="5" Margin="5" Padding="10" HasShadow="True">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <VerticalStackLayout Grid.Column="0">
+                                <Label Text="{Binding WarrantNumber, StringFormat='Warrant #{0}'}" FontAttributes="Bold" />
+                                <Label Text="{Binding MetalType, StringFormat='Metal Type: {0}'}" />
+                                <Label Text="{Binding Quantity, StringFormat='Quantity: {0} tons'}" />
+                                <Label Text="{Binding CurrentOwner, StringFormat='Current Owner: {0}'}" />
+                                <Label Text="{Binding Status, StringFormat='Status: {0}'}" />
+                            </VerticalStackLayout>
+                            <Button Grid.Column="1" Text="View Details" Command="{Binding Source={RelativeSource AncestorType={x:Type viewmodels:SellerWarrantListViewModel}}, Path=ViewWarrantDetailsCommand}" CommandParameter="{Binding WarrantNumber}" />
+                        </Grid>
+                    </Frame>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+        </CollectionView>
+    </VerticalStackLayout>
+</ContentView>

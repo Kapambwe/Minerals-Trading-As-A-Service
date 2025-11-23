@@ -1,0 +1,49 @@
+@inject IMineralListingService MineralListingService
+@inject NavigationManager NavigationManager
+
+<h3>Your Mineral Listings</h3>
+
+@if (MineralListings == null)
+{
+    <RadzenText Text="Loading mineral listings..." TagName="TagName.P" />
+}
+else if (!MineralListings.Any())
+{
+    <RadzenText Text="No mineral listings found." TagName="TagName.P" />
+}
+else
+{
+    <RadzenDataGrid Data="@MineralListings" TItem="MineralListing" AllowFiltering="true" AllowPaging="true" PageSize="10" AllowSorting="true">
+        <Columns>
+            <RadzenDataGridColumn TItem="MineralListing" Property="MetalType" Title="Metal Type" />
+            <RadzenDataGridColumn TItem="MineralListing" Property="Quantity" Title="Quantity" />
+            <RadzenDataGridColumn TItem="MineralListing" Property="PricePerTon" Title="Price per Ton">
+                <Template Context="listing">
+                    @listing.PricePerTon.ToString("C")
+                </Template>
+            </RadzenDataGridColumn>
+            <RadzenDataGridColumn TItem="MineralListing" Property="Status" Title="Status" />
+            <RadzenDataGridColumn TItem="MineralListing" Context="listing" Filterable="false" Sortable="false" TextAlign="TextAlign.Center" Width="100px">
+                <Template Context="listing">
+                    <RadzenButton Icon="info" ButtonStyle="ButtonStyle.Info" Variant="Variant.Flat" Shade="Shade.Lighter" Click="@(() => ViewListingDetails(listing.Id))" />
+                </Template>
+            </RadzenDataGridColumn>
+        </Columns>
+    </RadzenDataGrid>
+}
+
+@code {
+    private IEnumerable<MineralListing>? MineralListings;
+
+    protected override async Task OnInitializedAsync()
+    {
+        MineralListings = await MineralListingService.GetAllMineralListingsAsync();
+    }
+
+    private void ViewListingDetails(string listingId)
+    {
+        // Navigate to a detail page for the mineral listing
+        // For now, just an example, actual navigation might be different
+        NavigationManager.NavigateTo($"/seller/mineral-listings/{listingId}");
+    }
+}

@@ -1,0 +1,92 @@
+@inject IMarginService MarginService
+@inject IMarginRequestService MarginRequestService
+
+@if (string.IsNullOrEmpty(TradeId))
+{
+    <RadzenText Text="Please select a trade to view margin details." TagName="TagName.P" />
+}
+else
+{
+    <RadzenCard>
+        <RadzenText Text="Current Margins" TagName="TagName.H4" Class="mb-3" />
+        @if (Margins == null)
+        {
+            <RadzenText Text="Loading margins..." TagName="TagName.P" />
+        }
+        else if (!Margins.Any())
+        {
+            <RadzenText Text="No margins found for this trade." TagName="TagName.P" />
+        }
+        else
+        {
+            <RadzenDataGrid Data="@Margins" TItem="Margin" AllowFiltering="true" AllowPaging="true" PageSize="5" AllowSorting="true">
+                <Columns>
+                    <RadzenDataGridColumn TItem="Margin" Property="PartyName" Title="Party" />
+                    <RadzenDataGridColumn TItem="Margin" Property="InitialMargin" Title="Initial Margin">
+                        <Template Context="margin">
+                            @margin.InitialMargin.ToString("C")
+                        </Template>
+                    </RadzenDataGridColumn>
+                    <RadzenDataGridColumn TItem="Margin" Property="VariationMargin" Title="Variation Margin">
+                        <Template Context="margin">
+                            @margin.VariationMargin.ToString("C")
+                        </Template>
+                    </RadzenDataGridColumn>
+                    <RadzenDataGridColumn TItem="Margin" Property="TotalMargin" Title="Total Margin">
+                        <Template Context="margin">
+                            @margin.TotalMargin.ToString("C")
+                        </Template>
+                    </RadzenDataGridColumn>
+                    <RadzenDataGridColumn TItem="Margin" Property="Status" Title="Status" />
+                </Columns>
+            </RadzenDataGrid>
+        }
+    </RadzenCard>
+
+    <RadzenCard Class="mt-4">
+        <RadzenText Text="Margin Requests" TagName="TagName.H4" Class="mb-3" />
+        @if (MarginRequests == null)
+        {
+            <RadzenText Text="Loading margin requests..." TagName="TagName.P" />
+        }
+        else if (!MarginRequests.Any())
+        {
+            <RadzenText Text="No margin requests found for this trade." TagName="TagName.P" />
+        }
+        else
+        {
+            <RadzenDataGrid Data="@MarginRequests" TItem="MarginRequest" AllowFiltering="true" AllowPaging="true" PageSize="5" AllowSorting="true">
+                <Columns>
+                    <RadzenDataGridColumn TItem="MarginRequest" Property="RequestedAmount" Title="Requested Amount">
+                        <Template Context="request">
+                            @request.RequestedAmount.ToString("C")
+                        </Template>
+                    </RadzenDataGridColumn>
+                    <RadzenDataGridColumn TItem="MarginRequest" Property="RequestDate" Title="Request Date">
+                        <Template Context="request">
+                            @request.RequestDate.ToShortDateString()
+                        </Template>
+                    </RadzenDataGridColumn>
+                    <RadzenDataGridColumn TItem="MarginRequest" Property="Status" Title="Status" />
+                </Columns>
+            </RadzenDataGrid>
+        }
+    </RadzenCard>
+}
+
+@code {
+    [Parameter]
+    public string TradeId { get; set; } = string.Empty;
+
+    private IEnumerable<Margin>? Margins;
+    private IEnumerable<MarginRequest>? MarginRequests;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (!string.IsNullOrEmpty(TradeId))
+        {
+            Margins = await MarginService.GetMarginsByTradeIdAsync(TradeId);
+            MarginRequests = await MarginRequestService.GetMarginRequestsForTradeAsync(TradeId);
+        }
+    }
+}

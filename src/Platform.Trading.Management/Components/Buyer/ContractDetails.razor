@@ -1,0 +1,42 @@
+@inject ITradeService TradeService
+
+@if (Trade == null)
+{
+    <RadzenText Text="Loading contract details..." TagName="TagName.P" />
+}
+else
+{
+    <RadzenCard>
+        <RadzenText Text="@($"Trade #{Trade.TradeNumber}")" TagName="TagName.H3" />
+        <RadzenText Text="@($"{Trade.MetalType} Trade")" TagName="TagName.H5" Class="mt-3" />
+        <RadzenText Text="@($"<b>Buyer:</b> {Trade.BuyerName}")" TagName="TagName.P" />
+        <RadzenText Text="@($"<b>Seller:</b> {Trade.SellerName}")" TagName="TagName.P" />
+        <RadzenText Text="@($"<b>Quantity:</b> {Trade.Quantity} tons")" TagName="TagName.P" />
+        <RadzenText Text="@($"<b>Price per Ton:</b> {Trade.PricePerTon:C}")" TagName="TagName.P" />
+        <RadzenText Text="@($"<b>Total Value:</b> {Trade.TotalValue:C}")" TagName="TagName.P" />
+        <RadzenText Text="@($"<b>Delivery Date:</b> {Trade.DeliveryDate.ToShortDateString()}")" TagName="TagName.P" />
+        <RadzenText Text="@($"<b>Status:</b> {Trade.Status}")" TagName="TagName.P" />
+        <RadzenText Text="@($"<b>Novated:</b> {(Trade.IsNovated ? "Yes" : "No")}")" TagName="TagName.P" />
+        @if (Trade.IsNovated)
+        {
+            <RadzenText Text="@($"<b>Novation Date:</b> {Trade.NovationDate?.ToShortDateString()}")" TagName="TagName.P" />
+            <RadzenText Text="@($"<b>Clearing House:</b> {Trade.ClearingHouse}")" TagName="TagName.P" />
+        }
+        <RadzenText Text="@($"<b>Notes:</b> {Trade.Notes}")" TagName="TagName.P" />
+    </RadzenCard>
+}
+
+@code {
+    [Parameter]
+    public string TradeId { get; set; } = string.Empty;
+
+    private Trade? Trade;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (!string.IsNullOrEmpty(TradeId))
+        {
+            Trade = await TradeService.GetTradeByIdAsync(TradeId);
+        }
+    }
+}

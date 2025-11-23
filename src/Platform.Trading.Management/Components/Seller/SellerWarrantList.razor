@@ -1,0 +1,53 @@
+@inject IWarrantService WarrantService
+@inject NavigationManager NavigationManager
+
+<h3>Your Warrants</h3>
+
+@if (Warrants == null)
+{
+    <RadzenText Text="Loading warrants..." TagName="TagName.P" />
+}
+else if (!Warrants.Any())
+{
+    <RadzenText Text="No warrants found." TagName="TagName.P" />
+}
+else
+{
+    <RadzenDataGrid Data="@Warrants" TItem="Warrant" AllowFiltering="true" AllowPaging="true" PageSize="10" AllowSorting="true">
+        <Columns>
+            <RadzenDataGridColumn TItem="Warrant" Property="WarrantNumber" Title="Warrant Number" />
+            <RadzenDataGridColumn TItem="Warrant" Property="MetalType" Title="Metal Type" />
+            <RadzenDataGridColumn TItem="Warrant" Property="Quantity" Title="Quantity" />
+            <RadzenDataGridColumn TItem="Warrant" Property="CurrentOwner" Title="Current Owner" />
+            <RadzenDataGridColumn TItem="Warrant" Property="Status" Title="Status" />
+            <RadzenDataGridColumn TItem="Warrant" Context="warrant" Filterable="false" Sortable="false" TextAlign="TextAlign.Center" Width="100px">
+                <Template Context="warrant">
+                    <RadzenButton Icon="info" ButtonStyle="ButtonStyle.Info" Variant="Variant.Flat" Shade="Shade.Lighter" Click="@(() => ViewWarrantDetails(warrant.Id))" />
+                </Template>
+            </RadzenDataGridColumn>
+        </Columns>
+    </RadzenDataGrid>
+}
+
+@code {
+    // In a real application, SellerId would likely come from authentication context
+    // For mock purposes, we'll use a hardcoded ID or pass it as a parameter.
+    // [Parameter]
+    // public Guid SellerId { get; set; }
+
+    private IEnumerable<Warrant>? Warrants;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // For demonstration, filtering by a known seller name from mock data.
+        // In a real app, you'd have a service method like GetWarrantsBySellerIdAsync(SellerId)
+        var allWarrants = await WarrantService.GetAllWarrantsAsync();
+        Warrants = allWarrants.Where(w => w.PreviousOwner == "First Quantum Minerals Zambia" || w.PreviousOwner == "Kansanshi Mining" || w.PreviousOwner == "Barrick Lumwana Mining" || w.PreviousOwner == "Nkana Smelter Operations" || w.PreviousOwner == "Chibuluma Mines" || w.PreviousOwner == "Mufulira Mine" || w.PreviousOwner == "Sentinel Mining Zambia");
+    }
+
+    private void ViewWarrantDetails(string warrantId)
+    {
+        NavigationManager.NavigateTo($"/seller/warrants/{warrantId}");
+    }
+    }
+}

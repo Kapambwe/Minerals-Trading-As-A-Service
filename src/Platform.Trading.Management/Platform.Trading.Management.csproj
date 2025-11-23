@@ -16,4 +16,9 @@
     <PackageReference Include="Radzen.Blazor" Version="5.9.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Pages\BuyerPages\" />
+    <Folder Include="Pages\SellerPages\" />
+  </ItemGroup>
+
 </Project>

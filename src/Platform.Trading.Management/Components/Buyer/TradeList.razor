@@ -1,0 +1,48 @@
+@inject ITradeService TradeService
+@inject NavigationManager NavigationManager
+
+<h3>Your Trades</h3>
+
+@if (Trades == null)
+{
+    <p>Loading trades...</p>
+}
+else if (!Trades.Any())
+{
+    <p>No trades found.</p>
+}
+else
+{
+    <RadzenDataGrid Data="@Trades" TItem="Trade" AllowFiltering="true" AllowPaging="true" PageSize="10" AllowSorting="true">
+        <Columns>
+            <RadzenDataGridColumn TItem="Trade" Property="TradeNumber" Title="Trade Number" />
+            <RadzenDataGridColumn TItem="Trade" Property="MetalType" Title="Metal Type" />
+            <RadzenDataGridColumn TItem="Trade" Property="Quantity" Title="Quantity" />
+            <RadzenDataGridColumn TItem="Trade" Property="TotalValue" Title="Total Value">
+                <Template Context="trade">
+                    @trade.TotalValue.ToString("C")
+                </Template>
+            </RadzenDataGridColumn>
+            <RadzenDataGridColumn TItem="Trade" Property="Status" Title="Status" />
+            <RadzenDataGridColumn TItem="Trade" Context="trade" Filterable="false" Sortable="false" TextAlign="TextAlign.Center" Width="100px">
+                <Template Context="trade">
+                    <RadzenButton Icon="info" ButtonStyle="ButtonStyle.Info" Variant="Variant.Flat" Shade="Shade.Lighter" Click="@(() => ViewTradeDetails(trade.Id))" />
+                </Template>
+            </RadzenDataGridColumn>
+        </Columns>
+    </RadzenDataGrid>
+}
+
+@code {
+    private IEnumerable<Trade>? Trades;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Trades = await TradeService.GetAllTradesAsync();
+    }
+
+    private void ViewTradeDetails(string tradeId)
+    {
+        NavigationManager.NavigateTo($"/buyer/contract/{tradeId}");
+    }
+}

@@ -13,8 +13,8 @@ public class MockMarginService : IMarginService
         {
             new Margin
             {
-                Id = "MRG001",
-                TradeId = "TRD001",
+                Id = "1a2b3c4d-5e6f-7890-1234-567890abcdef",
+                TradeId = "a1b2c3d4-e5f6-7890-1234-567890abcdef",
                 TradeNumber = "ZME-2025-001",
                 InitialMargin = 212500,
                 VariationMargin = 15000,
@@ -28,8 +28,8 @@ public class MockMarginService : IMarginService
             },
             new Margin
             {
-                Id = "MRG002",
-                TradeId = "TRD001",
+                Id = "2b3c4d5e-6f7a-8901-2345-67890abcdef0",
+                TradeId = "a1b2c3d4-e5f6-7890-1234-567890abcdef",
                 TradeNumber = "ZME-2025-001",
                 InitialMargin = 212500,
                 VariationMargin = -15000,
@@ -43,8 +43,8 @@ public class MockMarginService : IMarginService
             },
             new Margin
             {
-                Id = "MRG003",
-                TradeId = "TRD002",
+                Id = "3c4d5e6f-7a8b-9012-3456-7890abcdef01",
+                TradeId = "b2c3d4e5-f6a7-8901-2345-67890abcdef0",
                 TradeNumber = "ZME-2025-002",
                 InitialMargin = 420000,
                 VariationMargin = 25000,
@@ -58,8 +58,8 @@ public class MockMarginService : IMarginService
             },
             new Margin
             {
-                Id = "MRG004",
-                TradeId = "TRD002",
+                Id = "4d5e6f7a-8b9c-0123-4567-890abcdef012",
+                TradeId = "b2c3d4e5-f6a7-8901-2345-67890abcdef0",
                 TradeNumber = "ZME-2025-002",
                 InitialMargin = 420000,
                 VariationMargin = -25000,
@@ -73,8 +73,8 @@ public class MockMarginService : IMarginService
             },
             new Margin
             {
-                Id = "MRG005",
-                TradeId = "TRD003",
+                Id = "5e6f7a8b-9c0d-1234-5678-90abcdef0123",
+                TradeId = "c3d4e5f6-a7b8-9012-3456-7890abcdef01",
                 TradeNumber = "ZME-2025-003",
                 InitialMargin = 256500,
                 VariationMargin = -10000,
@@ -88,8 +88,8 @@ public class MockMarginService : IMarginService
             },
             new Margin
             {
-                Id = "MRG006",
-                TradeId = "TRD003",
+                Id = "6f7a8b9c-0d1e-2345-6789-0abcdef01234",
+                TradeId = "c3d4e5f6-a7b8-9012-3456-7890abcdef01",
                 TradeNumber = "ZME-2025-003",
                 InitialMargin = 256500,
                 VariationMargin = 10000,
@@ -103,8 +103,8 @@ public class MockMarginService : IMarginService
             },
             new Margin
             {
-                Id = "MRG007",
-                TradeId = "TRD004",
+                Id = "7a8b9c0d-1e2f-3456-7890-abcdef012345",
+                TradeId = "d4e5f6a7-b8c9-0123-4567-890abcdef012",
                 TradeNumber = "ZME-2025-004",
                 InitialMargin = 129000,
                 VariationMargin = 7500,
@@ -118,8 +118,8 @@ public class MockMarginService : IMarginService
             },
             new Margin
             {
-                Id = "MRG008",
-                TradeId = "TRD005",
+                Id = "8b9c0d1e-2f3a-4567-8901-abcdef0123456",
+                TradeId = "e5f6a7b8-c9d0-1234-5678-90abcdef0123",
                 TradeNumber = "ZME-2025-005",
                 InitialMargin = 348000,
                 VariationMargin = 20000,
@@ -153,7 +153,7 @@ public class MockMarginService : IMarginService
 
     public Task<Margin> CreateMarginAsync(Margin margin)
     {
-        margin.Id = $"MRG{_margins.Count + 1:D3}";
+        margin.Id = Guid.NewGuid().ToString();
         margin.TotalMargin = margin.InitialMargin + margin.VariationMargin;
         _margins.Add(margin);
         return Task.FromResult(margin);

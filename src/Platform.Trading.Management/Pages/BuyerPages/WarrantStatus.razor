@@ -1,0 +1,8 @@
+@page "/buyer/warrant-status/{WarrantId}"
+
+<WarrantDetails WarrantId="@WarrantId" />
+
+@code {
+    [Parameter]
+    public string WarrantId { get; set; } = string.Empty;
+}

@@ -13,9 +13,9 @@ public class MockWarrantService : IWarrantService
         {
             new Warrant
             {
-                Id = "WRT001",
+                Id = "11223344-5566-7788-9900-aabbccddeeff",
                 WarrantNumber = "WRN-2025-001",
-                TradeId = "TRD001",
+                TradeId = "a1b2c3d4-e5f6-7890-1234-567890abcdef",
                 TradeNumber = "ZME-2025-001",
                 WarehouseId = "WH001",
                 WarehouseName = "Ndola Metals Storage Ltd.",
@@ -33,9 +33,9 @@ public class MockWarrantService : IWarrantService
             },
             new Warrant
             {
-                Id = "WRT002",
+                Id = "22334455-6677-8899-0011-aabbccddeeff",
                 WarrantNumber = "WRN-2025-002",
-                TradeId = "TRD002",
+                TradeId = "b2c3d4e5-f6a7-8901-2345-67890abcdef0",
                 TradeNumber = "ZME-2025-002",
                 WarehouseId = "WH002",
                 WarehouseName = "Kitwe Metals Depot",
@@ -53,9 +53,9 @@ public class MockWarrantService : IWarrantService
             },
             new Warrant
             {
-                Id = "WRT003",
+                Id = "33445566-7788-9900-1122-aabbccddeeff",
                 WarrantNumber = "WRN-2025-003",
-                TradeId = "TRD003",
+                TradeId = "c3d4e5f6-a7b8-9012-3456-7890abcdef01",
                 TradeNumber = "ZME-2025-003",
                 WarehouseId = "WH004",
                 WarehouseName = "Chingola Metals Warehouse",
@@ -73,9 +73,9 @@ public class MockWarrantService : IWarrantService
             },
             new Warrant
             {
-                Id = "WRT004",
+                Id = "44556677-8899-0011-2233-aabbccddeeff",
                 WarrantNumber = "WRN-2025-004",
-                TradeId = "TRD006",
+                TradeId = "f6a7b8c9-d0e1-2345-6789-0abcdef01234",
                 TradeNumber = "ZME-2025-006",
                 WarehouseId = "WH007",
                 WarehouseName = "Mufulira Metals Storage",
@@ -93,9 +93,9 @@ public class MockWarrantService : IWarrantService
             },
             new Warrant
             {
-                Id = "WRT005",
+                Id = "55667788-9900-1122-3344-aabbccddeeff",
                 WarrantNumber = "WRN-2025-005",
-                TradeId = "TRD007",
+                TradeId = "a0b1c2d3-e4f5-6789-0123-456789abcdef",
                 TradeNumber = "ZME-2025-007",
                 WarehouseId = "WH006",
                 WarehouseName = "Kalulushi Metal Exchange Warehouse",
@@ -133,7 +133,7 @@ public class MockWarrantService : IWarrantService
 
     public Task<Warrant> CreateWarrantAsync(Warrant warrant)
     {
-        warrant.Id = $"WRT{_warrants.Count + 1:D3}";
+        warrant.Id = Guid.NewGuid().ToString();
         warrant.WarrantNumber = $"WRN-2025-{_warrants.Count + 1:D3}";
         _warrants.Add(warrant);
         return Task.FromResult(warrant);
@@ -173,3 +173,4 @@ public class MockWarrantService : IWarrantService
         return Task.FromResult(warrant!);
     }
 }
+
