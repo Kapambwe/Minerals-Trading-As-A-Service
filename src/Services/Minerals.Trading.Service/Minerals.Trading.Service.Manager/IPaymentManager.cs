@@ -10,4 +10,7 @@ public interface IPaymentManager
     Task<Payment> CreatePaymentAsync(Payment payment);
     Task<Payment> UpdatePaymentAsync(Payment payment);
     Task<bool> DeletePaymentAsync(string id);
+    Task<bool> ValidatePaymentAsync(Payment payment);
+    Task<decimal> GetTotalPaymentsForTradeAsync(string tradeId);
+    Task<bool> IsTradeFullyPaidAsync(string tradeId);
 }

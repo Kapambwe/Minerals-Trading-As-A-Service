@@ -59,7 +59,8 @@ public class TradeManagerTests
             MetalType = MetalType.Copper,
             Quantity = 100,
             PricePerTon = 5000,
-            TotalValue = 500000
+            TotalValue = 500000,
+            DeliveryDate = DateTime.Now.AddMonths(1)
         });
         
         await manager.CreateTradeAsync(new Trade 
@@ -69,7 +70,8 @@ public class TradeManagerTests
             MetalType = MetalType.Gold,
             Quantity = 50,
             PricePerTon = 60000,
-            TotalValue = 3000000
+            TotalValue = 3000000,
+            DeliveryDate = DateTime.Now.AddMonths(2)
         });
 
         // Act
@@ -93,8 +95,12 @@ public class TradeManagerTests
             MetalType = MetalType.Copper,
             Quantity = 100,
             PricePerTon = 5000,
-            TotalValue = 500000
+            TotalValue = 500000,
+            DeliveryDate = DateTime.Now.AddMonths(1)
         });
+
+        // Confirm trade first (required before novation)
+        await manager.ConfirmTradeAsync(trade.Id);
 
         // Act
         var result = await manager.NovateTradeAsync(trade.Id);
@@ -118,7 +124,8 @@ public class TradeManagerTests
             MetalType = MetalType.Copper,
             Quantity = 100,
             PricePerTon = 5000,
-            TotalValue = 500000
+            TotalValue = 500000,
+            DeliveryDate = DateTime.Now.AddMonths(1)
         });
 
         // Act
@@ -141,7 +148,8 @@ public class TradeManagerTests
             MetalType = MetalType.Copper,
             Quantity = 100,
             PricePerTon = 5000,
-            TotalValue = 500000
+            TotalValue = 500000,
+            DeliveryDate = DateTime.Now.AddMonths(1)
         });
 
         // Act

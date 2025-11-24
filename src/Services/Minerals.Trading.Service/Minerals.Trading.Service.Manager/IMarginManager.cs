@@ -10,4 +10,7 @@ public interface IMarginManager
     Task<Margin> CreateMarginAsync(Margin margin);
     Task<Margin> UpdateMarginAsync(Margin margin);
     Task<bool> DeleteMarginAsync(string id);
+    Task<Margin> CalculateInitialMarginAsync(string tradeId, decimal marginPercentage);
+    Task<Margin> CalculateVariationMarginAsync(string tradeId, decimal currentMarketPrice);
+    Task<decimal> GetTotalMarginRequirementAsync(string tradeId);
 }

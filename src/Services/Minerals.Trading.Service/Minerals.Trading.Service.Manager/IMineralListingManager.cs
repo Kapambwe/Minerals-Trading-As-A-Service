@@ -11,4 +11,7 @@ public interface IMineralListingManager
     Task<bool> DeleteMineralListingAsync(string id);
     Task<IEnumerable<MineralListing>> GetAvailableMineralListingsAsync();
     Task<MineralListing> UpdateListingStatusAsync(string listingId, string status);
+    Task<bool> ValidateListingAsync(MineralListing listing);
+    Task<IEnumerable<MineralListing>> GetListingsByMetalTypeAsync(MetalType metalType);
+    Task<bool> CheckPriceRangeAsync(MetalType metalType, decimal pricePerTon);
 }

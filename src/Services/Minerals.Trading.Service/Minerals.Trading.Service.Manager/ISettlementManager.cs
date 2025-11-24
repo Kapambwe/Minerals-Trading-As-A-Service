@@ -11,4 +11,7 @@ public interface ISettlementManager
     Task<Settlement> UpdateSettlementAsync(Settlement settlement);
     Task<bool> DeleteSettlementAsync(string id);
     Task<Settlement> CompleteSettlementAsync(string settlementId);
+    Task<Settlement> ProcessPhysicalSettlementAsync(string tradeId, string warrantNumber, string warehouseLocation);
+    Task<Settlement> ProcessCashSettlementAsync(string tradeId, decimal finalPrice);
+    Task<bool> ValidateSettlementAsync(Settlement settlement);
 }

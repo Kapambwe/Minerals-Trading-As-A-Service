@@ -11,4 +11,6 @@ public interface IWarrantManager
     Task<Warrant> UpdateWarrantAsync(Warrant warrant);
     Task<bool> DeleteWarrantAsync(string id);
     Task<Warrant> TransferWarrantAsync(string warrantId, string newOwner);
+    Task<bool> ValidateWarrantAsync(Warrant warrant);
+    Task<bool> VerifyWarehouseCapacityAsync(string warehouseId, decimal additionalQuantity);
 }
