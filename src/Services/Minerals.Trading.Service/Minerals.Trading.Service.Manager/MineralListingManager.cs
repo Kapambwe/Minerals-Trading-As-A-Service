@@ -19,7 +19,7 @@ public class MineralListingManager : IMineralListingManager
         { MetalType.Nickel, (15000m, 30000m) },
         { MetalType.Lead, (1800m, 3000m) },
         { MetalType.Tin, (25000m, 40000m) },
-        { MetalType.Gold, (55000000m, 65000000m) }, // Gold is per ton, much higher
+        { MetalType.Gold, (64000000m, 80000000m) }, // Gold per ton (~32,150 troy oz * $2000-2500/oz)
         { MetalType.Cobalt, (30000m, 50000m) }
     };
 

@@ -100,12 +100,13 @@ public class WarrantManager : IWarrantManager
             throw new InvalidOperationException("New owner cannot be the same as current owner");
         }
 
+        var transferDate = DateTime.Now;
         warrant.PreviousOwner = warrant.CurrentOwner;
         warrant.CurrentOwner = newOwner;
-        warrant.TransferDate = DateTime.Now;
+        warrant.TransferDate = transferDate;
         warrant.Notes = string.IsNullOrEmpty(warrant.Notes)
-            ? $"Transferred to {newOwner} on {DateTime.Now:yyyy-MM-dd}"
-            : $"{warrant.Notes}\nTransferred to {newOwner} on {DateTime.Now:yyyy-MM-dd}";
+            ? $"Transferred to {newOwner} on {transferDate:yyyy-MM-dd}"
+            : $"{warrant.Notes}\nTransferred to {newOwner} on {transferDate:yyyy-MM-dd}";
         
         await _context.SaveChangesAsync();
         return warrant;
