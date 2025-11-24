@@ -11,4 +11,7 @@ public interface ITradeManager
     Task<bool> DeleteTradeAsync(string id);
     Task<Trade> NovateTradeAsync(string tradeId);
     Task<Trade> ConfirmTradeAsync(string tradeId);
+    Task<Trade> CancelTradeAsync(string tradeId, string reason);
+    Task<bool> ValidateTradeAsync(Trade trade);
+    Task<IEnumerable<Trade>> GetTradesByStatusAsync(TradeStatus status);
 }

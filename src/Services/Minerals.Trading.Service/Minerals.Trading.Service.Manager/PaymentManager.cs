@@ -7,6 +7,8 @@ namespace Minerals.Trading.Service.Manager;
 public class PaymentManager : IPaymentManager
 {
     private readonly TradingDbContext _context;
+    private const decimal PaymentBufferPercentage = 1.1m; // Allow 10% buffer for fees
+    private const decimal FullPaymentThreshold = 0.99m; // Consider paid if within 1% of trade value
 
     public PaymentManager(TradingDbContext context)
     {
@@ -32,6 +34,12 @@ public class PaymentManager : IPaymentManager
 
     public async Task<Payment> CreatePaymentAsync(Payment payment)
     {
+        // Validate payment
+        if (!await ValidatePaymentAsync(payment))
+        {
+            throw new InvalidOperationException("Payment validation failed");
+        }
+
         payment.Id = Guid.NewGuid().ToString();
         
         _context.Payments.Add(payment);
@@ -63,5 +71,61 @@ public class PaymentManager : IPaymentManager
         _context.Payments.Remove(payment);
         await _context.SaveChangesAsync();
         return true;
+    }
+
+    public async Task<bool> ValidatePaymentAsync(Payment payment)
+    {
+        if (string.IsNullOrWhiteSpace(payment.TradeId))
+        {
+            throw new ArgumentException("Trade ID is required");
+        }
+
+        var trade = await _context.Trades.FindAsync(payment.TradeId);
+        if (trade == null)
+        {
+            throw new KeyNotFoundException($"Trade with ID {payment.TradeId} not found");
+        }
+
+        if (payment.Amount <= 0)
+        {
+            throw new ArgumentException("Payment amount must be greater than zero");
+        }
+
+        // Check if total payments would exceed trade value
+        var existingPayments = await GetTotalPaymentsForTradeAsync(payment.TradeId);
+        var totalWithNewPayment = existingPayments + payment.Amount;
+
+        if (totalWithNewPayment > trade.TotalValue * PaymentBufferPercentage)
+        {
+            throw new InvalidOperationException(
+                $"Total payments (${totalWithNewPayment:F2}) would exceed trade value (${trade.TotalValue:F2}) by more than 10%");
+        }
+
+        if (string.IsNullOrWhiteSpace(payment.Description))
+        {
+            throw new ArgumentException("Payment description is required");
+        }
+
+        return true;
+    }
+
+    public async Task<decimal> GetTotalPaymentsForTradeAsync(string tradeId)
+    {
+        var payments = await GetPaymentsByTradeIdAsync(tradeId);
+        return payments.Sum(p => p.Amount);
+    }
+
+    public async Task<bool> IsTradeFullyPaidAsync(string tradeId)
+    {
+        var trade = await _context.Trades.FindAsync(tradeId);
+        if (trade == null)
+        {
+            throw new KeyNotFoundException($"Trade with ID {tradeId} not found");
+        }
+
+        var totalPayments = await GetTotalPaymentsForTradeAsync(tradeId);
+        
+        // Consider fully paid if payments are within 1% of trade value
+        return totalPayments >= trade.TotalValue * FullPaymentThreshold;
     }
 }
