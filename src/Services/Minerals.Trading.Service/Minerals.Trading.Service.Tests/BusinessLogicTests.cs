@@ -410,6 +410,7 @@ public class BusinessLogicTests
 
         // Assert
         var updatedTrade = await tradeManager.GetTradeByIdAsync(trade.Id);
+        Assert.NotNull(updatedTrade);
         Assert.Equal(TradeStatus.Settled, updatedTrade.Status);
     }
 

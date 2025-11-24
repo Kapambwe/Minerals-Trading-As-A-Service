@@ -7,6 +7,8 @@ namespace Minerals.Trading.Service.Manager;
 public class MineralListingManager : IMineralListingManager
 {
     private readonly TradingDbContext _context;
+    private const decimal PriceBufferLower = 0.8m; // 20% below minimum
+    private const decimal PriceBufferUpper = 1.2m; // 20% above maximum
     
     // Market price ranges for validation (per metric ton in USD)
     private static readonly Dictionary<MetalType, (decimal Min, decimal Max)> MarketPriceRanges = new()
@@ -186,8 +188,8 @@ public class MineralListingManager : IMineralListingManager
         var (min, max) = MarketPriceRanges[metalType];
         
         // Allow 20% deviation outside the range for flexibility
-        var minWithBuffer = min * 0.8m;
-        var maxWithBuffer = max * 1.2m;
+        var minWithBuffer = min * PriceBufferLower;
+        var maxWithBuffer = max * PriceBufferUpper;
         
         return Task.FromResult(pricePerTon >= minWithBuffer && pricePerTon <= maxWithBuffer);
     }

@@ -9,6 +9,7 @@ public class TradeManager : ITradeManager
     private readonly TradingDbContext _context;
     private const decimal MinTradeValue = 1000m; // Minimum trade value in USD
     private const decimal MaxQuantity = 10000m; // Maximum quantity per trade in metric tons
+    private const decimal ValueComparisonTolerance = 0.01m; // Tolerance for decimal comparisons
 
     public TradeManager(TradingDbContext context)
     {
@@ -44,7 +45,7 @@ public class TradeManager : ITradeManager
 
         // Validate calculated value matches
         var expectedValue = trade.Quantity * trade.PricePerTon;
-        if (Math.Abs(trade.TotalValue - expectedValue) > 0.01m)
+        if (Math.Abs(trade.TotalValue - expectedValue) > ValueComparisonTolerance)
         {
             throw new InvalidOperationException($"Trade total value mismatch. Expected: {expectedValue}, Provided: {trade.TotalValue}");
         }

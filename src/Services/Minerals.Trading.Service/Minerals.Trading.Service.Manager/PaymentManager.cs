@@ -7,6 +7,8 @@ namespace Minerals.Trading.Service.Manager;
 public class PaymentManager : IPaymentManager
 {
     private readonly TradingDbContext _context;
+    private const decimal PaymentBufferPercentage = 1.1m; // Allow 10% buffer for fees
+    private const decimal FullPaymentThreshold = 0.99m; // Consider paid if within 1% of trade value
 
     public PaymentManager(TradingDbContext context)
     {
@@ -93,7 +95,7 @@ public class PaymentManager : IPaymentManager
         var existingPayments = await GetTotalPaymentsForTradeAsync(payment.TradeId);
         var totalWithNewPayment = existingPayments + payment.Amount;
 
-        if (totalWithNewPayment > trade.TotalValue * 1.1m) // Allow 10% buffer for fees
+        if (totalWithNewPayment > trade.TotalValue * PaymentBufferPercentage)
         {
             throw new InvalidOperationException(
                 $"Total payments (${totalWithNewPayment:F2}) would exceed trade value (${trade.TotalValue:F2}) by more than 10%");
@@ -124,6 +126,6 @@ public class PaymentManager : IPaymentManager
         var totalPayments = await GetTotalPaymentsForTradeAsync(tradeId);
         
         // Consider fully paid if payments are within 1% of trade value
-        return totalPayments >= trade.TotalValue * 0.99m;
+        return totalPayments >= trade.TotalValue * FullPaymentThreshold;
     }
 }
