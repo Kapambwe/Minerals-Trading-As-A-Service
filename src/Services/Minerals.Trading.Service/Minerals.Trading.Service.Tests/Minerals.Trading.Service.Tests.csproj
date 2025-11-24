@@ -1,0 +1,28 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="coverlet.collector" Version="6.0.4" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
+    <PackageReference Include="xunit" Version="2.9.3" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="3.1.4" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Minerals.Trading.Service.Api\Minerals.Trading.Service.Api.csproj" />
+    <ProjectReference Include="..\Minerals.Trading.Service.Manager\Minerals.Trading.Service.Manager.csproj" />
+    <ProjectReference Include="..\Minerals.Trading.Service.Data\Minerals.Trading.Service.Data.csproj" />
+    <ProjectReference Include="..\Minerals.Trading.Service.Model\Minerals.Trading.Service.Model.csproj" />
+  </ItemGroup>
+
+</Project>
