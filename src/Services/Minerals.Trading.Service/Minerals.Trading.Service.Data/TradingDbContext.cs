@@ -68,5 +68,21 @@ public class TradingDbContext : DbContext
         modelBuilder.Entity<Margin>()
             .Property(m => m.TotalMargin)
             .HasPrecision(18, 2);
+        
+        modelBuilder.Entity<Margin>()
+            .Property(m => m.CurrentMarketPrice)
+            .HasPrecision(18, 2);
+        
+        modelBuilder.Entity<Margin>()
+            .Property(m => m.PriceChange)
+            .HasPrecision(18, 2);
+
+        modelBuilder.Entity<Warehouse>()
+            .Property(w => w.StorageCapacity)
+            .HasPrecision(18, 4);
+        
+        modelBuilder.Entity<Warehouse>()
+            .Property(w => w.CurrentStock)
+            .HasPrecision(18, 4);
     }
 }
