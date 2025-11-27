@@ -76,4 +76,47 @@ public class MarginsController : ControllerBase
         }
         return NoContent();
     }
+
+    [HttpPost("trade/{tradeId}/initial")]
+    public async Task<ActionResult<Margin>> CalculateInitialMargin(string tradeId, [FromQuery] decimal marginPercentage = 0.10m)
+    {
+        try
+        {
+            var margin = await _marginManager.CalculateInitialMarginAsync(tradeId, marginPercentage);
+            return Ok(margin);
+        }
+        catch (KeyNotFoundException)
+        {
+            return NotFound();
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+    }
+
+    [HttpPost("trade/{tradeId}/variation")]
+    public async Task<ActionResult<Margin>> CalculateVariationMargin(string tradeId, [FromBody] decimal currentMarketPrice)
+    {
+        try
+        {
+            var margin = await _marginManager.CalculateVariationMarginAsync(tradeId, currentMarketPrice);
+            return Ok(margin);
+        }
+        catch (KeyNotFoundException)
+        {
+            return NotFound();
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+    }
+
+    [HttpGet("trade/{tradeId}/total")]
+    public async Task<ActionResult<decimal>> GetTotalMarginRequirement(string tradeId)
+    {
+        var total = await _marginManager.GetTotalMarginRequirementAsync(tradeId);
+        return Ok(total);
+    }
 }

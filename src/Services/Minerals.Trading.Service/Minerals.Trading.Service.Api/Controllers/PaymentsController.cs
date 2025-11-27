@@ -43,8 +43,23 @@ public class PaymentsController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<Payment>> CreatePayment([FromBody] Payment payment)
     {
-        var createdPayment = await _paymentManager.CreatePaymentAsync(payment);
-        return CreatedAtAction(nameof(GetPaymentById), new { id = createdPayment.Id }, createdPayment);
+        try
+        {
+            var createdPayment = await _paymentManager.CreatePaymentAsync(payment);
+            return CreatedAtAction(nameof(GetPaymentById), new { id = createdPayment.Id }, createdPayment);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(ex.Message);
+        }
     }
 
     [HttpPut("{id}")]
@@ -75,5 +90,33 @@ public class PaymentsController : ControllerBase
             return NotFound();
         }
         return NoContent();
+    }
+
+    [HttpGet("trade/{tradeId}/total")]
+    public async Task<ActionResult<decimal>> GetTotalPaymentsForTrade(string tradeId)
+    {
+        try
+        {
+            var total = await _paymentManager.GetTotalPaymentsForTradeAsync(tradeId);
+            return Ok(total);
+        }
+        catch (KeyNotFoundException)
+        {
+            return NotFound();
+        }
+    }
+
+    [HttpGet("trade/{tradeId}/fully-paid")]
+    public async Task<ActionResult<bool>> IsTradeFullyPaid(string tradeId)
+    {
+        try
+        {
+            var isFullyPaid = await _paymentManager.IsTradeFullyPaidAsync(tradeId);
+            return Ok(isFullyPaid);
+        }
+        catch (KeyNotFoundException)
+        {
+            return NotFound();
+        }
     }
 }

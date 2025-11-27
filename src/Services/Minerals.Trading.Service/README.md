@@ -46,15 +46,18 @@ Minerals.Trading.Service/
 ### Trades API (`/api/trades`)
 - `GET /api/trades` - Get all trades
 - `GET /api/trades/{id}` - Get trade by ID
+- `GET /api/trades/status/{status}` - Get trades by status
 - `POST /api/trades` - Create new trade
 - `PUT /api/trades/{id}` - Update trade
 - `DELETE /api/trades/{id}` - Delete trade
 - `POST /api/trades/{id}/novate` - Novate trade (clearing house operation)
 - `POST /api/trades/{id}/confirm` - Confirm trade
+- `POST /api/trades/{id}/cancel` - Cancel trade with reason
 
 ### Mineral Listings API (`/api/minerallistings`)
 - `GET /api/minerallistings` - Get all listings
 - `GET /api/minerallistings/available` - Get available listings only
+- `GET /api/minerallistings/metal-type/{metalType}` - Get listings by metal type
 - `GET /api/minerallistings/{id}` - Get listing by ID
 - `POST /api/minerallistings` - Create new listing
 - `PUT /api/minerallistings/{id}` - Update listing
@@ -96,6 +99,8 @@ Minerals.Trading.Service/
 - `GET /api/settlements/trade/{tradeId}` - Get settlement by trade
 - `GET /api/settlements/{id}` - Get settlement by ID
 - `POST /api/settlements` - Create new settlement
+- `POST /api/settlements/physical` - Process physical settlement with warrant
+- `POST /api/settlements/cash` - Process cash settlement
 - `PUT /api/settlements/{id}` - Update settlement
 - `DELETE /api/settlements/{id}` - Delete settlement
 - `POST /api/settlements/{id}/complete` - Complete settlement
@@ -103,14 +108,19 @@ Minerals.Trading.Service/
 ### Margins API (`/api/margins`)
 - `GET /api/margins` - Get all margins
 - `GET /api/margins/trade/{tradeId}` - Get margins by trade
+- `GET /api/margins/trade/{tradeId}/total` - Get total margin requirement for trade
 - `GET /api/margins/{id}` - Get margin by ID
 - `POST /api/margins` - Create new margin
+- `POST /api/margins/trade/{tradeId}/initial` - Calculate initial margin
+- `POST /api/margins/trade/{tradeId}/variation` - Calculate variation margin
 - `PUT /api/margins/{id}` - Update margin
 - `DELETE /api/margins/{id}` - Delete margin
 
 ### Payments API (`/api/payments`)
 - `GET /api/payments` - Get all payments
 - `GET /api/payments/trade/{tradeId}` - Get payments by trade
+- `GET /api/payments/trade/{tradeId}/total` - Get total payments for trade
+- `GET /api/payments/trade/{tradeId}/fully-paid` - Check if trade is fully paid
 - `GET /api/payments/{id}` - Get payment by ID
 - `POST /api/payments` - Create new payment
 - `PUT /api/payments/{id}` - Update payment

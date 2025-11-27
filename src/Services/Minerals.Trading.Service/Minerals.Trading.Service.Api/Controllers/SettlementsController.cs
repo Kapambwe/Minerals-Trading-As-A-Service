@@ -93,5 +93,63 @@ public class SettlementsController : ControllerBase
         {
             return NotFound();
         }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(ex.Message);
+        }
     }
+
+    [HttpPost("physical")]
+    public async Task<ActionResult<Settlement>> ProcessPhysicalSettlement([FromBody] PhysicalSettlementRequest request)
+    {
+        try
+        {
+            var settlement = await _settlementManager.ProcessPhysicalSettlementAsync(
+                request.TradeId, request.WarrantNumber, request.WarehouseLocation);
+            return CreatedAtAction(nameof(GetSettlementById), new { id = settlement.Id }, settlement);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(ex.Message);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+    }
+
+    [HttpPost("cash")]
+    public async Task<ActionResult<Settlement>> ProcessCashSettlement([FromBody] CashSettlementRequest request)
+    {
+        try
+        {
+            var settlement = await _settlementManager.ProcessCashSettlementAsync(request.TradeId, request.FinalPrice);
+            return CreatedAtAction(nameof(GetSettlementById), new { id = settlement.Id }, settlement);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(ex.Message);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+    }
+}
+
+public class PhysicalSettlementRequest
+{
+    public string TradeId { get; set; } = string.Empty;
+    public string WarrantNumber { get; set; } = string.Empty;
+    public string WarehouseLocation { get; set; } = string.Empty;
+}
+
+public class CashSettlementRequest
+{
+    public string TradeId { get; set; } = string.Empty;
+    public decimal FinalPrice { get; set; }
 }

@@ -36,8 +36,19 @@ public class TradesController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<Trade>> CreateTrade([FromBody] Trade trade)
     {
-        var createdTrade = await _tradeManager.CreateTradeAsync(trade);
-        return CreatedAtAction(nameof(GetTradeById), new { id = createdTrade.Id }, createdTrade);
+        try
+        {
+            var createdTrade = await _tradeManager.CreateTradeAsync(trade);
+            return CreatedAtAction(nameof(GetTradeById), new { id = createdTrade.Id }, createdTrade);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(ex.Message);
+        }
     }
 
     [HttpPut("{id}")]
@@ -82,6 +93,10 @@ public class TradesController : ControllerBase
         {
             return NotFound();
         }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(ex.Message);
+        }
     }
 
     [HttpPost("{id}/confirm")]
@@ -96,5 +111,34 @@ public class TradesController : ControllerBase
         {
             return NotFound();
         }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+    }
+
+    [HttpPost("{id}/cancel")]
+    public async Task<ActionResult<Trade>> CancelTrade(string id, [FromBody] string reason)
+    {
+        try
+        {
+            var trade = await _tradeManager.CancelTradeAsync(id, reason);
+            return Ok(trade);
+        }
+        catch (KeyNotFoundException)
+        {
+            return NotFound();
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+    }
+
+    [HttpGet("status/{status}")]
+    public async Task<ActionResult<IEnumerable<Trade>>> GetTradesByStatus(TradeStatus status)
+    {
+        var trades = await _tradeManager.GetTradesByStatusAsync(status);
+        return Ok(trades);
     }
 }

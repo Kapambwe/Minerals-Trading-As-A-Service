@@ -29,6 +29,13 @@ public class MineralListingsController : ControllerBase
         return Ok(listings);
     }
 
+    [HttpGet("metal-type/{metalType}")]
+    public async Task<ActionResult<IEnumerable<MineralListing>>> GetListingsByMetalType(MetalType metalType)
+    {
+        var listings = await _mineralListingManager.GetListingsByMetalTypeAsync(metalType);
+        return Ok(listings);
+    }
+
     [HttpGet("{id}")]
     public async Task<ActionResult<MineralListing>> GetMineralListingById(string id)
     {
@@ -43,8 +50,19 @@ public class MineralListingsController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<MineralListing>> CreateMineralListing([FromBody] MineralListing listing)
     {
-        var createdListing = await _mineralListingManager.CreateMineralListingAsync(listing);
-        return CreatedAtAction(nameof(GetMineralListingById), new { id = createdListing.Id }, createdListing);
+        try
+        {
+            var createdListing = await _mineralListingManager.CreateMineralListingAsync(listing);
+            return CreatedAtAction(nameof(GetMineralListingById), new { id = createdListing.Id }, createdListing);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(ex.Message);
+        }
     }
 
     [HttpPut("{id}")]
@@ -88,6 +106,10 @@ public class MineralListingsController : ControllerBase
         catch (KeyNotFoundException)
         {
             return NotFound();
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(ex.Message);
         }
     }
 }

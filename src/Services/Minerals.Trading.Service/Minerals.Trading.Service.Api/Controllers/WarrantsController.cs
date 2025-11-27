@@ -43,8 +43,23 @@ public class WarrantsController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<Warrant>> CreateWarrant([FromBody] Warrant warrant)
     {
-        var createdWarrant = await _warrantManager.CreateWarrantAsync(warrant);
-        return CreatedAtAction(nameof(GetWarrantById), new { id = createdWarrant.Id }, createdWarrant);
+        try
+        {
+            var createdWarrant = await _warrantManager.CreateWarrantAsync(warrant);
+            return CreatedAtAction(nameof(GetWarrantById), new { id = createdWarrant.Id }, createdWarrant);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(ex.Message);
+        }
     }
 
     [HttpPut("{id}")]
@@ -88,6 +103,14 @@ public class WarrantsController : ControllerBase
         catch (KeyNotFoundException)
         {
             return NotFound();
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(ex.Message);
         }
     }
 }

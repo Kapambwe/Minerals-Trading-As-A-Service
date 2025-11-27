@@ -1,6 +1,393 @@
 @Minerals.Trading.Service.Api_HostAddress = http://localhost:5248
 
-GET {{Minerals.Trading.Service.Api_HostAddress}}/weatherforecast/
+### Health Check (if exists)
+GET {{Minerals.Trading.Service.Api_HostAddress}}/health
 Accept: application/json
 
 ###
+# ====================================
+# BUYERS API
+# ====================================
+
+### Get All Buyers
+GET {{Minerals.Trading.Service.Api_HostAddress}}/api/buyers
+Accept: application/json
+
+### Get Buyer By ID
+GET {{Minerals.Trading.Service.Api_HostAddress}}/api/buyers/{id}
+Accept: application/json
+
+### Create Buyer
+POST {{Minerals.Trading.Service.Api_HostAddress}}/api/buyers
+Content-Type: application/json
+
+{
+  "companyName": "Example Mining Corp",
+  "contactPerson": "John Doe",
+  "email": "john.doe@example.com",
+  "phoneNumber": "+1-555-0123",
+  "address": "123 Main St",
+  "city": "Lusaka",
+  "country": "Zambia",
+  "companyRegistrationNumber": "REG123456",
+  "taxIdentificationNumber": "TAX789012",
+  "bankName": "Standard Bank",
+  "bankAccountNumber": "1234567890",
+  "swiftCode": "SWIFT123",
+  "complianceOfficer": "Jane Smith"
+}
+
+### Update Buyer
+PUT {{Minerals.Trading.Service.Api_HostAddress}}/api/buyers/{id}
+Content-Type: application/json
+
+{
+  "id": "{id}",
+  "companyName": "Updated Mining Corp",
+  "contactPerson": "John Doe",
+  "email": "john.doe@example.com",
+  "phoneNumber": "+1-555-0123",
+  "address": "123 Main St",
+  "city": "Lusaka",
+  "country": "Zambia"
+}
+
+### Delete Buyer
+DELETE {{Minerals.Trading.Service.Api_HostAddress}}/api/buyers/{id}
+
+### Approve Buyer
+POST {{Minerals.Trading.Service.Api_HostAddress}}/api/buyers/{id}/approve
+
+### Update KYC Status
+PUT {{Minerals.Trading.Service.Api_HostAddress}}/api/buyers/{id}/kyc-status
+Content-Type: application/json
+
+"Approved"
+
+###
+# ====================================
+# SELLERS API
+# ====================================
+
+### Get All Sellers
+GET {{Minerals.Trading.Service.Api_HostAddress}}/api/sellers
+Accept: application/json
+
+### Get Seller By ID
+GET {{Minerals.Trading.Service.Api_HostAddress}}/api/sellers/{id}
+Accept: application/json
+
+### Create Seller
+POST {{Minerals.Trading.Service.Api_HostAddress}}/api/sellers
+Content-Type: application/json
+
+{
+  "companyName": "Zambian Copper Co",
+  "contactPerson": "Jane Smith",
+  "email": "jane.smith@copper.co.zm",
+  "phoneNumber": "+260-211-123456",
+  "address": "Copper Belt",
+  "city": "Ndola",
+  "country": "Zambia",
+  "companyRegistrationNumber": "ZM123456",
+  "taxIdentificationNumber": "ZMTAX123",
+  "bankName": "Zanaco",
+  "bankAccountNumber": "9876543210",
+  "swiftCode": "ZANACO01",
+  "complianceOfficer": "Bob Johnson",
+  "mineralsSold": "Copper,Cobalt",
+  "productionCapacityPerMonth": 5000
+}
+
+### Approve Seller
+POST {{Minerals.Trading.Service.Api_HostAddress}}/api/sellers/{id}/approve
+
+### Update Seller KYC Status
+PUT {{Minerals.Trading.Service.Api_HostAddress}}/api/sellers/{id}/kyc-status
+Content-Type: application/json
+
+"Approved"
+
+###
+# ====================================
+# MINERAL LISTINGS API
+# ====================================
+
+### Get All Mineral Listings
+GET {{Minerals.Trading.Service.Api_HostAddress}}/api/minerallistings
+Accept: application/json
+
+### Get Available Mineral Listings
+GET {{Minerals.Trading.Service.Api_HostAddress}}/api/minerallistings/available
+Accept: application/json
+
+### Get Listings by Metal Type
+GET {{Minerals.Trading.Service.Api_HostAddress}}/api/minerallistings/metal-type/Copper
+Accept: application/json
+
+### Get Mineral Listing By ID
+GET {{Minerals.Trading.Service.Api_HostAddress}}/api/minerallistings/{id}
+Accept: application/json
+
+### Create Mineral Listing
+POST {{Minerals.Trading.Service.Api_HostAddress}}/api/minerallistings
+Content-Type: application/json
+
+{
+  "sellerId": "seller-id-here",
+  "sellerCompanyName": "Zambian Copper Co",
+  "metalType": "Copper",
+  "quantityAvailable": 100.5,
+  "pricePerTon": 9500.00,
+  "originCountry": "Zambia",
+  "qualityGrade": "Grade A",
+  "notes": "High quality copper cathodes"
+}
+
+### Update Mineral Listing Status
+PUT {{Minerals.Trading.Service.Api_HostAddress}}/api/minerallistings/{id}/status
+Content-Type: application/json
+
+"Under Offer"
+
+###
+# ====================================
+# TRADES API
+# ====================================
+
+### Get All Trades
+GET {{Minerals.Trading.Service.Api_HostAddress}}/api/trades
+Accept: application/json
+
+### Get Trades By Status
+GET {{Minerals.Trading.Service.Api_HostAddress}}/api/trades/status/Pending
+Accept: application/json
+
+### Get Trade By ID
+GET {{Minerals.Trading.Service.Api_HostAddress}}/api/trades/{id}
+Accept: application/json
+
+### Create Trade
+POST {{Minerals.Trading.Service.Api_HostAddress}}/api/trades
+Content-Type: application/json
+
+{
+  "buyerName": "Example Mining Corp",
+  "sellerName": "Zambian Copper Co",
+  "metalType": "Copper",
+  "quantity": 50.0,
+  "pricePerTon": 9500.00,
+  "deliveryDate": "2025-06-01T00:00:00Z"
+}
+
+### Confirm Trade
+POST {{Minerals.Trading.Service.Api_HostAddress}}/api/trades/{id}/confirm
+
+### Novate Trade
+POST {{Minerals.Trading.Service.Api_HostAddress}}/api/trades/{id}/novate
+
+### Cancel Trade
+POST {{Minerals.Trading.Service.Api_HostAddress}}/api/trades/{id}/cancel
+Content-Type: application/json
+
+"Trade cancelled due to buyer request"
+
+###
+# ====================================
+# WAREHOUSES API
+# ====================================
+
+### Get All Warehouses
+GET {{Minerals.Trading.Service.Api_HostAddress}}/api/warehouses
+Accept: application/json
+
+### Get Approved Warehouses
+GET {{Minerals.Trading.Service.Api_HostAddress}}/api/warehouses/approved
+Accept: application/json
+
+### Create Warehouse
+POST {{Minerals.Trading.Service.Api_HostAddress}}/api/warehouses
+Content-Type: application/json
+
+{
+  "warehouseCode": "WH001",
+  "operatorName": "Zambia Warehouse Ltd",
+  "location": "Lusaka Industrial Area",
+  "city": "Lusaka",
+  "country": "Zambia",
+  "storageCapacity": 10000.0,
+  "currentStock": 0,
+  "hasWeighingSystem": true,
+  "hasQualityControl": true,
+  "hasFinancialStabilityProof": true,
+  "agreesToLMERules": true,
+  "securityLevel": "High",
+  "handlingEquipmentDetails": "Forklifts, Cranes"
+}
+
+### Approve Warehouse
+POST {{Minerals.Trading.Service.Api_HostAddress}}/api/warehouses/{id}/approve
+
+###
+# ====================================
+# WARRANTS API
+# ====================================
+
+### Get All Warrants
+GET {{Minerals.Trading.Service.Api_HostAddress}}/api/warrants
+Accept: application/json
+
+### Get Warrants By Trade ID
+GET {{Minerals.Trading.Service.Api_HostAddress}}/api/warrants/trade/{tradeId}
+Accept: application/json
+
+### Create Warrant
+POST {{Minerals.Trading.Service.Api_HostAddress}}/api/warrants
+Content-Type: application/json
+
+{
+  "tradeId": "trade-id-here",
+  "tradeNumber": "TRD-20250101-ABC123",
+  "warehouseId": "warehouse-id-here",
+  "warehouseName": "Zambia Warehouse Ltd",
+  "metalType": "Copper",
+  "quantity": 50.0,
+  "currentOwner": "Example Mining Corp",
+  "qualityGrade": "Grade A",
+  "lotNumber": "LOT-2025-001"
+}
+
+### Transfer Warrant
+POST {{Minerals.Trading.Service.Api_HostAddress}}/api/warrants/{id}/transfer
+Content-Type: application/json
+
+"New Owner Company Name"
+
+###
+# ====================================
+# INSPECTIONS API
+# ====================================
+
+### Get All Inspections
+GET {{Minerals.Trading.Service.Api_HostAddress}}/api/inspections
+Accept: application/json
+
+### Get Inspections By Warehouse ID
+GET {{Minerals.Trading.Service.Api_HostAddress}}/api/inspections/warehouse/{warehouseId}
+Accept: application/json
+
+### Create Inspection
+POST {{Minerals.Trading.Service.Api_HostAddress}}/api/inspections
+Content-Type: application/json
+
+{
+  "warehouseId": "warehouse-id-here",
+  "warehouseCode": "WH001",
+  "inspectorName": "John Inspector",
+  "siteInspectionPassed": true,
+  "weighingSystemVerified": true,
+  "qualityControlVerified": true,
+  "reportingSystemTested": true,
+  "neutralityEnsured": true,
+  "overallOutcome": "Passed",
+  "findings": "All systems operational",
+  "recommendations": "Maintain current standards",
+  "nextInspectionDate": "2026-01-01T00:00:00Z"
+}
+
+###
+# ====================================
+# PAYMENTS API
+# ====================================
+
+### Get All Payments
+GET {{Minerals.Trading.Service.Api_HostAddress}}/api/payments
+Accept: application/json
+
+### Get Payments By Trade ID
+GET {{Minerals.Trading.Service.Api_HostAddress}}/api/payments/trade/{tradeId}
+Accept: application/json
+
+### Get Total Payments For Trade
+GET {{Minerals.Trading.Service.Api_HostAddress}}/api/payments/trade/{tradeId}/total
+Accept: application/json
+
+### Check If Trade is Fully Paid
+GET {{Minerals.Trading.Service.Api_HostAddress}}/api/payments/trade/{tradeId}/fully-paid
+Accept: application/json
+
+### Create Payment
+POST {{Minerals.Trading.Service.Api_HostAddress}}/api/payments
+Content-Type: application/json
+
+{
+  "tradeId": "trade-id-here",
+  "amount": 475000.00,
+  "paymentDate": "2025-01-15T10:00:00Z",
+  "description": "Initial payment for copper trade"
+}
+
+###
+# ====================================
+# MARGINS API
+# ====================================
+
+### Get All Margins
+GET {{Minerals.Trading.Service.Api_HostAddress}}/api/margins
+Accept: application/json
+
+### Get Margins By Trade ID
+GET {{Minerals.Trading.Service.Api_HostAddress}}/api/margins/trade/{tradeId}
+Accept: application/json
+
+### Get Total Margin Requirement
+GET {{Minerals.Trading.Service.Api_HostAddress}}/api/margins/trade/{tradeId}/total
+Accept: application/json
+
+### Calculate Initial Margin
+POST {{Minerals.Trading.Service.Api_HostAddress}}/api/margins/trade/{tradeId}/initial?marginPercentage=0.10
+Accept: application/json
+
+### Calculate Variation Margin
+POST {{Minerals.Trading.Service.Api_HostAddress}}/api/margins/trade/{tradeId}/variation
+Content-Type: application/json
+
+9800.00
+
+###
+# ====================================
+# SETTLEMENTS API
+# ====================================
+
+### Get All Settlements
+GET {{Minerals.Trading.Service.Api_HostAddress}}/api/settlements
+Accept: application/json
+
+### Get Settlement By Trade ID
+GET {{Minerals.Trading.Service.Api_HostAddress}}/api/settlements/trade/{tradeId}
+Accept: application/json
+
+### Process Physical Settlement
+POST {{Minerals.Trading.Service.Api_HostAddress}}/api/settlements/physical
+Content-Type: application/json
+
+{
+  "tradeId": "trade-id-here",
+  "warrantNumber": "WRN-20250101-ABC123",
+  "warehouseLocation": "Lusaka Industrial Area"
+}
+
+### Process Cash Settlement
+POST {{Minerals.Trading.Service.Api_HostAddress}}/api/settlements/cash
+Content-Type: application/json
+
+{
+  "tradeId": "trade-id-here",
+  "finalPrice": 9800.00
+}
+
+### Complete Settlement
+POST {{Minerals.Trading.Service.Api_HostAddress}}/api/settlements/{id}/complete
+
+###
+
