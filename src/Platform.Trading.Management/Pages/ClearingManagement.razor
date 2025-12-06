@@ -1,0 +1,345 @@
+@page "/clearing"
+@using Platform.Trading.Management.Models
+@using Platform.Trading.Management.Models.Clearing
+@using Platform.Trading.Management.Services.Interfaces
+@inject IClearingService ClearingService
+@inject INettingService NettingService
+@inject ICollateralService CollateralService
+@inject IMarkToMarketService MarkToMarketService
+@inject NotificationService NotificationService
+
+<PageTitle>Clearing Management</PageTitle>
+
+<RadzenStack Gap="1rem">
+    <RadzenRow>
+        <RadzenColumn Size="12">
+            <RadzenText TextStyle="TextStyle.H3" TagName="TagName.H1">Clearing Management</RadzenText>
+            <RadzenText TextStyle="TextStyle.Body1">Central Counterparty (CCP) operations, netting, collateral, and mark-to-market</RadzenText>
+        </RadzenColumn>
+    </RadzenRow>
+
+    <RadzenTabs>
+        <Tabs>
+            <RadzenTabsItem Text="Clearing Members">
+                <RadzenRow Class="rz-mt-4">
+                    <RadzenColumn Size="12">
+                        <RadzenButton Icon="person_add" Text="Add Member" Click="@AddMember" ButtonStyle="ButtonStyle.Primary" />
+                    </RadzenColumn>
+                </RadzenRow>
+                <RadzenRow Class="rz-mt-4">
+                    <RadzenColumn Size="12">
+                        <RadzenDataGrid Data="@clearingMembers" TItem="ClearingMember" AllowFiltering="true"
+                                       AllowSorting="true" AllowPaging="true" PageSize="10">
+                            <Columns>
+                                <RadzenDataGridColumn TItem="ClearingMember" Property="MemberNumber" Title="Code" Width="100px" />
+                                <RadzenDataGridColumn TItem="ClearingMember" Property="MemberName" Title="Name" />
+                                <RadzenDataGridColumn TItem="ClearingMember" Property="MemberType" Title="Type" Width="120px" />
+                                <RadzenDataGridColumn TItem="ClearingMember" Property="MemberSince" Title="Since" Width="100px" FormatString="{0:MM/yyyy}" />
+                                <RadzenDataGridColumn TItem="ClearingMember" Property="CurrentCapital" Title="Net Capital" Width="130px" FormatString="{0:C0}" />
+                                <RadzenDataGridColumn TItem="ClearingMember" Property="GuaranteeFundContribution" Title="GF Contribution" Width="130px" FormatString="{0:C0}" />
+                                <RadzenDataGridColumn TItem="ClearingMember" Property="Status" Title="Status" Width="100px">
+                                    <Template Context="member">
+                                        <RadzenBadge BadgeStyle="@GetMemberStatusStyle(member.Status)" Text="@member.Status" />
+                                    </Template>
+                                </RadzenDataGridColumn>
+                                <RadzenDataGridColumn TItem="ClearingMember" Title="Capital OK" Width="100px">
+                                    <Template Context="member">
+                                        @if (member.MeetsCapitalRequirement)
+                                        {
+                                            <RadzenIcon Icon="check_circle" IconStyle="IconStyle.Success" />
+                                        }
+                                        else
+                                        {
+                                            <RadzenIcon Icon="warning" IconStyle="IconStyle.Danger" />
+                                        }
+                                    </Template>
+                                </RadzenDataGridColumn>
+                            </Columns>
+                        </RadzenDataGrid>
+                    </RadzenColumn>
+                </RadzenRow>
+            </RadzenTabsItem>
+
+            <RadzenTabsItem Text="Guarantee Fund">
+                <RadzenRow Class="rz-mt-4">
+                    <RadzenColumn Size="4">
+                        <RadzenCard>
+                            <RadzenText TextStyle="TextStyle.Overline">Total Fund Size</RadzenText>
+                            <RadzenText TextStyle="TextStyle.H4">@guaranteeFund?.TotalFundSize.ToString("C0")</RadzenText>
+                        </RadzenCard>
+                    </RadzenColumn>
+                    <RadzenColumn Size="4">
+                        <RadzenCard>
+                            <RadzenText TextStyle="TextStyle.Overline">Available Funds</RadzenText>
+                            <RadzenText TextStyle="TextStyle.H4">@guaranteeFund?.AvailableFunds.ToString("C0")</RadzenText>
+                        </RadzenCard>
+                    </RadzenColumn>
+                    <RadzenColumn Size="4">
+                        <RadzenCard>
+                            <RadzenText TextStyle="TextStyle.Overline">Utilization</RadzenText>
+                            <RadzenText TextStyle="TextStyle.H4" Style="@(guaranteeFund?.UtilizationPercentage < 50 ? "color: green;" : "color: red;")">
+                                @(guaranteeFund?.UtilizationPercentage.ToString("N1"))%
+                            </RadzenText>
+                        </RadzenCard>
+                    </RadzenColumn>
+                </RadzenRow>
+                <RadzenRow Class="rz-mt-4">
+                    <RadzenColumn Size="12">
+                        <RadzenDataGrid Data="@gfContributions" TItem="GuaranteeFundContribution" AllowSorting="true">
+                            <Columns>
+                                <RadzenDataGridColumn TItem="GuaranteeFundContribution" Property="MemberName" Title="Member" />
+                                <RadzenDataGridColumn TItem="GuaranteeFundContribution" Property="RequiredContribution" Title="Required" Width="130px" FormatString="{0:C0}" />
+                                <RadzenDataGridColumn TItem="GuaranteeFundContribution" Property="ActualContribution" Title="Actual" Width="130px" FormatString="{0:C0}" />
+                                <RadzenDataGridColumn TItem="GuaranteeFundContribution" Title="Share %" Width="100px">
+                                    <Template Context="contrib">
+                                        @if (contrib.RequiredContribution > 0)
+                                        {
+                                            <text>@(((contrib.ActualContribution / contrib.RequiredContribution) * 100).ToString("N1"))%</text>
+                                        }
+                                    </Template>
+                                </RadzenDataGridColumn>
+                                <RadzenDataGridColumn TItem="GuaranteeFundContribution" Title="Status" Width="100px">
+                                    <Template Context="contrib">
+                                        @if (contrib.IsPaidInFull)
+                                        {
+                                            <RadzenBadge BadgeStyle="BadgeStyle.Success" Text="Paid" />
+                                        }
+                                        else
+                                        {
+                                            <RadzenBadge BadgeStyle="BadgeStyle.Danger" Text="Shortfall" />
+                                        }
+                                    </Template>
+                                </RadzenDataGridColumn>
+                                <RadzenDataGridColumn TItem="GuaranteeFundContribution" Property="ContributionDate" Title="Last Payment" Width="120px" FormatString="{0:MM/dd/yyyy}" />
+                            </Columns>
+                        </RadzenDataGrid>
+                    </RadzenColumn>
+                </RadzenRow>
+            </RadzenTabsItem>
+
+            <RadzenTabsItem Text="Netting">
+                <RadzenRow Class="rz-mt-4">
+                    <RadzenColumn Size="12">
+                        <RadzenButton Icon="calculate" Text="Calculate Netting" Click="@CalculateNetting" ButtonStyle="ButtonStyle.Primary" />
+                    </RadzenColumn>
+                </RadzenRow>
+                <RadzenRow Class="rz-mt-4">
+                    <RadzenColumn Size="12">
+                        <RadzenDataGrid Data="@nettingCalculations" TItem="NettingCalculation" AllowSorting="true" AllowPaging="true" PageSize="10">
+                            <Columns>
+                                <RadzenDataGridColumn TItem="NettingCalculation" Property="NettingCycleId" Title="Cycle ID" Width="120px" />
+                                <RadzenDataGridColumn TItem="NettingCalculation" Property="SettlementDate" Title="Settlement Date" Width="120px" FormatString="{0:MM/dd/yyyy}" />
+                                <RadzenDataGridColumn TItem="NettingCalculation" Property="NettingType" Title="Type" Width="120px" />
+                                <RadzenDataGridColumn TItem="NettingCalculation" Property="GrossPayables" Title="Gross Payables" Width="130px" FormatString="{0:C0}" />
+                                <RadzenDataGridColumn TItem="NettingCalculation" Property="NetPayables" Title="Net Payables" Width="130px" FormatString="{0:C0}" />
+                                <RadzenDataGridColumn TItem="NettingCalculation" Property="NettingEfficiency" Title="Efficiency" Width="120px">
+                                    <Template Context="calc">
+                                        <RadzenProgressBar Value="@((double)calc.NettingEfficiency)" ShowValue="true" 
+                                                          ProgressBarStyle="ProgressBarStyle.Success" />
+                                    </Template>
+                                </RadzenDataGridColumn>
+                                <RadzenDataGridColumn TItem="NettingCalculation" Property="Status" Title="Status" Width="100px">
+                                    <Template Context="calc">
+                                        <RadzenBadge BadgeStyle="@GetNettingStatusStyle(calc.Status)" Text="@calc.Status" />
+                                    </Template>
+                                </RadzenDataGridColumn>
+                            </Columns>
+                        </RadzenDataGrid>
+                    </RadzenColumn>
+                </RadzenRow>
+            </RadzenTabsItem>
+
+            <RadzenTabsItem Text="Collateral">
+                <RadzenRow Class="rz-mt-4">
+                    <RadzenColumn Size="12">
+                        <RadzenButton Icon="account_balance" Text="Revalue All" Click="@RevalueCollateral" ButtonStyle="ButtonStyle.Primary" />
+                    </RadzenColumn>
+                </RadzenRow>
+                <RadzenRow Class="rz-mt-4">
+                    <RadzenColumn Size="12">
+                        <RadzenDataGrid Data="@collateralAccounts" TItem="CollateralManagement" AllowFiltering="true"
+                                       AllowSorting="true" AllowPaging="true" PageSize="10">
+                            <Columns>
+                                <RadzenDataGridColumn TItem="CollateralManagement" Property="ParticipantName" Title="Participant" />
+                                <RadzenDataGridColumn TItem="CollateralManagement" Property="AccountType" Title="Account Type" Width="120px" />
+                                <RadzenDataGridColumn TItem="CollateralManagement" Property="TotalMarketValue" Title="Market Value" Width="130px" FormatString="{0:C0}" />
+                                <RadzenDataGridColumn TItem="CollateralManagement" Property="TotalCollateralValue" Title="After Haircuts" Width="130px" FormatString="{0:C0}" />
+                                <RadzenDataGridColumn TItem="CollateralManagement" Property="RequiredCollateral" Title="Required" Width="130px" FormatString="{0:C0}" />
+                                <RadzenDataGridColumn TItem="CollateralManagement" Property="CoverageRatio" Title="Coverage" Width="120px">
+                                    <Template Context="acc">
+                                        <RadzenProgressBar Value="@((double)Math.Min(acc.CoverageRatio, 200))" Max="200" ShowValue="true" 
+                                                          ProgressBarStyle="@(acc.IsSufficient ? ProgressBarStyle.Success : ProgressBarStyle.Danger)" />
+                                    </Template>
+                                </RadzenDataGridColumn>
+                                <RadzenDataGridColumn TItem="CollateralManagement" Title="Status" Width="100px">
+                                    <Template Context="acc">
+                                        @if (acc.IsSufficient)
+                                        {
+                                            <RadzenBadge BadgeStyle="BadgeStyle.Success" Text="OK" />
+                                        }
+                                        else
+                                        {
+                                            <RadzenBadge BadgeStyle="BadgeStyle.Danger" Text="CALL" />
+                                        }
+                                    </Template>
+                                </RadzenDataGridColumn>
+                            </Columns>
+                        </RadzenDataGrid>
+                    </RadzenColumn>
+                </RadzenRow>
+            </RadzenTabsItem>
+
+            <RadzenTabsItem Text="Mark-to-Market">
+                <RadzenRow Class="rz-mt-4">
+                    <RadzenColumn Size="12">
+                        <RadzenButton Icon="update" Text="Run EOD MTM" Click="@RunEndOfDayMtm" ButtonStyle="ButtonStyle.Primary" />
+                        <RadzenButton Icon="refresh" Text="Intraday MTM" Click="@RunIntradayMtm" ButtonStyle="ButtonStyle.Secondary" Class="rz-ml-2" />
+                    </RadzenColumn>
+                </RadzenRow>
+                <RadzenRow Class="rz-mt-4">
+                    <RadzenColumn Size="12">
+                        <RadzenDataGrid Data="@mtmRecords" TItem="MarkToMarket" AllowFiltering="true"
+                                       AllowSorting="true" AllowPaging="true" PageSize="10">
+                            <Columns>
+                                <RadzenDataGridColumn TItem="MarkToMarket" Property="EntityName" Title="Entity" />
+                                <RadzenDataGridColumn TItem="MarkToMarket" Property="ValuationDate" Title="Valuation Date" Width="130px" FormatString="{0:MM/dd/yyyy}" />
+                                <RadzenDataGridColumn TItem="MarkToMarket" Property="ValuationCycle" Title="Cycle" Width="100px" />
+                                <RadzenDataGridColumn TItem="MarkToMarket" Property="CurrentMarketValue" Title="Market Value" Width="130px" FormatString="{0:C0}" />
+                                <RadzenDataGridColumn TItem="MarkToMarket" Property="DailyPnL" Title="Daily P&L" Width="120px">
+                                    <Template Context="mtm">
+                                        <span style="@(mtm.DailyPnL >= 0 ? "color: green;" : "color: red;")">
+                                            @mtm.DailyPnL.ToString("C0")
+                                        </span>
+                                    </Template>
+                                </RadzenDataGridColumn>
+                                <RadzenDataGridColumn TItem="MarkToMarket" Property="VariationMarginDue" Title="Variation Margin" Width="130px" FormatString="{0:C0}" />
+                                <RadzenDataGridColumn TItem="MarkToMarket" Property="MarginCallStatus" Title="Margin Call" Width="120px">
+                                    <Template Context="mtm">
+                                        <RadzenBadge BadgeStyle="@GetMarginCallStyle(mtm.MarginCallStatus)" Text="@mtm.MarginCallStatus" />
+                                    </Template>
+                                </RadzenDataGridColumn>
+                            </Columns>
+                        </RadzenDataGrid>
+                    </RadzenColumn>
+                </RadzenRow>
+            </RadzenTabsItem>
+
+            <RadzenTabsItem Text="Default Management">
+                <RadzenRow Class="rz-mt-4">
+                    <RadzenColumn Size="12">
+                        <RadzenDataGrid Data="@defaultCases" TItem="DefaultManagement" AllowFiltering="true"
+                                       AllowSorting="true" AllowPaging="true" PageSize="10">
+                            <Columns>
+                                <RadzenDataGridColumn TItem="DefaultManagement" Property="CaseNumber" Title="Case #" Width="120px" />
+                                <RadzenDataGridColumn TItem="DefaultManagement" Property="DefaultingMemberName" Title="Member" />
+                                <RadzenDataGridColumn TItem="DefaultManagement" Property="DefaultType" Title="Type" Width="120px" />
+                                <RadzenDataGridColumn TItem="DefaultManagement" Property="DefaultDate" Title="Default Date" Width="120px" FormatString="{0:MM/dd/yyyy}" />
+                                <RadzenDataGridColumn TItem="DefaultManagement" Property="DefaultAmount" Title="Default Amount" Width="130px" FormatString="{0:C0}" />
+                                <RadzenDataGridColumn TItem="DefaultManagement" Property="RecoveredAmount" Title="Recovered" Width="130px" FormatString="{0:C0}" />
+                                <RadzenDataGridColumn TItem="DefaultManagement" Property="Status" Title="Status" Width="120px">
+                                    <Template Context="def">
+                                        <RadzenBadge BadgeStyle="@GetDefaultStatusStyle(def.Status)" Text="@def.Status" />
+                                    </Template>
+                                </RadzenDataGridColumn>
+                            </Columns>
+                        </RadzenDataGrid>
+                    </RadzenColumn>
+                </RadzenRow>
+            </RadzenTabsItem>
+        </Tabs>
+    </RadzenTabs>
+</RadzenStack>
+
+@code {
+    private IEnumerable<ClearingMember> clearingMembers = new List<ClearingMember>();
+    private GuaranteeFund? guaranteeFund;
+    private IEnumerable<GuaranteeFundContribution> gfContributions = new List<GuaranteeFundContribution>();
+    private IEnumerable<NettingCalculation> nettingCalculations = new List<NettingCalculation>();
+    private IEnumerable<CollateralManagement> collateralAccounts = new List<CollateralManagement>();
+    private IEnumerable<MarkToMarket> mtmRecords = new List<MarkToMarket>();
+    private IEnumerable<DefaultManagement> defaultCases = new List<DefaultManagement>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAllData();
+    }
+
+    private async Task LoadAllData()
+    {
+        clearingMembers = await ClearingService.GetAllClearingMembersAsync();
+        guaranteeFund = await ClearingService.GetGuaranteeFundStatusAsync();
+        gfContributions = await ClearingService.GetMemberContributionsAsync();
+        nettingCalculations = await NettingService.GetNettingCyclesAsync(DateTime.Today);
+        collateralAccounts = await CollateralService.GetAllCollateralAccountsAsync();
+        mtmRecords = await MarkToMarketService.GetAllMtmAsync(DateTime.Today);
+        defaultCases = await ClearingService.GetAllDefaultCasesAsync();
+    }
+
+    private async Task AddMember()
+    {
+        NotificationService.Notify(NotificationSeverity.Info, "Add Member", "Add clearing member dialog would open here");
+    }
+
+    private async Task CalculateNetting()
+    {
+        await NettingService.CalculateNettingAsync(DateTime.Today.AddDays(2), "Multilateral");
+        NotificationService.Notify(NotificationSeverity.Success, "Netting", "Netting calculation completed");
+        nettingCalculations = await NettingService.GetNettingCyclesAsync(DateTime.Today);
+    }
+
+    private async Task RevalueCollateral()
+    {
+        NotificationService.Notify(NotificationSeverity.Info, "Collateral", "Revaluing all collateral positions...");
+        collateralAccounts = await CollateralService.GetAllCollateralAccountsAsync();
+    }
+
+    private async Task RunEndOfDayMtm()
+    {
+        await MarkToMarketService.RunEndOfDayMtmAsync();
+        NotificationService.Notify(NotificationSeverity.Success, "MTM", "End of day mark-to-market completed");
+        mtmRecords = await MarkToMarketService.GetAllMtmAsync(DateTime.Today);
+    }
+
+    private async Task RunIntradayMtm()
+    {
+        await MarkToMarketService.RunIntradayMtmAsync();
+        NotificationService.Notify(NotificationSeverity.Success, "MTM", "Intraday mark-to-market completed");
+        mtmRecords = await MarkToMarketService.GetAllMtmAsync(DateTime.Today);
+    }
+
+    private BadgeStyle GetMemberStatusStyle(string status) => status switch
+    {
+        "Active" => BadgeStyle.Success,
+        "Suspended" => BadgeStyle.Danger,
+        "Pending" => BadgeStyle.Warning,
+        _ => BadgeStyle.Light
+    };
+
+    private BadgeStyle GetNettingStatusStyle(string status) => status switch
+    {
+        "Calculated" => BadgeStyle.Info,
+        "Approved" => BadgeStyle.Primary,
+        "Applied" => BadgeStyle.Success,
+        "Completed" => BadgeStyle.Secondary,
+        _ => BadgeStyle.Light
+    };
+
+    private BadgeStyle GetMarginCallStyle(string status) => status switch
+    {
+        "None" => BadgeStyle.Light,
+        "Issued" => BadgeStyle.Warning,
+        "Pending" => BadgeStyle.Danger,
+        "Paid" => BadgeStyle.Success,
+        "Defaulted" => BadgeStyle.Danger,
+        _ => BadgeStyle.Light
+    };
+
+    private BadgeStyle GetDefaultStatusStyle(string status) => status switch
+    {
+        "Declared" => BadgeStyle.Danger,
+        "InProgress" => BadgeStyle.Warning,
+        "WaterfallApplied" => BadgeStyle.Info,
+        "Closed" => BadgeStyle.Secondary,
+        _ => BadgeStyle.Light
+    };
+}

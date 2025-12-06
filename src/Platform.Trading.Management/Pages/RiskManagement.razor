@@ -1,0 +1,364 @@
+@page "/risk-management"
+@using Platform.Trading.Management.Models
+@using Platform.Trading.Management.Models.Risk
+@using Platform.Trading.Management.Services.Interfaces
+@inject IRiskService RiskService
+@inject NotificationService NotificationService
+
+<PageTitle>Risk Management</PageTitle>
+
+<RadzenStack Gap="1rem">
+    <RadzenRow>
+        <RadzenColumn Size="12">
+            <RadzenText TextStyle="TextStyle.H3" TagName="TagName.H1">Risk Management</RadzenText>
+            <RadzenText TextStyle="TextStyle.Body1">VaR calculations, stress testing, exposure monitoring, and market surveillance</RadzenText>
+        </RadzenColumn>
+    </RadzenRow>
+
+    <RadzenTabs>
+        <Tabs>
+            <RadzenTabsItem Text="VaR Calculations">
+                <RadzenRow Class="rz-mt-4">
+                    <RadzenColumn Size="12">
+                        <RadzenButton Icon="calculate" Text="Calculate VaR" Click="@CalculateVaR" ButtonStyle="ButtonStyle.Primary" />
+                        <RadzenButton Icon="refresh" Text="Refresh" Click="@LoadVaRData" ButtonStyle="ButtonStyle.Secondary" Class="rz-ml-2" />
+                    </RadzenColumn>
+                </RadzenRow>
+                <RadzenRow Class="rz-mt-4">
+                    <RadzenColumn Size="12">
+                        <RadzenDataGrid Data="@varCalculations" TItem="VaRCalculation" AllowFiltering="true"
+                                       AllowSorting="true" AllowPaging="true" PageSize="10">
+                            <Columns>
+                                <RadzenDataGridColumn TItem="VaRCalculation" Property="EntityName" Title="Entity" />
+                                <RadzenDataGridColumn TItem="VaRCalculation" Property="EntityType" Title="Type" Width="100px" />
+                                <RadzenDataGridColumn TItem="VaRCalculation" Property="CalculationDate" Title="Date" Width="130px" FormatString="{0:MM/dd/yyyy HH:mm}" />
+                                <RadzenDataGridColumn TItem="VaRCalculation" Property="VaRAmount" Title="VaR" Width="120px" FormatString="{0:C0}" />
+                                <RadzenDataGridColumn TItem="VaRCalculation" Property="ExpectedShortfall" Title="ES (CVaR)" Width="120px" FormatString="{0:C0}" />
+                                <RadzenDataGridColumn TItem="VaRCalculation" Property="ConfidenceLevel" Title="Confidence" Width="100px" FormatString="{0:N0}%" />
+                                <RadzenDataGridColumn TItem="VaRCalculation" Property="UtilizationPercentage" Title="Utilization" Width="120px">
+                                    <Template Context="var">
+                                        <RadzenProgressBar Value="@((double)var.UtilizationPercentage)" ShowValue="true" 
+                                                          ProgressBarStyle="@GetUtilizationStyle(var.UtilizationPercentage)" />
+                                    </Template>
+                                </RadzenDataGridColumn>
+                                <RadzenDataGridColumn TItem="VaRCalculation" Title="Status" Width="100px">
+                                    <Template Context="var">
+                                        @if (var.ExceedsLimit)
+                                        {
+                                            <RadzenBadge BadgeStyle="BadgeStyle.Danger" Text="BREACH" />
+                                        }
+                                        else
+                                        {
+                                            <RadzenBadge BadgeStyle="BadgeStyle.Success" Text="OK" />
+                                        }
+                                    </Template>
+                                </RadzenDataGridColumn>
+                            </Columns>
+                        </RadzenDataGrid>
+                    </RadzenColumn>
+                </RadzenRow>
+            </RadzenTabsItem>
+
+            <RadzenTabsItem Text="Stress Testing">
+                <RadzenRow Class="rz-mt-4">
+                    <RadzenColumn Size="12">
+                        <RadzenButton Icon="science" Text="Run Stress Test" Click="@RunStressTest" ButtonStyle="ButtonStyle.Warning" />
+                        <RadzenButton Icon="refresh" Text="Refresh" Click="@LoadStressTests" ButtonStyle="ButtonStyle.Secondary" Class="rz-ml-2" />
+                    </RadzenColumn>
+                </RadzenRow>
+                <RadzenRow Class="rz-mt-4">
+                    <RadzenColumn Size="12">
+                        <RadzenDataGrid Data="@stressTests" TItem="StressTest" AllowFiltering="true"
+                                       AllowSorting="true" AllowPaging="true" PageSize="10">
+                            <Columns>
+                                <RadzenDataGridColumn TItem="StressTest" Property="TestName" Title="Test Name" />
+                                <RadzenDataGridColumn TItem="StressTest" Property="TestType" Title="Type" Width="120px" />
+                                <RadzenDataGridColumn TItem="StressTest" Property="ScenarioName" Title="Scenario" Width="150px" />
+                                <RadzenDataGridColumn TItem="StressTest" Property="ExecutionDate" Title="Date" Width="130px" FormatString="{0:MM/dd/yyyy}" />
+                                <RadzenDataGridColumn TItem="StressTest" Property="Loss" Title="Stressed Loss" Width="120px" FormatString="{0:C0}" />
+                                <RadzenDataGridColumn TItem="StressTest" Property="LossPercentage" Title="Loss %" Width="100px" FormatString="{0:N1}%" />
+                                <RadzenDataGridColumn TItem="StressTest" Property="RiskLevel" Title="Risk Level" Width="110px">
+                                    <Template Context="test">
+                                        <RadzenBadge BadgeStyle="@GetRiskBadgeStyle(test.RiskLevel)" Text="@test.RiskLevel" />
+                                    </Template>
+                                </RadzenDataGridColumn>
+                                <RadzenDataGridColumn TItem="StressTest" Title="GF Coverage" Width="100px">
+                                    <Template Context="test">
+                                        @if (test.GuaranteeFundSufficient)
+                                        {
+                                            <RadzenIcon Icon="check_circle" IconStyle="IconStyle.Success" />
+                                        }
+                                        else
+                                        {
+                                            <RadzenIcon Icon="warning" IconStyle="IconStyle.Danger" />
+                                        }
+                                    </Template>
+                                </RadzenDataGridColumn>
+                            </Columns>
+                        </RadzenDataGrid>
+                    </RadzenColumn>
+                </RadzenRow>
+            </RadzenTabsItem>
+
+            <RadzenTabsItem Text="Exposure Monitoring">
+                <RadzenRow Class="rz-mt-4">
+                    <RadzenColumn Size="12">
+                        <RadzenButton Icon="visibility" Text="Monitor Exposures" Click="@MonitorExposures" ButtonStyle="ButtonStyle.Primary" />
+                    </RadzenColumn>
+                </RadzenRow>
+                <RadzenRow Class="rz-mt-4">
+                    <RadzenColumn Size="12">
+                        <RadzenDataGrid Data="@exposures" TItem="ExposureMonitoring" AllowFiltering="true"
+                                       AllowSorting="true" AllowPaging="true" PageSize="10">
+                            <Columns>
+                                <RadzenDataGridColumn TItem="ExposureMonitoring" Property="EntityName" Title="Entity" />
+                                <RadzenDataGridColumn TItem="ExposureMonitoring" Property="EntityType" Title="Type" Width="120px" />
+                                <RadzenDataGridColumn TItem="ExposureMonitoring" Property="GrossExposure" Title="Gross Exposure" Width="130px" FormatString="{0:C0}" />
+                                <RadzenDataGridColumn TItem="ExposureMonitoring" Property="NetExposure" Title="Net Exposure" Width="130px" FormatString="{0:C0}" />
+                                <RadzenDataGridColumn TItem="ExposureMonitoring" Property="GrossUtilization" Title="Utilization" Width="120px">
+                                    <Template Context="exp">
+                                        <RadzenProgressBar Value="@((double)exp.GrossUtilization)" ShowValue="true" 
+                                                          ProgressBarStyle="@GetUtilizationStyle(exp.GrossUtilization)" />
+                                    </Template>
+                                </RadzenDataGridColumn>
+                                <RadzenDataGridColumn TItem="ExposureMonitoring" Property="AlertLevel" Title="Alert Level" Width="110px">
+                                    <Template Context="exp">
+                                        <RadzenBadge BadgeStyle="@GetAlertBadgeStyle(exp.AlertLevel)" Text="@exp.AlertLevel" />
+                                    </Template>
+                                </RadzenDataGridColumn>
+                                <RadzenDataGridColumn TItem="ExposureMonitoring" Title="Collateral" Width="100px">
+                                    <Template Context="exp">
+                                        @if (exp.CollateralSufficient)
+                                        {
+                                            <RadzenIcon Icon="check_circle" IconStyle="IconStyle.Success" />
+                                        }
+                                        else
+                                        {
+                                            <RadzenIcon Icon="error" IconStyle="IconStyle.Danger" />
+                                        }
+                                    </Template>
+                                </RadzenDataGridColumn>
+                            </Columns>
+                        </RadzenDataGrid>
+                    </RadzenColumn>
+                </RadzenRow>
+            </RadzenTabsItem>
+
+            <RadzenTabsItem Text="Market Surveillance">
+                <RadzenRow Class="rz-mt-4">
+                    <RadzenColumn Size="12">
+                        <RadzenButton Icon="security" Text="Scan Market" Click="@ScanMarket" ButtonStyle="ButtonStyle.Danger" />
+                    </RadzenColumn>
+                </RadzenRow>
+                <RadzenRow Class="rz-mt-4">
+                    <RadzenColumn Size="12">
+                        <RadzenDataGrid Data="@surveillanceAlerts" TItem="MarketSurveillance" AllowFiltering="true"
+                                       AllowSorting="true" AllowPaging="true" PageSize="10">
+                            <Columns>
+                                <RadzenDataGridColumn TItem="MarketSurveillance" Property="DetectionTime" Title="Detected" Width="130px" FormatString="{0:MM/dd/yyyy HH:mm}" />
+                                <RadzenDataGridColumn TItem="MarketSurveillance" Property="AlertType" Title="Alert Type" Width="150px" />
+                                <RadzenDataGridColumn TItem="MarketSurveillance" Property="MetalType" Title="Metal" Width="100px" />
+                                <RadzenDataGridColumn TItem="MarketSurveillance" Property="AlertSeverity" Title="Severity" Width="100px">
+                                    <Template Context="alert">
+                                        <RadzenBadge BadgeStyle="@GetSeverityBadgeStyle(alert.AlertSeverity)" Text="@alert.AlertSeverity" />
+                                    </Template>
+                                </RadzenDataGridColumn>
+                                <RadzenDataGridColumn TItem="MarketSurveillance" Property="AlertDescription" Title="Description" />
+                                <RadzenDataGridColumn TItem="MarketSurveillance" Property="Status" Title="Status" Width="120px">
+                                    <Template Context="alert">
+                                        <RadzenBadge BadgeStyle="@GetStatusBadgeStyle(alert.Status)" Text="@alert.Status" />
+                                    </Template>
+                                </RadzenDataGridColumn>
+                                <RadzenDataGridColumn TItem="MarketSurveillance" Title="Reported" Width="80px">
+                                    <Template Context="alert">
+                                        @if (alert.ReportedToRegulator)
+                                        {
+                                            <RadzenIcon Icon="verified" IconStyle="IconStyle.Success" />
+                                        }
+                                    </Template>
+                                </RadzenDataGridColumn>
+                            </Columns>
+                        </RadzenDataGrid>
+                    </RadzenColumn>
+                </RadzenRow>
+            </RadzenTabsItem>
+
+            <RadzenTabsItem Text="Circuit Breakers">
+                <RadzenRow Class="rz-mt-4">
+                    <RadzenColumn Size="12">
+                        <RadzenDataGrid Data="@circuitBreakers" TItem="CircuitBreaker" AllowSorting="true">
+                            <Columns>
+                                <RadzenDataGridColumn TItem="CircuitBreaker" Property="MetalType" Title="Metal" Width="120px" />
+                                <RadzenDataGridColumn TItem="CircuitBreaker" Property="PriceMovementThreshold" Title="Threshold %" Width="120px" FormatString="{0:N1}%" />
+                                <RadzenDataGridColumn TItem="CircuitBreaker" Property="HaltDurationMinutes" Title="Halt Duration" Width="130px">
+                                    <Template Context="cb">
+                                        @cb.HaltDurationMinutes minutes
+                                    </Template>
+                                </RadzenDataGridColumn>
+                                <RadzenDataGridColumn TItem="CircuitBreaker" Property="Status" Title="Status" Width="120px">
+                                    <Template Context="cb">
+                                        <RadzenBadge BadgeStyle="@GetCircuitBreakerStyle(cb.Status)" Text="@cb.Status" />
+                                    </Template>
+                                </RadzenDataGridColumn>
+                                <RadzenDataGridColumn TItem="CircuitBreaker" Property="TriggeredTime" Title="Last Triggered" Width="150px" FormatString="{0:MM/dd/yyyy HH:mm}" />
+                                <RadzenDataGridColumn TItem="CircuitBreaker" Property="TriggerReason" Title="Trigger Reason" />
+                                <RadzenDataGridColumn TItem="CircuitBreaker" Title="Actions" Width="150px">
+                                    <Template Context="cb">
+                                        @if (cb.IsTriggered)
+                                        {
+                                            <RadzenButton Text="Reset" Size="ButtonSize.Small" ButtonStyle="ButtonStyle.Success" 
+                                                         Click="@(() => ResetCircuitBreaker(cb))" />
+                                        }
+                                        else
+                                        {
+                                            <RadzenButton Text="Trigger" Size="ButtonSize.Small" ButtonStyle="ButtonStyle.Danger" 
+                                                         Click="@(() => TriggerCircuitBreaker(cb))" />
+                                        }
+                                    </Template>
+                                </RadzenDataGridColumn>
+                            </Columns>
+                        </RadzenDataGrid>
+                    </RadzenColumn>
+                </RadzenRow>
+            </RadzenTabsItem>
+        </Tabs>
+    </RadzenTabs>
+</RadzenStack>
+
+@code {
+    private IEnumerable<VaRCalculation> varCalculations = new List<VaRCalculation>();
+    private IEnumerable<StressTest> stressTests = new List<StressTest>();
+    private IEnumerable<ExposureMonitoring> exposures = new List<ExposureMonitoring>();
+    private IEnumerable<MarketSurveillance> surveillanceAlerts = new List<MarketSurveillance>();
+    private IEnumerable<CircuitBreaker> circuitBreakers = new List<CircuitBreaker>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAllData();
+    }
+
+    private async Task LoadAllData()
+    {
+        await LoadVaRData();
+        await LoadStressTests();
+        await LoadExposures();
+        await LoadSurveillanceAlerts();
+        await LoadCircuitBreakers();
+    }
+
+    private async Task LoadVaRData()
+    {
+        varCalculations = await RiskService.GetAllVaRCalculationsAsync();
+    }
+
+    private async Task LoadStressTests()
+    {
+        stressTests = await RiskService.GetAllStressTestsAsync();
+    }
+
+    private async Task LoadExposures()
+    {
+        exposures = await RiskService.GetAllExposuresAsync();
+    }
+
+    private async Task LoadSurveillanceAlerts()
+    {
+        surveillanceAlerts = await RiskService.GetAllSurveillanceAlertsAsync();
+    }
+
+    private async Task LoadCircuitBreakers()
+    {
+        circuitBreakers = await RiskService.GetAllCircuitBreakersAsync();
+    }
+
+    private async Task CalculateVaR()
+    {
+        NotificationService.Notify(NotificationSeverity.Info, "VaR Calculation", "VaR calculation initiated for all portfolios");
+        await LoadVaRData();
+    }
+
+    private async Task RunStressTest()
+    {
+        NotificationService.Notify(NotificationSeverity.Warning, "Stress Test", "Running stress test scenarios...");
+        await LoadStressTests();
+    }
+
+    private async Task MonitorExposures()
+    {
+        NotificationService.Notify(NotificationSeverity.Info, "Exposure Monitoring", "Refreshing exposure calculations...");
+        await LoadExposures();
+    }
+
+    private async Task ScanMarket()
+    {
+        NotificationService.Notify(NotificationSeverity.Info, "Market Scan", "Scanning for market anomalies...");
+        await LoadSurveillanceAlerts();
+    }
+
+    private async Task TriggerCircuitBreaker(CircuitBreaker cb)
+    {
+        await RiskService.TriggerCircuitBreakerAsync(cb.MetalType, 0, 0, "Manual trigger");
+        NotificationService.Notify(NotificationSeverity.Warning, "Circuit Breaker", $"Circuit breaker triggered for {cb.MetalType}");
+        await LoadCircuitBreakers();
+    }
+
+    private async Task ResetCircuitBreaker(CircuitBreaker cb)
+    {
+        await RiskService.ResetCircuitBreakerAsync(cb.MetalType);
+        NotificationService.Notify(NotificationSeverity.Success, "Circuit Breaker", $"Circuit breaker reset for {cb.MetalType}");
+        await LoadCircuitBreakers();
+    }
+
+    private ProgressBarStyle GetUtilizationStyle(decimal utilization)
+    {
+        if (utilization < 50) return ProgressBarStyle.Success;
+        if (utilization < 80) return ProgressBarStyle.Warning;
+        return ProgressBarStyle.Danger;
+    }
+
+    private BadgeStyle GetRiskBadgeStyle(string riskLevel) => riskLevel switch
+    {
+        "Low" => BadgeStyle.Success,
+        "Moderate" => BadgeStyle.Warning,
+        "High" => BadgeStyle.Danger,
+        "Critical" => BadgeStyle.Danger,
+        _ => BadgeStyle.Light
+    };
+
+    private BadgeStyle GetAlertBadgeStyle(string alertLevel) => alertLevel switch
+    {
+        "Normal" => BadgeStyle.Success,
+        "Warning" => BadgeStyle.Warning,
+        "Critical" => BadgeStyle.Danger,
+        "Breach" => BadgeStyle.Danger,
+        _ => BadgeStyle.Light
+    };
+
+    private BadgeStyle GetSeverityBadgeStyle(string severity) => severity switch
+    {
+        "Low" => BadgeStyle.Info,
+        "Medium" => BadgeStyle.Warning,
+        "High" => BadgeStyle.Danger,
+        "Critical" => BadgeStyle.Danger,
+        _ => BadgeStyle.Light
+    };
+
+    private BadgeStyle GetStatusBadgeStyle(string status) => status switch
+    {
+        "Detected" => BadgeStyle.Info,
+        "UnderReview" => BadgeStyle.Warning,
+        "Confirmed" => BadgeStyle.Danger,
+        "FalsePositive" => BadgeStyle.Light,
+        "Escalated" => BadgeStyle.Danger,
+        "Closed" => BadgeStyle.Secondary,
+        _ => BadgeStyle.Light
+    };
+
+    private BadgeStyle GetCircuitBreakerStyle(string status) => status switch
+    {
+        "Active" => BadgeStyle.Success,
+        "Triggered" => BadgeStyle.Danger,
+        "Resumed" => BadgeStyle.Info,
+        _ => BadgeStyle.Light
+    };
+}
