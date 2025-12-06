@@ -16,6 +16,7 @@ public interface IAmlKycService
     Task<AmlScreeningResult> PerformScreeningAsync(string entityId, string entityType);
     
     // Beneficial Owners
+    Task<IEnumerable<BeneficialOwner>> GetAllBeneficialOwnersAsync();
     Task<IEnumerable<BeneficialOwner>> GetBeneficialOwnersByEntityAsync(string entityId, string entityType);
     Task<BeneficialOwner?> GetBeneficialOwnerByIdAsync(string id);
     Task<BeneficialOwner> CreateBeneficialOwnerAsync(BeneficialOwner owner);

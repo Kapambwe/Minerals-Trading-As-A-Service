@@ -1,0 +1,234 @@
+@page "/tax-compliance"
+@using Platform.Trading.Management.Models
+@using Platform.Trading.Management.Models.Tax
+@using Platform.Trading.Management.Services.Interfaces
+@inject ITaxService TaxService
+@inject NotificationService NotificationService
+
+<PageTitle>Tax & Export Compliance</PageTitle>
+
+<RadzenStack Gap="1rem">
+    <RadzenRow>
+        <RadzenColumn Size="12">
+            <RadzenText TextStyle="TextStyle.H3" TagName="TagName.H1">Tax & Export Compliance</RadzenText>
+            <RadzenText TextStyle="TextStyle.Body1">ZRA tax integration, export permits, and Bank of Zambia reporting</RadzenText>
+        </RadzenColumn>
+    </RadzenRow>
+
+    <RadzenTabs>
+        <Tabs>
+            <RadzenTabsItem Text="Tax Calculations">
+                <RadzenRow Class="rz-mt-4">
+                    <RadzenColumn Size="12">
+                        <RadzenDataGrid Data="@taxCalculations" TItem="TaxCalculation" AllowFiltering="true"
+                                       AllowSorting="true" AllowPaging="true" PageSize="10"
+                                       RowExpand="@((calc) => calc.TaxComponents.Any())">
+                            <Columns>
+                                <RadzenDataGridColumn TItem="TaxCalculation" Property="TradeNumber" Title="Trade #" Width="130px" />
+                                <RadzenDataGridColumn TItem="TaxCalculation" Property="MetalType" Title="Metal" Width="100px" />
+                                <RadzenDataGridColumn TItem="TaxCalculation" Property="Quantity" Title="Qty (MT)" Width="100px" FormatString="{0:N2}" />
+                                <RadzenDataGridColumn TItem="TaxCalculation" Property="TradeValue" Title="Trade Value" Width="120px" FormatString="{0:C0}" />
+                                <RadzenDataGridColumn TItem="TaxCalculation" Property="TotalTaxAmount" Title="Total Tax (ZMW)" Width="130px" FormatString="{0:N0}" />
+                                <RadzenDataGridColumn TItem="TaxCalculation" Property="DueDate" Title="Due Date" Width="110px" FormatString="{0:MM/dd/yyyy}" />
+                                <RadzenDataGridColumn TItem="TaxCalculation" Property="Status" Title="Status" Width="110px">
+                                    <Template Context="calc">
+                                        <RadzenBadge BadgeStyle="@GetTaxStatusBadgeStyle(calc.Status)" Text="@calc.Status" />
+                                    </Template>
+                                </RadzenDataGridColumn>
+                                <RadzenDataGridColumn TItem="TaxCalculation" Width="150px" Title="Actions">
+                                    <Template Context="calc">
+                                        @if (calc.Status == "Calculated")
+                                        {
+                                            <RadzenButton Icon="send" Size="ButtonSize.Small" Text="Submit" 
+                                                         Click="@(() => SubmitToZra(calc))" ButtonStyle="ButtonStyle.Primary" />
+                                        }
+                                    </Template>
+                                </RadzenDataGridColumn>
+                            </Columns>
+                            <Template Context="calc">
+                                <RadzenCard Style="margin-left: 2rem; margin-right: 2rem;">
+                                    <RadzenText TextStyle="TextStyle.Subtitle1">Tax Components</RadzenText>
+                                    <RadzenDataGrid Data="@calc.TaxComponents" TItem="TaxComponent" Density="Density.Compact">
+                                        <Columns>
+                                            <RadzenDataGridColumn TItem="TaxComponent" Property="TaxName" Title="Tax" />
+                                            <RadzenDataGridColumn TItem="TaxComponent" Property="TaxRate" Title="Rate" FormatString="{0:N1}%" Width="100px" />
+                                            <RadzenDataGridColumn TItem="TaxComponent" Property="TaxableAmount" Title="Taxable Amount" FormatString="{0:N0}" Width="140px" />
+                                            <RadzenDataGridColumn TItem="TaxComponent" Property="TaxAmount" Title="Tax Amount" FormatString="{0:N0}" Width="120px" />
+                                        </Columns>
+                                    </RadzenDataGrid>
+                                </RadzenCard>
+                            </Template>
+                        </RadzenDataGrid>
+                    </RadzenColumn>
+                </RadzenRow>
+            </RadzenTabsItem>
+
+            <RadzenTabsItem Text="Export Permits">
+                <RadzenRow Class="rz-mt-4">
+                    <RadzenColumn Size="12">
+                        <RadzenButton Icon="add_circle_outline" Text="New Permit Application" Click="@CreateNewPermit" ButtonStyle="ButtonStyle.Primary" />
+                    </RadzenColumn>
+                </RadzenRow>
+                <RadzenRow Class="rz-mt-4">
+                    <RadzenColumn Size="12">
+                        <RadzenDataGrid Data="@exportPermits" TItem="ExportPermit" AllowFiltering="true"
+                                       AllowSorting="true" AllowPaging="true" PageSize="10">
+                            <Columns>
+                                <RadzenDataGridColumn TItem="ExportPermit" Property="PermitNumber" Title="Permit #" Width="140px" />
+                                <RadzenDataGridColumn TItem="ExportPermit" Property="ApplicantName" Title="Applicant" />
+                                <RadzenDataGridColumn TItem="ExportPermit" Property="MetalType" Title="Metal" Width="100px" />
+                                <RadzenDataGridColumn TItem="ExportPermit" Property="Quantity" Title="Qty (MT)" Width="100px" FormatString="{0:N2}" />
+                                <RadzenDataGridColumn TItem="ExportPermit" Property="DestinationCountry" Title="Destination" Width="120px" />
+                                <RadzenDataGridColumn TItem="ExportPermit" Property="DeclaredValue" Title="Value" Width="120px" FormatString="{0:C0}" />
+                                <RadzenDataGridColumn TItem="ExportPermit" Property="TaxClearanceVerified" Title="Tax Clear" Width="90px">
+                                    <Template Context="permit">
+                                        <RadzenIcon Icon="@(permit.TaxClearanceVerified ? "check_circle" : "cancel")" 
+                                                   IconStyle="@(permit.TaxClearanceVerified ? IconStyle.Success : IconStyle.Danger)" />
+                                    </Template>
+                                </RadzenDataGridColumn>
+                                <RadzenDataGridColumn TItem="ExportPermit" Property="ExpiryDate" Title="Expiry" Width="110px" FormatString="{0:MM/dd/yyyy}" />
+                                <RadzenDataGridColumn TItem="ExportPermit" Property="Status" Title="Status" Width="100px">
+                                    <Template Context="permit">
+                                        <RadzenBadge BadgeStyle="@GetPermitStatusBadgeStyle(permit.Status)" Text="@permit.Status" />
+                                    </Template>
+                                </RadzenDataGridColumn>
+                            </Columns>
+                        </RadzenDataGrid>
+                    </RadzenColumn>
+                </RadzenRow>
+            </RadzenTabsItem>
+
+            <RadzenTabsItem Text="BOZ Transactions">
+                <RadzenRow Class="rz-mt-4">
+                    <RadzenColumn Size="12">
+                        <RadzenDataGrid Data="@bozTransactions" TItem="BozTransaction" AllowFiltering="true"
+                                       AllowSorting="true" AllowPaging="true" PageSize="10">
+                            <Columns>
+                                <RadzenDataGridColumn TItem="BozTransaction" Property="ReportingReference" Title="Reference" Width="150px" />
+                                <RadzenDataGridColumn TItem="BozTransaction" Property="TradeNumber" Title="Trade #" Width="130px" />
+                                <RadzenDataGridColumn TItem="BozTransaction" Property="TransactionType" Title="Type" Width="100px" />
+                                <RadzenDataGridColumn TItem="BozTransaction" Property="TransactionAmount" Title="Amount (USD)" Width="130px" FormatString="{0:C0}" />
+                                <RadzenDataGridColumn TItem="BozTransaction" Property="ZmwEquivalent" Title="ZMW Equiv." Width="130px" FormatString="{0:N0}" />
+                                <RadzenDataGridColumn TItem="BozTransaction" Property="LocalPartyName" Title="Local Party" />
+                                <RadzenDataGridColumn TItem="BozTransaction" Property="ForeignPartyCountry" Title="Foreign Country" Width="130px" />
+                                <RadzenDataGridColumn TItem="BozTransaction" Property="IsLargeTransaction" Title="Large Txn" Width="90px">
+                                    <Template Context="txn">
+                                        @if (txn.IsLargeTransaction)
+                                        {
+                                            <RadzenBadge BadgeStyle="BadgeStyle.Warning" Text="Yes" />
+                                        }
+                                    </Template>
+                                </RadzenDataGridColumn>
+                                <RadzenDataGridColumn TItem="BozTransaction" Property="Status" Title="Status" Width="110px">
+                                    <Template Context="txn">
+                                        <RadzenBadge BadgeStyle="@GetBozStatusBadgeStyle(txn.Status)" Text="@txn.Status" />
+                                    </Template>
+                                </RadzenDataGridColumn>
+                                <RadzenDataGridColumn TItem="BozTransaction" Width="120px" Title="Actions">
+                                    <Template Context="txn">
+                                        @if (txn.Status == "Pending")
+                                        {
+                                            <RadzenButton Icon="send" Size="ButtonSize.Small" Text="Submit" 
+                                                         Click="@(() => SubmitToBoz(txn))" ButtonStyle="ButtonStyle.Primary" />
+                                        }
+                                    </Template>
+                                </RadzenDataGridColumn>
+                            </Columns>
+                        </RadzenDataGrid>
+                    </RadzenColumn>
+                </RadzenRow>
+            </RadzenTabsItem>
+
+            <RadzenTabsItem Text="Tax Rates">
+                <RadzenRow Class="rz-mt-4">
+                    <RadzenColumn Size="12">
+                        <RadzenDataGrid Data="@taxRates" TItem="TaxRateConfiguration" AllowFiltering="true"
+                                       AllowSorting="true" AllowPaging="true" PageSize="10">
+                            <Columns>
+                                <RadzenDataGridColumn TItem="TaxRateConfiguration" Property="MetalType" Title="Metal" Width="100px" />
+                                <RadzenDataGridColumn TItem="TaxRateConfiguration" Property="TaxType" Title="Tax Type" Width="140px" />
+                                <RadzenDataGridColumn TItem="TaxRateConfiguration" Property="TaxName" Title="Tax Name" />
+                                <RadzenDataGridColumn TItem="TaxRateConfiguration" Property="Rate" Title="Rate %" Width="100px" FormatString="{0:N1}%" />
+                                <RadzenDataGridColumn TItem="TaxRateConfiguration" Property="EffectiveFrom" Title="Effective From" Width="120px" FormatString="{0:MM/dd/yyyy}" />
+                                <RadzenDataGridColumn TItem="TaxRateConfiguration" Property="LegalReference" Title="Legal Reference" />
+                                <RadzenDataGridColumn TItem="TaxRateConfiguration" Property="IsActive" Title="Active" Width="80px">
+                                    <Template Context="rate">
+                                        <RadzenIcon Icon="@(rate.IsActive ? "check_circle" : "cancel")" 
+                                                   IconStyle="@(rate.IsActive ? IconStyle.Success : IconStyle.Light)" />
+                                    </Template>
+                                </RadzenDataGridColumn>
+                            </Columns>
+                        </RadzenDataGrid>
+                    </RadzenColumn>
+                </RadzenRow>
+            </RadzenTabsItem>
+        </Tabs>
+    </RadzenTabs>
+</RadzenStack>
+
+@code {
+    private IEnumerable<TaxCalculation> taxCalculations = new List<TaxCalculation>();
+    private IEnumerable<ExportPermit> exportPermits = new List<ExportPermit>();
+    private IEnumerable<BozTransaction> bozTransactions = new List<BozTransaction>();
+    private IEnumerable<TaxRateConfiguration> taxRates = new List<TaxRateConfiguration>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        taxCalculations = await TaxService.GetAllTaxCalculationsAsync();
+        exportPermits = await TaxService.GetAllExportPermitsAsync();
+        bozTransactions = await TaxService.GetAllBozTransactionsAsync();
+        taxRates = await TaxService.GetTaxRateConfigurationsAsync();
+    }
+
+    private async Task CreateNewPermit()
+    {
+        NotificationService.Notify(NotificationSeverity.Info, "Export Permit", "Create export permit dialog would open here");
+    }
+
+    private async Task SubmitToZra(TaxCalculation calc)
+    {
+        await TaxService.SubmitTaxToZraAsync(calc.Id);
+        await LoadData();
+        NotificationService.Notify(NotificationSeverity.Success, "Submitted", $"Tax calculation for {calc.TradeNumber} submitted to ZRA.");
+    }
+
+    private async Task SubmitToBoz(BozTransaction txn)
+    {
+        await TaxService.SubmitToBozAsync(txn.Id);
+        await LoadData();
+        NotificationService.Notify(NotificationSeverity.Success, "Submitted", $"Transaction {txn.ReportingReference} submitted to BOZ.");
+    }
+
+    private BadgeStyle GetTaxStatusBadgeStyle(string status) => status switch
+    {
+        "Calculated" => BadgeStyle.Info,
+        "Submitted" => BadgeStyle.Warning,
+        "Paid" => BadgeStyle.Success,
+        "Overdue" => BadgeStyle.Danger,
+        _ => BadgeStyle.Light
+    };
+
+    private BadgeStyle GetPermitStatusBadgeStyle(string status) => status switch
+    {
+        "Approved" => BadgeStyle.Success,
+        "Pending" => BadgeStyle.Warning,
+        "UnderReview" => BadgeStyle.Info,
+        "Rejected" => BadgeStyle.Danger,
+        "Expired" => BadgeStyle.Light,
+        _ => BadgeStyle.Light
+    };
+
+    private BadgeStyle GetBozStatusBadgeStyle(string status) => status switch
+    {
+        "Submitted" => BadgeStyle.Info,
+        "Acknowledged" => BadgeStyle.Success,
+        "Pending" => BadgeStyle.Warning,
+        "Rejected" => BadgeStyle.Danger,
+        _ => BadgeStyle.Light
+    };
+}

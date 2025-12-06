@@ -125,6 +125,9 @@ public class MockAmlKycService : IAmlKycService
         return Task.FromResult(result);
     }
 
+    public Task<IEnumerable<BeneficialOwner>> GetAllBeneficialOwnersAsync()
+        => Task.FromResult<IEnumerable<BeneficialOwner>>(_beneficialOwners);
+
     public Task<IEnumerable<BeneficialOwner>> GetBeneficialOwnersByEntityAsync(string entityId, string entityType)
         => Task.FromResult<IEnumerable<BeneficialOwner>>(
             _beneficialOwners.Where(o => o.EntityId == entityId && o.EntityType == entityType));

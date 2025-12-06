@@ -1,0 +1,195 @@
+@page "/compliance"
+@using Platform.Trading.Management.Models.AmlKyc
+@using Platform.Trading.Management.Services.Interfaces
+@inject IAmlKycService AmlKycService
+@inject DialogService DialogService
+@inject NotificationService NotificationService
+
+<PageTitle>Compliance Management</PageTitle>
+
+<RadzenStack Gap="1rem">
+    <RadzenRow>
+        <RadzenColumn Size="12">
+            <RadzenText TextStyle="TextStyle.H3" TagName="TagName.H1">Compliance Management</RadzenText>
+            <RadzenText TextStyle="TextStyle.Body1">AML/KYC screening, beneficial ownership, and suspicious activity reporting</RadzenText>
+        </RadzenColumn>
+    </RadzenRow>
+
+    <RadzenTabs>
+        <Tabs>
+            <RadzenTabsItem Text="AML Screenings">
+                <RadzenRow Class="rz-mt-4">
+                    <RadzenColumn Size="12">
+                        <RadzenButton Icon="search" Text="New Screening" Click="@PerformNewScreening" ButtonStyle="ButtonStyle.Primary" />
+                    </RadzenColumn>
+                </RadzenRow>
+                <RadzenRow Class="rz-mt-4">
+                    <RadzenColumn Size="12">
+                        <RadzenDataGrid Data="@screeningResults" TItem="AmlScreeningResult" AllowFiltering="true"
+                                       AllowSorting="true" AllowPaging="true" PageSize="10">
+                            <Columns>
+                                <RadzenDataGridColumn TItem="AmlScreeningResult" Property="EntityName" Title="Entity" />
+                                <RadzenDataGridColumn TItem="AmlScreeningResult" Property="EntityType" Title="Type" Width="100px" />
+                                <RadzenDataGridColumn TItem="AmlScreeningResult" Property="ScreeningDate" Title="Screening Date" Width="130px" FormatString="{0:MM/dd/yyyy}" />
+                                <RadzenDataGridColumn TItem="AmlScreeningResult" Property="SanctionsCheckPassed" Title="Sanctions" Width="100px">
+                                    <Template Context="result">
+                                        <RadzenIcon Icon="@(result.SanctionsCheckPassed ? "check_circle" : "cancel")" 
+                                                   IconStyle="@(result.SanctionsCheckPassed ? IconStyle.Success : IconStyle.Danger)" />
+                                    </Template>
+                                </RadzenDataGridColumn>
+                                <RadzenDataGridColumn TItem="AmlScreeningResult" Property="PepCheckPassed" Title="PEP" Width="100px">
+                                    <Template Context="result">
+                                        <RadzenIcon Icon="@(result.PepCheckPassed ? "check_circle" : "warning")" 
+                                                   IconStyle="@(result.PepCheckPassed ? IconStyle.Success : IconStyle.Warning)" />
+                                    </Template>
+                                </RadzenDataGridColumn>
+                                <RadzenDataGridColumn TItem="AmlScreeningResult" Property="RiskLevel" Title="Risk Level" Width="110px">
+                                    <Template Context="result">
+                                        <RadzenBadge BadgeStyle="@GetRiskBadgeStyle(result.RiskLevel)" Text="@result.RiskLevel" />
+                                    </Template>
+                                </RadzenDataGridColumn>
+                                <RadzenDataGridColumn TItem="AmlScreeningResult" Property="ScreeningStatus" Title="Status" Width="130px">
+                                    <Template Context="result">
+                                        <RadzenBadge BadgeStyle="@GetStatusBadgeStyle(result.ScreeningStatus)" Text="@result.ScreeningStatus" />
+                                    </Template>
+                                </RadzenDataGridColumn>
+                            </Columns>
+                        </RadzenDataGrid>
+                    </RadzenColumn>
+                </RadzenRow>
+            </RadzenTabsItem>
+
+            <RadzenTabsItem Text="Beneficial Owners">
+                <RadzenRow Class="rz-mt-4">
+                    <RadzenColumn Size="12">
+                        <RadzenButton Icon="person_add" Text="Add Beneficial Owner" Click="@AddBeneficialOwner" ButtonStyle="ButtonStyle.Primary" />
+                    </RadzenColumn>
+                </RadzenRow>
+                <RadzenRow Class="rz-mt-4">
+                    <RadzenColumn Size="12">
+                        <RadzenDataGrid Data="@beneficialOwners" TItem="BeneficialOwner" AllowFiltering="true"
+                                       AllowSorting="true" AllowPaging="true" PageSize="10">
+                            <Columns>
+                                <RadzenDataGridColumn TItem="BeneficialOwner" Property="FullName" Title="Name" />
+                                <RadzenDataGridColumn TItem="BeneficialOwner" Property="EntityType" Title="Entity Type" Width="120px" />
+                                <RadzenDataGridColumn TItem="BeneficialOwner" Property="Nationality" Title="Nationality" Width="120px" />
+                                <RadzenDataGridColumn TItem="BeneficialOwner" Property="OwnershipPercentage" Title="Ownership %" Width="120px" FormatString="{0:N1}%" />
+                                <RadzenDataGridColumn TItem="BeneficialOwner" Property="IsPep" Title="PEP" Width="80px">
+                                    <Template Context="owner">
+                                        @if (owner.IsPep)
+                                        {
+                                            <RadzenBadge BadgeStyle="BadgeStyle.Warning" Text="Yes" />
+                                        }
+                                        else
+                                        {
+                                            <RadzenBadge BadgeStyle="BadgeStyle.Light" Text="No" />
+                                        }
+                                    </Template>
+                                </RadzenDataGridColumn>
+                                <RadzenDataGridColumn TItem="BeneficialOwner" Property="VerificationStatus" Title="Verification" Width="130px">
+                                    <Template Context="owner">
+                                        <RadzenBadge BadgeStyle="@GetVerificationBadgeStyle(owner.VerificationStatus)" Text="@owner.VerificationStatus" />
+                                    </Template>
+                                </RadzenDataGridColumn>
+                            </Columns>
+                        </RadzenDataGrid>
+                    </RadzenColumn>
+                </RadzenRow>
+            </RadzenTabsItem>
+
+            <RadzenTabsItem Text="Suspicious Activity Reports">
+                <RadzenRow Class="rz-mt-4">
+                    <RadzenColumn Size="12">
+                        <RadzenButton Icon="report_problem" Text="Create SAR" Click="@CreateSar" ButtonStyle="ButtonStyle.Danger" />
+                    </RadzenColumn>
+                </RadzenRow>
+                <RadzenRow Class="rz-mt-4">
+                    <RadzenColumn Size="12">
+                        <RadzenDataGrid Data="@sars" TItem="SuspiciousActivityReport" AllowFiltering="true"
+                                       AllowSorting="true" AllowPaging="true" PageSize="10">
+                            <Columns>
+                                <RadzenDataGridColumn TItem="SuspiciousActivityReport" Property="ReportNumber" Title="Report #" Width="140px" />
+                                <RadzenDataGridColumn TItem="SuspiciousActivityReport" Property="SubjectName" Title="Subject" />
+                                <RadzenDataGridColumn TItem="SuspiciousActivityReport" Property="SuspicionCategory" Title="Category" Width="150px" />
+                                <RadzenDataGridColumn TItem="SuspiciousActivityReport" Property="ReportDate" Title="Report Date" Width="120px" FormatString="{0:MM/dd/yyyy}" />
+                                <RadzenDataGridColumn TItem="SuspiciousActivityReport" Property="Status" Title="Status" Width="130px">
+                                    <Template Context="sar">
+                                        <RadzenBadge BadgeStyle="@GetSarStatusBadgeStyle(sar.Status)" Text="@sar.Status" />
+                                    </Template>
+                                </RadzenDataGridColumn>
+                            </Columns>
+                        </RadzenDataGrid>
+                    </RadzenColumn>
+                </RadzenRow>
+            </RadzenTabsItem>
+        </Tabs>
+    </RadzenTabs>
+</RadzenStack>
+
+@code {
+    private IEnumerable<AmlScreeningResult> screeningResults = new List<AmlScreeningResult>();
+    private IEnumerable<BeneficialOwner> beneficialOwners = new List<BeneficialOwner>();
+    private IEnumerable<SuspiciousActivityReport> sars = new List<SuspiciousActivityReport>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        screeningResults = await AmlKycService.GetAllScreeningResultsAsync();
+        sars = await AmlKycService.GetAllSarsAsync();
+        beneficialOwners = await AmlKycService.GetAllBeneficialOwnersAsync();
+    }
+
+    private async Task PerformNewScreening()
+    {
+        NotificationService.Notify(NotificationSeverity.Info, "Screening", "New screening dialog would open here");
+    }
+
+    private async Task AddBeneficialOwner()
+    {
+        NotificationService.Notify(NotificationSeverity.Info, "Beneficial Owner", "Add beneficial owner dialog would open here");
+    }
+
+    private async Task CreateSar()
+    {
+        NotificationService.Notify(NotificationSeverity.Info, "SAR", "Create SAR dialog would open here");
+    }
+
+    private BadgeStyle GetRiskBadgeStyle(string riskLevel) => riskLevel switch
+    {
+        "Low" => BadgeStyle.Success,
+        "Medium" => BadgeStyle.Warning,
+        "High" => BadgeStyle.Danger,
+        "Critical" => BadgeStyle.Danger,
+        _ => BadgeStyle.Light
+    };
+
+    private BadgeStyle GetStatusBadgeStyle(string status) => status switch
+    {
+        "Passed" => BadgeStyle.Success,
+        "Failed" => BadgeStyle.Danger,
+        "Review Required" => BadgeStyle.Warning,
+        "Pending" => BadgeStyle.Info,
+        _ => BadgeStyle.Light
+    };
+
+    private BadgeStyle GetVerificationBadgeStyle(string status) => status switch
+    {
+        "Verified" => BadgeStyle.Success,
+        "Rejected" => BadgeStyle.Danger,
+        "Pending" => BadgeStyle.Warning,
+        _ => BadgeStyle.Light
+    };
+
+    private BadgeStyle GetSarStatusBadgeStyle(string status) => status switch
+    {
+        "Filed" => BadgeStyle.Success,
+        "Under Review" => BadgeStyle.Warning,
+        "Draft" => BadgeStyle.Info,
+        "Closed" => BadgeStyle.Light,
+        _ => BadgeStyle.Light
+    };
+}

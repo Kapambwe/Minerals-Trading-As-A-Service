@@ -1,0 +1,163 @@
+@page "/price-indices"
+@using Platform.Trading.Management.Models
+@using Platform.Trading.Management.Models.Trading
+@using Platform.Trading.Management.Services.Interfaces
+@inject IPriceIndexService PriceIndexService
+@inject NotificationService NotificationService
+
+<PageTitle>Price Indices</PageTitle>
+
+<RadzenStack Gap="1rem">
+    <RadzenRow>
+        <RadzenColumn Size="12">
+            <RadzenText TextStyle="TextStyle.H3" TagName="TagName.H1">Price Indices</RadzenText>
+            <RadzenText TextStyle="TextStyle.Body1">LME, COMEX, and ZME benchmark prices integration</RadzenText>
+        </RadzenColumn>
+    </RadzenRow>
+
+    <RadzenRow>
+        <RadzenColumn Size="12">
+            <RadzenButton Icon="refresh" Text="Refresh All Prices" Click="@RefreshAllPrices" ButtonStyle="ButtonStyle.Primary" />
+        </RadzenColumn>
+    </RadzenRow>
+
+    <RadzenRow>
+        @foreach (var source in new[] { "LME", "COMEX", "ZME" })
+        {
+            <RadzenColumn Size="4">
+                <RadzenCard>
+                    <RadzenText TextStyle="TextStyle.H5">@source Prices</RadzenText>
+                    <RadzenDataList Data="@(priceIndices.Where(p => p.IndexSource == source))" TItem="PriceIndex">
+                        <Template Context="price">
+                            <RadzenCard Style="margin-bottom: 0.5rem;">
+                                <RadzenRow AlignItems="AlignItems.Center">
+                                    <RadzenColumn Size="6">
+                                        <RadzenText TextStyle="TextStyle.Subtitle1">@price.MetalType</RadzenText>
+                                        <RadzenText TextStyle="TextStyle.Caption">@price.PriceType</RadzenText>
+                                    </RadzenColumn>
+                                    <RadzenColumn Size="6" Style="text-align: right;">
+                                        <RadzenText TextStyle="TextStyle.H6">@price.Price.ToString("C0")</RadzenText>
+                                        @if (price.Change.HasValue)
+                                        {
+                                            <RadzenText TextStyle="TextStyle.Caption" 
+                                                       Style="@($"color: {(price.Change >= 0 ? "green" : "red")}")">
+                                                @(price.Change >= 0 ? "+" : "")@price.Change?.ToString("C0") 
+                                                (@(price.ChangePercentage?.ToString("N2"))%)
+                                            </RadzenText>
+                                        }
+                                    </RadzenColumn>
+                                </RadzenRow>
+                            </RadzenCard>
+                        </Template>
+                    </RadzenDataList>
+                </RadzenCard>
+            </RadzenColumn>
+        }
+    </RadzenRow>
+
+    <RadzenRow>
+        <RadzenColumn Size="12">
+            <RadzenCard>
+                <RadzenText TextStyle="TextStyle.H5">All Price Indices</RadzenText>
+                <RadzenDataGrid Data="@priceIndices" TItem="PriceIndex" AllowFiltering="true" 
+                               AllowSorting="true" AllowPaging="true" PageSize="15">
+                    <Columns>
+                        <RadzenDataGridColumn TItem="PriceIndex" Property="IndexSource" Title="Source" Width="100px">
+                            <Template Context="price">
+                                <RadzenBadge BadgeStyle="@GetSourceBadgeStyle(price.IndexSource)" Text="@price.IndexSource" />
+                            </Template>
+                        </RadzenDataGridColumn>
+                        <RadzenDataGridColumn TItem="PriceIndex" Property="IndexName" Title="Index Name" />
+                        <RadzenDataGridColumn TItem="PriceIndex" Property="MetalType" Title="Metal" Width="100px" />
+                        <RadzenDataGridColumn TItem="PriceIndex" Property="PriceType" Title="Type" Width="100px" />
+                        <RadzenDataGridColumn TItem="PriceIndex" Property="Price" Title="Price" Width="120px" FormatString="{0:C0}" />
+                        <RadzenDataGridColumn TItem="PriceIndex" Property="Change" Title="Change" Width="100px">
+                            <Template Context="price">
+                                @if (price.Change.HasValue)
+                                {
+                                    <span style="color: @(price.Change >= 0 ? "green" : "red")">
+                                        @(price.Change >= 0 ? "+" : "")@price.Change?.ToString("C0")
+                                    </span>
+                                }
+                            </Template>
+                        </RadzenDataGridColumn>
+                        <RadzenDataGridColumn TItem="PriceIndex" Property="ChangePercentage" Title="Change %" Width="100px">
+                            <Template Context="price">
+                                @if (price.ChangePercentage.HasValue)
+                                {
+                                    <span style="color: @(price.ChangePercentage >= 0 ? "green" : "red")">
+                                        @(price.ChangePercentage >= 0 ? "+" : "")@price.ChangePercentage?.ToString("N2")%
+                                    </span>
+                                }
+                            </Template>
+                        </RadzenDataGridColumn>
+                        <RadzenDataGridColumn TItem="PriceIndex" Property="Volume" Title="Volume" Width="120px" FormatString="{0:N0}" />
+                        <RadzenDataGridColumn TItem="PriceIndex" Property="PriceDate" Title="Date" Width="110px" FormatString="{0:MM/dd/yyyy}" />
+                        <RadzenDataGridColumn TItem="PriceIndex" Property="DataStatus" Title="Status" Width="100px">
+                            <Template Context="price">
+                                <RadzenBadge BadgeStyle="@GetDataStatusBadgeStyle(price.DataStatus)" Text="@price.DataStatus" />
+                            </Template>
+                        </RadzenDataGridColumn>
+                    </Columns>
+                </RadzenDataGrid>
+            </RadzenCard>
+        </RadzenColumn>
+    </RadzenRow>
+
+    <RadzenRow>
+        <RadzenColumn Size="12">
+            <RadzenCard>
+                <RadzenText TextStyle="TextStyle.H5">Price History (Last 30 Days)</RadzenText>
+                <RadzenChart Style="height: 300px;">
+                    <RadzenLineSeries Data="@priceHistory" CategoryProperty="Date" ValueProperty="ClosePrice" Title="@($"{selectedMetal} Close Price")" />
+                    <RadzenCategoryAxis>
+                        <RadzenAxisTitle Text="Date" />
+                    </RadzenCategoryAxis>
+                    <RadzenValueAxis>
+                        <RadzenAxisTitle Text="Price (USD/MT)" />
+                    </RadzenValueAxis>
+                </RadzenChart>
+            </RadzenCard>
+        </RadzenColumn>
+    </RadzenRow>
+</RadzenStack>
+
+@code {
+    private IEnumerable<PriceIndex> priceIndices = new List<PriceIndex>();
+    private IEnumerable<PriceHistory> priceHistory = new List<PriceHistory>();
+    private MetalType selectedMetal = MetalType.Copper;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        priceIndices = await PriceIndexService.GetAllPriceIndicesAsync();
+        priceHistory = await PriceIndexService.GetPriceHistoryAsync("LME", selectedMetal, DateTime.Today.AddDays(-30), DateTime.Today);
+    }
+
+    private async Task RefreshAllPrices()
+    {
+        await PriceIndexService.RefreshAllPriceIndicesAsync();
+        await LoadData();
+        NotificationService.Notify(NotificationSeverity.Success, "Refreshed", "All price indices refreshed successfully.");
+    }
+
+    private BadgeStyle GetSourceBadgeStyle(string source) => source switch
+    {
+        "LME" => BadgeStyle.Primary,
+        "COMEX" => BadgeStyle.Info,
+        "ZME" => BadgeStyle.Success,
+        _ => BadgeStyle.Secondary
+    };
+
+    private BadgeStyle GetDataStatusBadgeStyle(string status) => status switch
+    {
+        "Active" => BadgeStyle.Success,
+        "Delayed" => BadgeStyle.Warning,
+        "Stale" => BadgeStyle.Danger,
+        _ => BadgeStyle.Light
+    };
+}

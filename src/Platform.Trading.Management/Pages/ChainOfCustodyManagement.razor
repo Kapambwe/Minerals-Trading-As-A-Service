@@ -1,0 +1,252 @@
+@page "/chain-of-custody"
+@using Platform.Trading.Management.Models
+@using Platform.Trading.Management.Models.ChainOfCustody
+@using Platform.Trading.Management.Services.Interfaces
+@inject IChainOfCustodyService ChainOfCustodyService
+@inject NotificationService NotificationService
+
+<PageTitle>Chain of Custody</PageTitle>
+
+<RadzenStack Gap="1rem">
+    <RadzenRow>
+        <RadzenColumn Size="12">
+            <RadzenText TextStyle="TextStyle.H3" TagName="TagName.H1">Chain of Custody</RadzenText>
+            <RadzenText TextStyle="TextStyle.Body1">Mine-to-market traceability and conflict minerals compliance</RadzenText>
+        </RadzenColumn>
+    </RadzenRow>
+
+    <RadzenTabs>
+        <Tabs>
+            <RadzenTabsItem Text="Custody Records">
+                <RadzenRow Class="rz-mt-4">
+                    <RadzenColumn Size="12">
+                        <RadzenButton Icon="add_circle_outline" Text="New Record" Click="@CreateNewRecord" ButtonStyle="ButtonStyle.Primary" />
+                        <RadzenButton Icon="verified" Text="Validate Chain" Click="@ValidateChain" ButtonStyle="ButtonStyle.Secondary" Class="rz-ml-2" />
+                    </RadzenColumn>
+                </RadzenRow>
+                <RadzenRow Class="rz-mt-4">
+                    <RadzenColumn Size="12">
+                        <RadzenDataGrid Data="@custodyRecords" TItem="CustodyRecord" AllowFiltering="true"
+                                       AllowSorting="true" AllowPaging="true" PageSize="10">
+                            <Columns>
+                                <RadzenDataGridColumn TItem="CustodyRecord" Property="BatchNumber" Title="Batch #" Width="150px" />
+                                <RadzenDataGridColumn TItem="CustodyRecord" Property="SequenceNumber" Title="Seq" Width="60px" />
+                                <RadzenDataGridColumn TItem="CustodyRecord" Property="CustodyType" Title="Type" Width="100px">
+                                    <Template Context="record">
+                                        <RadzenBadge BadgeStyle="@GetCustodyTypeBadgeStyle(record.CustodyType)" Text="@record.CustodyType" />
+                                    </Template>
+                                </RadzenDataGridColumn>
+                                <RadzenDataGridColumn TItem="CustodyRecord" Property="MetalType" Title="Metal" Width="100px" />
+                                <RadzenDataGridColumn TItem="CustodyRecord" Property="Quantity" Title="Qty (MT)" Width="100px" FormatString="{0:N2}" />
+                                <RadzenDataGridColumn TItem="CustodyRecord" Property="LocationName" Title="Location" />
+                                <RadzenDataGridColumn TItem="CustodyRecord" Property="TransferDate" Title="Transfer Date" Width="120px" FormatString="{0:MM/dd/yyyy}" />
+                                <RadzenDataGridColumn TItem="CustodyRecord" Property="IsVerified" Title="Verified" Width="90px">
+                                    <Template Context="record">
+                                        <RadzenIcon Icon="@(record.IsVerified ? "verified" : "pending")" 
+                                                   IconStyle="@(record.IsVerified ? IconStyle.Success : IconStyle.Warning)" />
+                                    </Template>
+                                </RadzenDataGridColumn>
+                                <RadzenDataGridColumn TItem="CustodyRecord" Property="ConflictFreeVerified" Title="Conflict Free" Width="110px">
+                                    <Template Context="record">
+                                        @if (record.ConflictFreeVerified == true)
+                                        {
+                                            <RadzenBadge BadgeStyle="BadgeStyle.Success" Text="Yes" />
+                                        }
+                                        else if (record.ConflictFreeVerified == false)
+                                        {
+                                            <RadzenBadge BadgeStyle="BadgeStyle.Danger" Text="No" />
+                                        }
+                                        else
+                                        {
+                                            <RadzenBadge BadgeStyle="BadgeStyle.Warning" Text="Pending" />
+                                        }
+                                    </Template>
+                                </RadzenDataGridColumn>
+                                <RadzenDataGridColumn TItem="CustodyRecord" Property="Status" Title="Status" Width="100px">
+                                    <Template Context="record">
+                                        <RadzenBadge BadgeStyle="@GetRecordStatusBadgeStyle(record.Status)" Text="@record.Status" />
+                                    </Template>
+                                </RadzenDataGridColumn>
+                            </Columns>
+                            <Template Context="record">
+                                <RadzenCard Style="margin-left: 2rem; margin-right: 2rem;">
+                                    <RadzenRow>
+                                        <RadzenColumn Size="4">
+                                            <RadzenText TextStyle="TextStyle.Overline">Origin Details</RadzenText>
+                                            <p><strong>Mining License:</strong> @(record.MiningLicenseNumber ?? "N/A")</p>
+                                            <p><strong>Mine Operator:</strong> @(record.MineOperator ?? "N/A")</p>
+                                            <p><strong>GPS:</strong> @(record.GpsCoordinates ?? "N/A")</p>
+                                        </RadzenColumn>
+                                        <RadzenColumn Size="4">
+                                            <RadzenText TextStyle="TextStyle.Overline">Transfer Details</RadzenText>
+                                            <p><strong>From:</strong> @record.TransferringParty</p>
+                                            <p><strong>To:</strong> @record.ReceivingParty</p>
+                                            <p><strong>Transport Doc:</strong> @(record.TransportDocumentNumber ?? "N/A")</p>
+                                        </RadzenColumn>
+                                        <RadzenColumn Size="4">
+                                            <RadzenText TextStyle="TextStyle.Overline">Verification</RadzenText>
+                                            <p><strong>Verified By:</strong> @(record.VerifiedBy ?? "Pending")</p>
+                                            <p><strong>Verified Qty:</strong> @(record.VerifiedQuantity?.ToString("N2") ?? "N/A") MT</p>
+                                            <p><strong>Variance:</strong> @(record.QuantityVariance?.ToString("N2") ?? "N/A") MT</p>
+                                        </RadzenColumn>
+                                    </RadzenRow>
+                                </RadzenCard>
+                            </Template>
+                        </RadzenDataGrid>
+                    </RadzenColumn>
+                </RadzenRow>
+            </RadzenTabsItem>
+
+            <RadzenTabsItem Text="Assay Certificates">
+                <RadzenRow Class="rz-mt-4">
+                    <RadzenColumn Size="12">
+                        <RadzenButton Icon="add_circle_outline" Text="New Certificate" Click="@CreateNewCertificate" ButtonStyle="ButtonStyle.Primary" />
+                    </RadzenColumn>
+                </RadzenRow>
+                <RadzenRow Class="rz-mt-4">
+                    <RadzenColumn Size="12">
+                        <RadzenDataGrid Data="@assayCertificates" TItem="AssayCertificate" AllowFiltering="true"
+                                       AllowSorting="true" AllowPaging="true" PageSize="10">
+                            <Columns>
+                                <RadzenDataGridColumn TItem="AssayCertificate" Property="CertificateNumber" Title="Certificate #" Width="150px" />
+                                <RadzenDataGridColumn TItem="AssayCertificate" Property="BatchNumber" Title="Batch #" Width="150px" />
+                                <RadzenDataGridColumn TItem="AssayCertificate" Property="MetalType" Title="Metal" Width="100px" />
+                                <RadzenDataGridColumn TItem="AssayCertificate" Property="PrimaryMetalContent" Title="Purity %" Width="100px" FormatString="{0:N2}%" />
+                                <RadzenDataGridColumn TItem="AssayCertificate" Property="QualityGrade" Title="Grade" Width="120px" />
+                                <RadzenDataGridColumn TItem="AssayCertificate" Property="LaboratoryName" Title="Laboratory" />
+                                <RadzenDataGridColumn TItem="AssayCertificate" Property="IssueDate" Title="Issue Date" Width="110px" FormatString="{0:MM/dd/yyyy}" />
+                                <RadzenDataGridColumn TItem="AssayCertificate" Property="MeetsLmeStandard" Title="LME" Width="70px">
+                                    <Template Context="cert">
+                                        <RadzenIcon Icon="@(cert.MeetsLmeStandard ? "check_circle" : "cancel")" 
+                                                   IconStyle="@(cert.MeetsLmeStandard ? IconStyle.Success : IconStyle.Danger)" />
+                                    </Template>
+                                </RadzenDataGridColumn>
+                                <RadzenDataGridColumn TItem="AssayCertificate" Property="MeetsZbsStandard" Title="ZBS" Width="70px">
+                                    <Template Context="cert">
+                                        <RadzenIcon Icon="@(cert.MeetsZbsStandard ? "check_circle" : "cancel")" 
+                                                   IconStyle="@(cert.MeetsZbsStandard ? IconStyle.Success : IconStyle.Danger)" />
+                                    </Template>
+                                </RadzenDataGridColumn>
+                                <RadzenDataGridColumn TItem="AssayCertificate" Property="Status" Title="Status" Width="100px">
+                                    <Template Context="cert">
+                                        <RadzenBadge BadgeStyle="@GetCertStatusBadgeStyle(cert.Status)" Text="@cert.Status" />
+                                    </Template>
+                                </RadzenDataGridColumn>
+                            </Columns>
+                            <Template Context="cert">
+                                <RadzenCard Style="margin-left: 2rem; margin-right: 2rem;">
+                                    <RadzenRow>
+                                        <RadzenColumn Size="6">
+                                            <RadzenText TextStyle="TextStyle.Subtitle1">Elemental Analysis</RadzenText>
+                                            <RadzenDataGrid Data="@cert.ElementalAnalysis" TItem="AssayElement" Density="Density.Compact">
+                                                <Columns>
+                                                    <RadzenDataGridColumn TItem="AssayElement" Property="ElementName" Title="Element" />
+                                                    <RadzenDataGridColumn TItem="AssayElement" Property="Content" Title="Content" />
+                                                    <RadzenDataGridColumn TItem="AssayElement" Property="Unit" Title="Unit" />
+                                                </Columns>
+                                            </RadzenDataGrid>
+                                        </RadzenColumn>
+                                        <RadzenColumn Size="6">
+                                            <RadzenText TextStyle="TextStyle.Subtitle1">Impurities</RadzenText>
+                                            <RadzenDataGrid Data="@cert.Impurities" TItem="ImpurityResult" Density="Density.Compact">
+                                                <Columns>
+                                                    <RadzenDataGridColumn TItem="ImpurityResult" Property="ElementName" Title="Element" />
+                                                    <RadzenDataGridColumn TItem="ImpurityResult" Property="Level" Title="Level" />
+                                                    <RadzenDataGridColumn TItem="ImpurityResult" Property="Unit" Title="Unit" />
+                                                    <RadzenDataGridColumn TItem="ImpurityResult" Property="IsWithinSpec" Title="In Spec">
+                                                        <Template Context="imp">
+                                                            <RadzenIcon Icon="@(imp.IsWithinSpec ? "check" : "close")" 
+                                                                       IconStyle="@(imp.IsWithinSpec ? IconStyle.Success : IconStyle.Danger)" />
+                                                        </Template>
+                                                    </RadzenDataGridColumn>
+                                                </Columns>
+                                            </RadzenDataGrid>
+                                        </RadzenColumn>
+                                    </RadzenRow>
+                                </RadzenCard>
+                            </Template>
+                        </RadzenDataGrid>
+                    </RadzenColumn>
+                </RadzenRow>
+            </RadzenTabsItem>
+        </Tabs>
+    </RadzenTabs>
+</RadzenStack>
+
+@code {
+    private IEnumerable<CustodyRecord> custodyRecords = new List<CustodyRecord>();
+    private IEnumerable<AssayCertificate> assayCertificates = new List<AssayCertificate>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        custodyRecords = await ChainOfCustodyService.GetAllCustodyRecordsAsync();
+        assayCertificates = await ChainOfCustodyService.GetAllAssayCertificatesAsync();
+    }
+
+    private async Task CreateNewRecord()
+    {
+        NotificationService.Notify(NotificationSeverity.Info, "New Record", "Create custody record dialog would open here");
+    }
+
+    private async Task CreateNewCertificate()
+    {
+        NotificationService.Notify(NotificationSeverity.Info, "New Certificate", "Create assay certificate dialog would open here");
+    }
+
+    private async Task ValidateChain()
+    {
+        var firstRecord = custodyRecords.FirstOrDefault();
+        if (firstRecord != null)
+        {
+            var isValid = await ChainOfCustodyService.ValidateChainIntegrityAsync(firstRecord.CustodyChainId);
+            var isConflictFree = await ChainOfCustodyService.ValidateConflictMineralsComplianceAsync(firstRecord.CustodyChainId);
+            
+            if (isValid && isConflictFree)
+            {
+                NotificationService.Notify(NotificationSeverity.Success, "Validation", "Chain integrity and conflict minerals compliance verified.");
+            }
+            else if (!isValid)
+            {
+                NotificationService.Notify(NotificationSeverity.Error, "Validation", "Chain integrity validation failed.");
+            }
+            else
+            {
+                NotificationService.Notify(NotificationSeverity.Warning, "Validation", "Conflict minerals compliance not verified.");
+            }
+        }
+    }
+
+    private BadgeStyle GetCustodyTypeBadgeStyle(string type) => type switch
+    {
+        "Mine" => BadgeStyle.Info,
+        "Transport" => BadgeStyle.Warning,
+        "Warehouse" => BadgeStyle.Success,
+        "Processing" => BadgeStyle.Primary,
+        "Export" => BadgeStyle.Secondary,
+        _ => BadgeStyle.Light
+    };
+
+    private BadgeStyle GetRecordStatusBadgeStyle(string status) => status switch
+    {
+        "Verified" => BadgeStyle.Success,
+        "In Transit" => BadgeStyle.Warning,
+        "Received" => BadgeStyle.Info,
+        "Disputed" => BadgeStyle.Danger,
+        _ => BadgeStyle.Light
+    };
+
+    private BadgeStyle GetCertStatusBadgeStyle(string status) => status switch
+    {
+        "Issued" => BadgeStyle.Success,
+        "Verified" => BadgeStyle.Primary,
+        "Draft" => BadgeStyle.Info,
+        "Disputed" => BadgeStyle.Danger,
+        "Cancelled" => BadgeStyle.Light,
+        _ => BadgeStyle.Light
+    };
+}
