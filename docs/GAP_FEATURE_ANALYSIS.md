@@ -453,6 +453,11 @@ The Platform.Trading.Management module now provides a comprehensive foundation f
    - Price Indices with benchmark tracking
    - Chain of Custody with traceability visualization
    - Tax & Export Compliance with ZRA/BOZ reporting
+   - **Risk Management Dashboard (VaR, stress testing, exposure monitoring, market surveillance, circuit breakers)**
+   - **Clearing Management (CCP members, guarantee fund, netting, collateral, mark-to-market, default management)**
+   - **Derivatives & Forex Management (forex rates, derivatives contracts, options, block trades, data feeds)**
+   - **Participant Management (artisanal miners, aggregation centers, dispute resolution, government auctions)**
+   - **Environmental Compliance (ZEMA certificates, inspections, violations, due for inspection tracking)**
 
 9. **Advanced Trading Features (NEW)**
    - **Multi-currency FX trading (ForexRate, ForexConversion)**
