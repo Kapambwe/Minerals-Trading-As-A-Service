@@ -1,0 +1,294 @@
+@page "/derivatives"
+@using Platform.Trading.Management.Models
+@using Platform.Trading.Management.Models.Trading
+@using Platform.Trading.Management.Models.Infrastructure
+@using Platform.Trading.Management.Services.Interfaces
+@inject IForexService ForexService
+@inject IDerivativeService DerivativeService
+@inject IBlockTradeService BlockTradeService
+@inject IDataFeedService DataFeedService
+@inject NotificationService NotificationService
+
+<PageTitle>Derivatives & Forex</PageTitle>
+
+<RadzenStack Gap="1rem">
+    <RadzenRow>
+        <RadzenColumn Size="12">
+            <RadzenText TextStyle="TextStyle.H3" TagName="TagName.H1">Derivatives & Forex Management</RadzenText>
+            <RadzenText TextStyle="TextStyle.Body1">Forex rates, derivatives contracts, block trades, and real-time data feeds</RadzenText>
+        </RadzenColumn>
+    </RadzenRow>
+
+    <RadzenTabs>
+        <Tabs>
+            <RadzenTabsItem Text="Forex Rates">
+                <RadzenRow Class="rz-mt-4">
+                    <RadzenColumn Size="12">
+                        <RadzenButton Icon="refresh" Text="Refresh from BOZ" Click="@RefreshForexRates" ButtonStyle="ButtonStyle.Primary" />
+                    </RadzenColumn>
+                </RadzenRow>
+                <RadzenRow Class="rz-mt-4">
+                    <RadzenColumn Size="12">
+                        <RadzenDataGrid Data="@forexRates" TItem="ForexRate" AllowFiltering="true"
+                                       AllowSorting="true" AllowPaging="true" PageSize="10">
+                            <Columns>
+                                <RadzenDataGridColumn TItem="ForexRate" Property="BaseCurrency" Title="Base" Width="80px" />
+                                <RadzenDataGridColumn TItem="ForexRate" Property="QuoteCurrency" Title="Quote" Width="80px" />
+                                <RadzenDataGridColumn TItem="ForexRate" Property="BidRate" Title="Bid Rate" Width="120px" FormatString="{0:N4}" />
+                                <RadzenDataGridColumn TItem="ForexRate" Property="AskRate" Title="Ask Rate" Width="120px" FormatString="{0:N4}" />
+                                <RadzenDataGridColumn TItem="ForexRate" Property="Rate" Title="Mid Rate" Width="120px" FormatString="{0:N4}" />
+                                <RadzenDataGridColumn TItem="ForexRate" Property="Spread" Title="Spread" Width="100px" FormatString="{0:N4}" />
+                                <RadzenDataGridColumn TItem="ForexRate" Property="RateSource" Title="Source" Width="100px" />
+                                <RadzenDataGridColumn TItem="ForexRate" Property="LastUpdated" Title="Last Updated" Width="150px" FormatString="{0:MM/dd/yyyy HH:mm}" />
+                                <RadzenDataGridColumn TItem="ForexRate" Property="Change" Title="Change" Width="100px">
+                                    <Template Context="rate">
+                                        <span style="@((rate.Change ?? 0) >= 0 ? "color: green;" : "color: red;")">
+                                            @((rate.Change ?? 0) >= 0 ? "+" : "")@((rate.Change ?? 0).ToString("N4"))
+                                        </span>
+                                    </Template>
+                                </RadzenDataGridColumn>
+                            </Columns>
+                        </RadzenDataGrid>
+                    </RadzenColumn>
+                </RadzenRow>
+            </RadzenTabsItem>
+
+            <RadzenTabsItem Text="Derivatives Contracts">
+                <RadzenRow Class="rz-mt-4">
+                    <RadzenColumn Size="12">
+                        <RadzenButton Icon="add_circle" Text="New Contract" Click="@CreateDerivative" ButtonStyle="ButtonStyle.Primary" />
+                    </RadzenColumn>
+                </RadzenRow>
+                <RadzenRow Class="rz-mt-4">
+                    <RadzenColumn Size="12">
+                        <RadzenDataGrid Data="@derivativeContracts" TItem="DerivativeContract" AllowFiltering="true"
+                                       AllowSorting="true" AllowPaging="true" PageSize="10">
+                            <Columns>
+                                <RadzenDataGridColumn TItem="DerivativeContract" Property="ContractCode" Title="Code" Width="120px" />
+                                <RadzenDataGridColumn TItem="DerivativeContract" Property="ContractType" Title="Type" Width="100px" />
+                                <RadzenDataGridColumn TItem="DerivativeContract" Property="MetalType" Title="Metal" Width="100px" />
+                                <RadzenDataGridColumn TItem="DerivativeContract" Property="ContractSize" Title="Size" Width="100px" FormatString="{0:N0}" />
+                                <RadzenDataGridColumn TItem="DerivativeContract" Property="SettlementPrice" Title="Price" Width="120px" FormatString="{0:C2}" />
+                                <RadzenDataGridColumn TItem="DerivativeContract" Property="ExpiryDate" Title="Expiry" Width="110px" FormatString="{0:MM/dd/yyyy}" />
+                                <RadzenDataGridColumn TItem="DerivativeContract" Property="OpenInterest" Title="Open Interest" Width="120px" FormatString="{0:N0}" />
+                                <RadzenDataGridColumn TItem="DerivativeContract" Property="Volume" Title="Volume" Width="100px" FormatString="{0:N0}" />
+                                <RadzenDataGridColumn TItem="DerivativeContract" Property="TradingStatus" Title="Status" Width="100px">
+                                    <Template Context="contract">
+                                        <RadzenBadge BadgeStyle="@GetContractStatusStyle(contract.TradingStatus)" Text="@contract.TradingStatus" />
+                                    </Template>
+                                </RadzenDataGridColumn>
+                            </Columns>
+                        </RadzenDataGrid>
+                    </RadzenColumn>
+                </RadzenRow>
+            </RadzenTabsItem>
+
+            <RadzenTabsItem Text="Options">
+                <RadzenRow Class="rz-mt-4">
+                    <RadzenColumn Size="12">
+                        <RadzenButton Icon="add_circle" Text="New Option" Click="@CreateOption" ButtonStyle="ButtonStyle.Primary" />
+                    </RadzenColumn>
+                </RadzenRow>
+                <RadzenRow Class="rz-mt-4">
+                    <RadzenColumn Size="12">
+                        <RadzenDataGrid Data="@optionContracts" TItem="OptionContract" AllowFiltering="true"
+                                       AllowSorting="true" AllowPaging="true" PageSize="10">
+                            <Columns>
+                                <RadzenDataGridColumn TItem="OptionContract" Property="ContractCode" Title="Code" Width="120px" />
+                                <RadzenDataGridColumn TItem="OptionContract" Property="OptionType" Title="Type" Width="80px">
+                                    <Template Context="opt">
+                                        <RadzenBadge BadgeStyle="@(opt.OptionType == "Call" ? BadgeStyle.Success : BadgeStyle.Danger)" 
+                                                    Text="@opt.OptionType" />
+                                    </Template>
+                                </RadzenDataGridColumn>
+                                <RadzenDataGridColumn TItem="OptionContract" Property="MetalType" Title="Metal" Width="100px" />
+                                <RadzenDataGridColumn TItem="OptionContract" Property="StrikePrice" Title="Strike" Width="120px" FormatString="{0:C2}" />
+                                <RadzenDataGridColumn TItem="OptionContract" Property="Premium" Title="Premium" Width="100px" FormatString="{0:C2}" />
+                                <RadzenDataGridColumn TItem="OptionContract" Property="ExpiryDate" Title="Expiry" Width="110px" FormatString="{0:MM/dd/yyyy}" />
+                                <RadzenDataGridColumn TItem="OptionContract" Property="Delta" Title="Delta" Width="80px" FormatString="{0:N3}" />
+                                <RadzenDataGridColumn TItem="OptionContract" Property="Gamma" Title="Gamma" Width="80px" FormatString="{0:N3}" />
+                                <RadzenDataGridColumn TItem="OptionContract" Property="ImpliedVolatility" Title="IV %" Width="80px" FormatString="{0:N1}%" />
+                                <RadzenDataGridColumn TItem="OptionContract" Property="TradingStatus" Title="Status" Width="100px">
+                                    <Template Context="opt">
+                                        <RadzenBadge BadgeStyle="@GetContractStatusStyle(opt.TradingStatus)" Text="@opt.TradingStatus" />
+                                    </Template>
+                                </RadzenDataGridColumn>
+                            </Columns>
+                        </RadzenDataGrid>
+                    </RadzenColumn>
+                </RadzenRow>
+            </RadzenTabsItem>
+
+            <RadzenTabsItem Text="Block Trades">
+                <RadzenRow Class="rz-mt-4">
+                    <RadzenColumn Size="12">
+                        <RadzenButton Icon="handshake" Text="New Block Trade" Click="@CreateBlockTrade" ButtonStyle="ButtonStyle.Primary" />
+                    </RadzenColumn>
+                </RadzenRow>
+                <RadzenRow Class="rz-mt-4">
+                    <RadzenColumn Size="12">
+                        <RadzenDataGrid Data="@blockTrades" TItem="BlockTrade" AllowFiltering="true"
+                                       AllowSorting="true" AllowPaging="true" PageSize="10">
+                            <Columns>
+                                <RadzenDataGridColumn TItem="BlockTrade" Property="BlockTradeNumber" Title="Reference" Width="140px" />
+                                <RadzenDataGridColumn TItem="BlockTrade" Property="TradeDate" Title="Date" Width="110px" FormatString="{0:MM/dd/yyyy}" />
+                                <RadzenDataGridColumn TItem="BlockTrade" Property="BuyerName" Title="Buyer" />
+                                <RadzenDataGridColumn TItem="BlockTrade" Property="SellerName" Title="Seller" />
+                                <RadzenDataGridColumn TItem="BlockTrade" Property="MetalType" Title="Metal" Width="100px" />
+                                <RadzenDataGridColumn TItem="BlockTrade" Property="Quantity" Title="Quantity" Width="100px" FormatString="{0:N0}" />
+                                <RadzenDataGridColumn TItem="BlockTrade" Property="NegotiatedPrice" Title="Price" Width="120px" FormatString="{0:C2}" />
+                                <RadzenDataGridColumn TItem="BlockTrade" Title="Value" Width="130px">
+                                    <Template Context="trade">
+                                        @((trade.Quantity * trade.NegotiatedPrice).ToString("C0"))
+                                    </Template>
+                                </RadzenDataGridColumn>
+                                <RadzenDataGridColumn TItem="BlockTrade" Property="Status" Title="Status" Width="120px">
+                                    <Template Context="trade">
+                                        <RadzenBadge BadgeStyle="@GetBlockTradeStatusStyle(trade.Status)" Text="@trade.Status" />
+                                    </Template>
+                                </RadzenDataGridColumn>
+                                <RadzenDataGridColumn TItem="BlockTrade" Title="Reported" Width="80px">
+                                    <Template Context="trade">
+                                        @if (trade.ReportedToMarket)
+                                        {
+                                            <RadzenIcon Icon="check_circle" IconStyle="IconStyle.Success" />
+                                        }
+                                        else
+                                        {
+                                            <RadzenIcon Icon="schedule" IconStyle="IconStyle.Warning" />
+                                        }
+                                    </Template>
+                                </RadzenDataGridColumn>
+                            </Columns>
+                        </RadzenDataGrid>
+                    </RadzenColumn>
+                </RadzenRow>
+            </RadzenTabsItem>
+
+            <RadzenTabsItem Text="Data Feeds">
+                <RadzenRow Class="rz-mt-4">
+                    <RadzenColumn Size="12">
+                        <RadzenDataGrid Data="@dataFeeds" TItem="DataFeed" AllowSorting="true">
+                            <Columns>
+                                <RadzenDataGridColumn TItem="DataFeed" Property="FeedName" Title="Feed Name" />
+                                <RadzenDataGridColumn TItem="DataFeed" Property="FeedType" Title="Type" Width="120px" />
+                                <RadzenDataGridColumn TItem="DataFeed" Property="Protocol" Title="Protocol" Width="100px" />
+                                <RadzenDataGridColumn TItem="DataFeed" Property="ConnectionStatus" Title="Status" Width="120px">
+                                    <Template Context="feed">
+                                        <RadzenBadge BadgeStyle="@GetFeedStatusStyle(feed.ConnectionStatus)" Text="@feed.ConnectionStatus" />
+                                    </Template>
+                                </RadzenDataGridColumn>
+                                <RadzenDataGridColumn TItem="DataFeed" Property="MessagesPerSecond" Title="Msg/sec" Width="100px" FormatString="{0:N0}" />
+                                <RadzenDataGridColumn TItem="DataFeed" Property="LastMessageTime" Title="Last Message" Width="150px" FormatString="{0:HH:mm:ss.fff}" />
+                                <RadzenDataGridColumn TItem="DataFeed" Title="Subscribers" Width="100px">
+                                    <Template Context="feed">
+                                        @(feed.Subscriptions?.Count ?? 0)
+                                    </Template>
+                                </RadzenDataGridColumn>
+                                <RadzenDataGridColumn TItem="DataFeed" Title="Actions" Width="150px">
+                                    <Template Context="feed">
+                                        @if (feed.ConnectionStatus == "Connected")
+                                        {
+                                            <RadzenButton Text="Disconnect" Size="ButtonSize.Small" ButtonStyle="ButtonStyle.Danger" 
+                                                         Click="@(() => DisconnectFeed(feed))" />
+                                        }
+                                        else
+                                        {
+                                            <RadzenButton Text="Connect" Size="ButtonSize.Small" ButtonStyle="ButtonStyle.Success" 
+                                                         Click="@(() => ConnectFeed(feed))" />
+                                        }
+                                    </Template>
+                                </RadzenDataGridColumn>
+                            </Columns>
+                        </RadzenDataGrid>
+                    </RadzenColumn>
+                </RadzenRow>
+            </RadzenTabsItem>
+        </Tabs>
+    </RadzenTabs>
+</RadzenStack>
+
+@code {
+    private IEnumerable<ForexRate> forexRates = new List<ForexRate>();
+    private IEnumerable<DerivativeContract> derivativeContracts = new List<DerivativeContract>();
+    private IEnumerable<OptionContract> optionContracts = new List<OptionContract>();
+    private IEnumerable<BlockTrade> blockTrades = new List<BlockTrade>();
+    private IEnumerable<DataFeed> dataFeeds = new List<DataFeed>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAllData();
+    }
+
+    private async Task LoadAllData()
+    {
+        forexRates = await ForexService.GetAllRatesAsync();
+        derivativeContracts = await DerivativeService.GetAllContractsAsync();
+        optionContracts = new List<OptionContract>(); // Options loaded through DerivativeService
+        blockTrades = await BlockTradeService.GetAllBlockTradesAsync();
+        dataFeeds = await DataFeedService.GetAllDataFeedsAsync();
+    }
+
+    private async Task RefreshForexRates()
+    {
+        await ForexService.RefreshRatesFromBozAsync();
+        forexRates = await ForexService.GetAllRatesAsync();
+        NotificationService.Notify(NotificationSeverity.Success, "Forex Rates", "Rates refreshed from Bank of Zambia");
+    }
+
+    private async Task CreateDerivative()
+    {
+        NotificationService.Notify(NotificationSeverity.Info, "Derivatives", "Create derivative contract dialog would open here");
+    }
+
+    private async Task CreateOption()
+    {
+        NotificationService.Notify(NotificationSeverity.Info, "Options", "Create option contract dialog would open here");
+    }
+
+    private async Task CreateBlockTrade()
+    {
+        NotificationService.Notify(NotificationSeverity.Info, "Block Trade", "Create block trade dialog would open here");
+    }
+
+    private async Task ConnectFeed(DataFeed feed)
+    {
+        await DataFeedService.ConnectAsync(feed.Id);
+        NotificationService.Notify(NotificationSeverity.Success, "Data Feed", $"Connected to {feed.FeedName}");
+        dataFeeds = await DataFeedService.GetAllDataFeedsAsync();
+    }
+
+    private async Task DisconnectFeed(DataFeed feed)
+    {
+        await DataFeedService.DisconnectAsync(feed.Id);
+        NotificationService.Notify(NotificationSeverity.Info, "Data Feed", $"Disconnected from {feed.FeedName}");
+        dataFeeds = await DataFeedService.GetAllDataFeedsAsync();
+    }
+
+    private BadgeStyle GetContractStatusStyle(string status) => status switch
+    {
+        "Active" => BadgeStyle.Success,
+        "Expired" => BadgeStyle.Light,
+        "Suspended" => BadgeStyle.Danger,
+        "Pending" => BadgeStyle.Warning,
+        _ => BadgeStyle.Light
+    };
+
+    private BadgeStyle GetBlockTradeStatusStyle(string status) => status switch
+    {
+        "Pending" => BadgeStyle.Warning,
+        "Approved" => BadgeStyle.Success,
+        "Rejected" => BadgeStyle.Danger,
+        "Reported" => BadgeStyle.Primary,
+        _ => BadgeStyle.Light
+    };
+
+    private BadgeStyle GetFeedStatusStyle(string status) => status switch
+    {
+        "Connected" => BadgeStyle.Success,
+        "Disconnected" => BadgeStyle.Light,
+        "Reconnecting" => BadgeStyle.Warning,
+        "Error" => BadgeStyle.Danger,
+        _ => BadgeStyle.Light
+    };
+}

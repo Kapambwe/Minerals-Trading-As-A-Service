@@ -1,0 +1,362 @@
+@page "/environmental"
+@using Platform.Trading.Management.Models
+@using Platform.Trading.Management.Models.Environmental
+@using Platform.Trading.Management.Services.Interfaces
+@inject IEnvironmentalService EnvironmentalService
+@inject NotificationService NotificationService
+
+<PageTitle>Environmental Compliance</PageTitle>
+
+<RadzenStack Gap="1rem">
+    <RadzenRow>
+        <RadzenColumn Size="12">
+            <RadzenText TextStyle="TextStyle.H3" TagName="TagName.H1">Environmental Compliance</RadzenText>
+            <RadzenText TextStyle="TextStyle.Body1">ZEMA (Zambia Environmental Management Agency) compliance tracking, inspections, and violations</RadzenText>
+        </RadzenColumn>
+    </RadzenRow>
+
+    <RadzenTabs>
+        <Tabs>
+            <RadzenTabsItem Text="ZEMA Certificates">
+                <RadzenRow Class="rz-mt-4">
+                    <RadzenColumn Size="12">
+                        <RadzenButton Icon="add_circle" Text="New Application" Click="@NewApplication" ButtonStyle="ButtonStyle.Primary" />
+                        <RadzenButton Icon="refresh" Text="Refresh" Click="@LoadZemaCompliances" ButtonStyle="ButtonStyle.Secondary" Class="rz-ml-2" />
+                    </RadzenColumn>
+                </RadzenRow>
+                <RadzenRow Class="rz-mt-4">
+                    <RadzenColumn Size="12">
+                        <RadzenDataGrid Data="@zemaCompliances" TItem="ZemaCompliance" AllowFiltering="true"
+                                       AllowSorting="true" AllowPaging="true" PageSize="10">
+                            <Columns>
+                                <RadzenDataGridColumn TItem="ZemaCompliance" Property="CertificateNumber" Title="Certificate #" Width="140px" />
+                                <RadzenDataGridColumn TItem="ZemaCompliance" Property="ApplicantName" Title="Applicant" />
+                                <RadzenDataGridColumn TItem="ZemaCompliance" Property="MineLocation" Title="Location" Width="150px" />
+                                <RadzenDataGridColumn TItem="ZemaCompliance" Property="Province" Title="Province" Width="120px" />
+                                <RadzenDataGridColumn TItem="ZemaCompliance" Property="PrimaryMineral" Title="Mineral" Width="100px" />
+                                <RadzenDataGridColumn TItem="ZemaCompliance" Property="MiningMethod" Title="Method" Width="110px" />
+                                <RadzenDataGridColumn TItem="ZemaCompliance" Property="IssueDate" Title="Issued" Width="100px" FormatString="{0:MM/dd/yyyy}" />
+                                <RadzenDataGridColumn TItem="ZemaCompliance" Property="ExpiryDate" Title="Expiry" Width="100px" FormatString="{0:MM/dd/yyyy}" />
+                                <RadzenDataGridColumn TItem="ZemaCompliance" Property="Status" Title="Status" Width="110px">
+                                    <Template Context="compliance">
+                                        <RadzenBadge BadgeStyle="@GetComplianceStatusStyle(compliance.Status)" Text="@compliance.Status" />
+                                    </Template>
+                                </RadzenDataGridColumn>
+                                <RadzenDataGridColumn TItem="ZemaCompliance" Title="Violations" Width="90px">
+                                    <Template Context="compliance">
+                                        @if (compliance.HasActiveViolations)
+                                        {
+                                            <RadzenBadge BadgeStyle="BadgeStyle.Danger" Text="Active" />
+                                        }
+                                        else
+                                        {
+                                            <RadzenBadge BadgeStyle="BadgeStyle.Light" Text="None" />
+                                        }
+                                    </Template>
+                                </RadzenDataGridColumn>
+                            </Columns>
+                        </RadzenDataGrid>
+                    </RadzenColumn>
+                </RadzenRow>
+            </RadzenTabsItem>
+
+            <RadzenTabsItem Text="Inspections">
+                <RadzenRow Class="rz-mt-4">
+                    <RadzenColumn Size="12">
+                        <RadzenButton Icon="fact_check" Text="Schedule Inspection" Click="@ScheduleInspection" ButtonStyle="ButtonStyle.Primary" />
+                    </RadzenColumn>
+                </RadzenRow>
+                <RadzenRow Class="rz-mt-4">
+                    <RadzenColumn Size="4">
+                        <RadzenCard>
+                            <RadzenText TextStyle="TextStyle.Overline">Total Inspections</RadzenText>
+                            <RadzenText TextStyle="TextStyle.H4">@totalInspections</RadzenText>
+                        </RadzenCard>
+                    </RadzenColumn>
+                    <RadzenColumn Size="4">
+                        <RadzenCard>
+                            <RadzenText TextStyle="TextStyle.Overline">Compliant</RadzenText>
+                            <RadzenText TextStyle="TextStyle.H4" Style="color: green;">@compliantInspections</RadzenText>
+                        </RadzenCard>
+                    </RadzenColumn>
+                    <RadzenColumn Size="4">
+                        <RadzenCard>
+                            <RadzenText TextStyle="TextStyle.Overline">Non-Compliant</RadzenText>
+                            <RadzenText TextStyle="TextStyle.H4" Style="color: red;">@nonCompliantInspections</RadzenText>
+                        </RadzenCard>
+                    </RadzenColumn>
+                </RadzenRow>
+                <RadzenRow Class="rz-mt-4">
+                    <RadzenColumn Size="12">
+                        <RadzenDataGrid Data="@allInspections" TItem="InspectionRecord" AllowFiltering="true"
+                                       AllowSorting="true" AllowPaging="true" PageSize="10">
+                            <Columns>
+                                <RadzenDataGridColumn TItem="InspectionRecord" Property="InspectionReference" Title="Reference" Width="140px" />
+                                <RadzenDataGridColumn TItem="InspectionRecord" Property="ApplicantName" Title="Applicant" />
+                                <RadzenDataGridColumn TItem="InspectionRecord" Property="InspectionDate" Title="Date" Width="110px" FormatString="{0:MM/dd/yyyy}" />
+                                <RadzenDataGridColumn TItem="InspectionRecord" Property="InspectionType" Title="Type" Width="100px" />
+                                <RadzenDataGridColumn TItem="InspectionRecord" Property="InspectorName" Title="Inspector" Width="150px" />
+                                <RadzenDataGridColumn TItem="InspectionRecord" Property="ComplianceScore" Title="Score" Width="80px">
+                                    <Template Context="insp">
+                                        <RadzenProgressBar Value="@((double)insp.ComplianceScore)" ShowValue="true" Max="100"
+                                                          ProgressBarStyle="@GetScoreStyle(insp.ComplianceScore)" />
+                                    </Template>
+                                </RadzenDataGridColumn>
+                                <RadzenDataGridColumn TItem="InspectionRecord" Property="OverallResult" Title="Result" Width="130px">
+                                    <Template Context="insp">
+                                        <RadzenBadge BadgeStyle="@GetResultStyle(insp.OverallResult)" Text="@insp.OverallResult" />
+                                    </Template>
+                                </RadzenDataGridColumn>
+                            </Columns>
+                        </RadzenDataGrid>
+                    </RadzenColumn>
+                </RadzenRow>
+            </RadzenTabsItem>
+
+            <RadzenTabsItem Text="Violations">
+                <RadzenRow Class="rz-mt-4">
+                    <RadzenColumn Size="12">
+                        <RadzenButton Icon="report_problem" Text="Record Violation" Click="@RecordViolation" ButtonStyle="ButtonStyle.Danger" />
+                    </RadzenColumn>
+                </RadzenRow>
+                <RadzenRow Class="rz-mt-4">
+                    <RadzenColumn Size="12">
+                        <RadzenDataGrid Data="@activeViolations" TItem="ViolationRecord" AllowFiltering="true"
+                                       AllowSorting="true" AllowPaging="true" PageSize="10">
+                            <Columns>
+                                <RadzenDataGridColumn TItem="ViolationRecord" Property="ViolationNumber" Title="Violation #" Width="140px" />
+                                <RadzenDataGridColumn TItem="ViolationRecord" Property="ApplicantName" Title="Applicant" />
+                                <RadzenDataGridColumn TItem="ViolationRecord" Property="DetectedDate" Title="Detected" Width="110px" FormatString="{0:MM/dd/yyyy}" />
+                                <RadzenDataGridColumn TItem="ViolationRecord" Property="Category" Title="Category" Width="140px" />
+                                <RadzenDataGridColumn TItem="ViolationRecord" Property="Severity" Title="Severity" Width="100px">
+                                    <Template Context="viol">
+                                        <RadzenBadge BadgeStyle="@GetSeverityStyle(viol.Severity)" Text="@viol.Severity" />
+                                    </Template>
+                                </RadzenDataGridColumn>
+                                <RadzenDataGridColumn TItem="ViolationRecord" Property="Description" Title="Description" />
+                                <RadzenDataGridColumn TItem="ViolationRecord" Property="FineAmount" Title="Fine" Width="100px" FormatString="{0:C0}" />
+                                <RadzenDataGridColumn TItem="ViolationRecord" Property="Status" Title="Status" Width="130px">
+                                    <Template Context="viol">
+                                        <RadzenBadge BadgeStyle="@GetViolationStatusStyle(viol.Status)" Text="@viol.Status" />
+                                    </Template>
+                                </RadzenDataGridColumn>
+                                <RadzenDataGridColumn TItem="ViolationRecord" Property="RemediationDeadline" Title="Deadline" Width="110px" FormatString="{0:MM/dd/yyyy}" />
+                            </Columns>
+                        </RadzenDataGrid>
+                    </RadzenColumn>
+                </RadzenRow>
+            </RadzenTabsItem>
+
+            <RadzenTabsItem Text="Due for Inspection">
+                <RadzenRow Class="rz-mt-4">
+                    <RadzenColumn Size="12">
+                        <RadzenText TextStyle="TextStyle.H6">Sites Due for Inspection</RadzenText>
+                        <RadzenDataGrid Data="@dueForInspection" TItem="ZemaCompliance" AllowSorting="true" AllowPaging="true" PageSize="10">
+                            <Columns>
+                                <RadzenDataGridColumn TItem="ZemaCompliance" Property="CertificateNumber" Title="Certificate #" Width="140px" />
+                                <RadzenDataGridColumn TItem="ZemaCompliance" Property="ApplicantName" Title="Applicant" />
+                                <RadzenDataGridColumn TItem="ZemaCompliance" Property="MineLocation" Title="Location" />
+                                <RadzenDataGridColumn TItem="ZemaCompliance" Property="Province" Title="Province" Width="120px" />
+                                <RadzenDataGridColumn TItem="ZemaCompliance" Property="LastInspectionDate" Title="Last Inspection" Width="130px" FormatString="{0:MM/dd/yyyy}" />
+                                <RadzenDataGridColumn TItem="ZemaCompliance" Property="NextInspectionDue" Title="Due Date" Width="130px" FormatString="{0:MM/dd/yyyy}" />
+                                <RadzenDataGridColumn TItem="ZemaCompliance" Title="Overdue" Width="100px">
+                                    <Template Context="comp">
+                                        @{
+                                            var daysOverdue = (DateTime.Today - comp.NextInspectionDue)?.Days ?? 0;
+                                            if (daysOverdue > 0)
+                                            {
+                                                <RadzenBadge BadgeStyle="BadgeStyle.Danger" Text="@($"{daysOverdue} days")" />
+                                            }
+                                            else
+                                            {
+                                                <RadzenBadge BadgeStyle="BadgeStyle.Success" Text="On time" />
+                                            }
+                                        }
+                                    </Template>
+                                </RadzenDataGridColumn>
+                                <RadzenDataGridColumn TItem="ZemaCompliance" Title="Actions" Width="120px">
+                                    <Template Context="comp">
+                                        <RadzenButton Text="Schedule" Size="ButtonSize.Small" ButtonStyle="ButtonStyle.Primary" 
+                                                     Click="@(() => ScheduleInspectionFor(comp))" />
+                                    </Template>
+                                </RadzenDataGridColumn>
+                            </Columns>
+                        </RadzenDataGrid>
+                    </RadzenColumn>
+                </RadzenRow>
+            </RadzenTabsItem>
+        </Tabs>
+    </RadzenTabs>
+</RadzenStack>
+
+@code {
+    private IEnumerable<ZemaCompliance> zemaCompliances = new List<ZemaCompliance>();
+    private IEnumerable<ZemaCompliance> dueForInspection = new List<ZemaCompliance>();
+    private List<InspectionRecord> allInspections = new();
+    private List<ViolationRecord> activeViolations = new();
+    
+    private int totalInspections = 0;
+    private int compliantInspections = 0;
+    private int nonCompliantInspections = 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAllData();
+    }
+
+    private async Task LoadAllData()
+    {
+        await LoadZemaCompliances();
+        await LoadInspections();
+        await LoadViolations();
+        await LoadDueForInspection();
+    }
+
+    private async Task LoadZemaCompliances()
+    {
+        zemaCompliances = await EnvironmentalService.GetAllZemaCompliancesAsync();
+    }
+
+    private async Task LoadInspections()
+    {
+        allInspections = new List<InspectionRecord>();
+        foreach (var compliance in zemaCompliances)
+        {
+            foreach (var inspection in compliance.Inspections)
+            {
+                allInspections.Add(new InspectionRecord
+                {
+                    InspectionReference = inspection.InspectionReference,
+                    ApplicantName = compliance.ApplicantName,
+                    InspectionDate = inspection.InspectionDate,
+                    InspectionType = inspection.InspectionType,
+                    InspectorName = inspection.InspectorName,
+                    ComplianceScore = inspection.ComplianceScore,
+                    OverallResult = inspection.OverallResult
+                });
+            }
+        }
+        
+        totalInspections = allInspections.Count;
+        compliantInspections = allInspections.Count(i => i.OverallResult == "Compliant");
+        nonCompliantInspections = allInspections.Count(i => i.OverallResult == "NonCompliant");
+    }
+
+    private async Task LoadViolations()
+    {
+        var violations = await EnvironmentalService.GetActiveViolationsAsync();
+        activeViolations = new List<ViolationRecord>();
+        
+        foreach (var compliance in zemaCompliances)
+        {
+            foreach (var violation in compliance.Violations.Where(v => v.Status == "Open" || v.Status == "UnderRemediation"))
+            {
+                activeViolations.Add(new ViolationRecord
+                {
+                    ViolationNumber = violation.ViolationNumber,
+                    ApplicantName = compliance.ApplicantName,
+                    DetectedDate = violation.DetectedDate,
+                    Category = violation.Category,
+                    Severity = violation.Severity,
+                    Description = violation.Description,
+                    FineAmount = violation.FineAmount,
+                    Status = violation.Status,
+                    RemediationDeadline = violation.RemediationDeadline
+                });
+            }
+        }
+    }
+
+    private async Task LoadDueForInspection()
+    {
+        dueForInspection = await EnvironmentalService.GetCompliancesDueForInspectionAsync(DateTime.Today.AddDays(30));
+    }
+
+    private async Task NewApplication()
+    {
+        NotificationService.Notify(NotificationSeverity.Info, "ZEMA Application", "New ZEMA application dialog would open here");
+    }
+
+    private async Task ScheduleInspection()
+    {
+        NotificationService.Notify(NotificationSeverity.Info, "Inspection", "Schedule inspection dialog would open here");
+    }
+
+    private async Task ScheduleInspectionFor(ZemaCompliance compliance)
+    {
+        NotificationService.Notify(NotificationSeverity.Info, "Inspection", $"Scheduling inspection for {compliance.ApplicantName}");
+    }
+
+    private async Task RecordViolation()
+    {
+        NotificationService.Notify(NotificationSeverity.Warning, "Violation", "Record violation dialog would open here");
+    }
+
+    private BadgeStyle GetComplianceStatusStyle(string status) => status switch
+    {
+        "Approved" => BadgeStyle.Success,
+        "Pending" => BadgeStyle.Warning,
+        "UnderReview" => BadgeStyle.Info,
+        "Rejected" => BadgeStyle.Danger,
+        "Expired" => BadgeStyle.Light,
+        "Suspended" => BadgeStyle.Danger,
+        _ => BadgeStyle.Light
+    };
+
+    private BadgeStyle GetResultStyle(string result) => result switch
+    {
+        "Compliant" => BadgeStyle.Success,
+        "PartiallyCompliant" => BadgeStyle.Warning,
+        "NonCompliant" => BadgeStyle.Danger,
+        _ => BadgeStyle.Light
+    };
+
+    private ProgressBarStyle GetScoreStyle(int score) => score switch
+    {
+        >= 80 => ProgressBarStyle.Success,
+        >= 60 => ProgressBarStyle.Warning,
+        _ => ProgressBarStyle.Danger
+    };
+
+    private BadgeStyle GetSeverityStyle(string severity) => severity switch
+    {
+        "Minor" => BadgeStyle.Info,
+        "Moderate" => BadgeStyle.Warning,
+        "Major" => BadgeStyle.Danger,
+        "Critical" => BadgeStyle.Danger,
+        _ => BadgeStyle.Light
+    };
+
+    private BadgeStyle GetViolationStatusStyle(string status) => status switch
+    {
+        "Open" => BadgeStyle.Danger,
+        "UnderRemediation" => BadgeStyle.Warning,
+        "Closed" => BadgeStyle.Success,
+        "Referred" => BadgeStyle.Info,
+        _ => BadgeStyle.Light
+    };
+
+    public class InspectionRecord
+    {
+        public string InspectionReference { get; set; } = string.Empty;
+        public string ApplicantName { get; set; } = string.Empty;
+        public DateTime InspectionDate { get; set; }
+        public string InspectionType { get; set; } = string.Empty;
+        public string InspectorName { get; set; } = string.Empty;
+        public int ComplianceScore { get; set; }
+        public string OverallResult { get; set; } = string.Empty;
+    }
+
+    public class ViolationRecord
+    {
+        public string ViolationNumber { get; set; } = string.Empty;
+        public string ApplicantName { get; set; } = string.Empty;
+        public DateTime DetectedDate { get; set; }
+        public string Category { get; set; } = string.Empty;
+        public string Severity { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        public decimal? FineAmount { get; set; }
+        public string Status { get; set; } = string.Empty;
+        public DateTime? RemediationDeadline { get; set; }
+    }
+}

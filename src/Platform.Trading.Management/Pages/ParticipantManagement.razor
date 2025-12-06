@@ -1,0 +1,317 @@
+@page "/participants"
+@using Platform.Trading.Management.Models
+@using Platform.Trading.Management.Models.Participant
+@using Platform.Trading.Management.Services.Interfaces
+@inject IParticipantService ParticipantService
+@inject NotificationService NotificationService
+
+<PageTitle>Participant Management</PageTitle>
+
+<RadzenStack Gap="1rem">
+    <RadzenRow>
+        <RadzenColumn Size="12">
+            <RadzenText TextStyle="TextStyle.H3" TagName="TagName.H1">Participant Management</RadzenText>
+            <RadzenText TextStyle="TextStyle.Body1">Artisanal miners, aggregation centers, dispute resolution, and government auctions</RadzenText>
+        </RadzenColumn>
+    </RadzenRow>
+
+    <RadzenTabs>
+        <Tabs>
+            <RadzenTabsItem Text="Artisanal Miners (ASM)">
+                <RadzenRow Class="rz-mt-4">
+                    <RadzenColumn Size="12">
+                        <RadzenButton Icon="person_add" Text="Register Miner" Click="@RegisterMiner" ButtonStyle="ButtonStyle.Primary" />
+                    </RadzenColumn>
+                </RadzenRow>
+                <RadzenRow Class="rz-mt-4">
+                    <RadzenColumn Size="12">
+                        <RadzenDataGrid Data="@artisanalMiners" TItem="ArtisanalMiner" AllowFiltering="true"
+                                       AllowSorting="true" AllowPaging="true" PageSize="10">
+                            <Columns>
+                                <RadzenDataGridColumn TItem="ArtisanalMiner" Property="RegistrationNumber" Title="Reg #" Width="130px" />
+                                <RadzenDataGridColumn TItem="ArtisanalMiner" Property="Name" Title="Name" />
+                                <RadzenDataGridColumn TItem="ArtisanalMiner" Property="MinerType" Title="Type" Width="100px" />
+                                <RadzenDataGridColumn TItem="ArtisanalMiner" Property="Province" Title="Province" Width="120px" />
+                                <RadzenDataGridColumn TItem="ArtisanalMiner" Property="LicenseStatus" Title="License" Width="100px">
+                                    <Template Context="miner">
+                                        <RadzenBadge BadgeStyle="@GetLicenseStatusStyle(miner.LicenseStatus)" Text="@miner.LicenseStatus" />
+                                    </Template>
+                                </RadzenDataGridColumn>
+                                <RadzenDataGridColumn TItem="ArtisanalMiner" Property="PreferredPaymentMethod" Title="Payment" Width="120px" />
+                                <RadzenDataGridColumn TItem="ArtisanalMiner" Title="Conflict Free" Width="100px">
+                                    <Template Context="miner">
+                                        @if (miner.ConflictFreeVerified)
+                                        {
+                                            <RadzenIcon Icon="verified" IconStyle="IconStyle.Success" />
+                                        }
+                                        else
+                                        {
+                                            <RadzenIcon Icon="pending" IconStyle="IconStyle.Warning" />
+                                        }
+                                    </Template>
+                                </RadzenDataGridColumn>
+                                <RadzenDataGridColumn TItem="ArtisanalMiner" Property="TotalLifetimeProduction" Title="Production (kg)" Width="130px" FormatString="{0:N0}" />
+                                <RadzenDataGridColumn TItem="ArtisanalMiner" Property="Status" Title="Status" Width="100px">
+                                    <Template Context="miner">
+                                        <RadzenBadge BadgeStyle="@GetMinerStatusStyle(miner.Status)" Text="@miner.Status" />
+                                    </Template>
+                                </RadzenDataGridColumn>
+                            </Columns>
+                        </RadzenDataGrid>
+                    </RadzenColumn>
+                </RadzenRow>
+            </RadzenTabsItem>
+
+            <RadzenTabsItem Text="Aggregation Centers">
+                <RadzenRow Class="rz-mt-4">
+                    <RadzenColumn Size="12">
+                        <RadzenButton Icon="add_location" Text="Add Center" Click="@AddAggregationCenter" ButtonStyle="ButtonStyle.Primary" />
+                    </RadzenColumn>
+                </RadzenRow>
+                <RadzenRow Class="rz-mt-4">
+                    <RadzenColumn Size="12">
+                        <RadzenDataGrid Data="@aggregationCenters" TItem="AggregationCenter" AllowFiltering="true"
+                                       AllowSorting="true" AllowPaging="true" PageSize="10">
+                            <Columns>
+                                <RadzenDataGridColumn TItem="AggregationCenter" Property="CenterCode" Title="Code" Width="100px" />
+                                <RadzenDataGridColumn TItem="AggregationCenter" Property="CenterName" Title="Name" />
+                                <RadzenDataGridColumn TItem="AggregationCenter" Property="Province" Title="Province" Width="120px" />
+                                <RadzenDataGridColumn TItem="AggregationCenter" Property="District" Title="District" Width="120px" />
+                                <RadzenDataGridColumn TItem="AggregationCenter" Property="ManagerName" Title="Manager" Width="150px" />
+                                <RadzenDataGridColumn TItem="AggregationCenter" Property="RegisteredMiners" Title="Miners" Width="80px" />
+                                <RadzenDataGridColumn TItem="AggregationCenter" Property="StorageCapacity" Title="Capacity (MT)" Width="120px" FormatString="{0:N0}" />
+                                <RadzenDataGridColumn TItem="AggregationCenter" Property="CurrentStock" Title="Stock (MT)" Width="110px" FormatString="{0:N1}" />
+                                <RadzenDataGridColumn TItem="AggregationCenter" Title="ZEMA" Width="80px">
+                                    <Template Context="center">
+                                        @if (center.ZemaApproved)
+                                        {
+                                            <RadzenIcon Icon="check_circle" IconStyle="IconStyle.Success" />
+                                        }
+                                        else
+                                        {
+                                            <RadzenIcon Icon="cancel" IconStyle="IconStyle.Danger" />
+                                        }
+                                    </Template>
+                                </RadzenDataGridColumn>
+                                <RadzenDataGridColumn TItem="AggregationCenter" Property="Status" Title="Status" Width="100px">
+                                    <Template Context="center">
+                                        <RadzenBadge BadgeStyle="@GetCenterStatusStyle(center.Status)" Text="@center.Status" />
+                                    </Template>
+                                </RadzenDataGridColumn>
+                            </Columns>
+                        </RadzenDataGrid>
+                    </RadzenColumn>
+                </RadzenRow>
+            </RadzenTabsItem>
+
+            <RadzenTabsItem Text="Dispute Resolution">
+                <RadzenRow Class="rz-mt-4">
+                    <RadzenColumn Size="12">
+                        <RadzenButton Icon="gavel" Text="File Dispute" Click="@FileDispute" ButtonStyle="ButtonStyle.Warning" />
+                    </RadzenColumn>
+                </RadzenRow>
+                <RadzenRow Class="rz-mt-4">
+                    <RadzenColumn Size="12">
+                        <RadzenDataGrid Data="@disputeCases" TItem="DisputeCase" AllowFiltering="true"
+                                       AllowSorting="true" AllowPaging="true" PageSize="10">
+                            <Columns>
+                                <RadzenDataGridColumn TItem="DisputeCase" Property="CaseNumber" Title="Case #" Width="140px" />
+                                <RadzenDataGridColumn TItem="DisputeCase" Property="FiledDate" Title="Filed" Width="100px" FormatString="{0:MM/dd/yyyy}" />
+                                <RadzenDataGridColumn TItem="DisputeCase" Property="ClaimantName" Title="Claimant" />
+                                <RadzenDataGridColumn TItem="DisputeCase" Property="RespondentName" Title="Respondent" />
+                                <RadzenDataGridColumn TItem="DisputeCase" Property="DisputeType" Title="Type" Width="130px" />
+                                <RadzenDataGridColumn TItem="DisputeCase" Property="DisputedAmount" Title="Amount" Width="120px" FormatString="{0:C0}" />
+                                <RadzenDataGridColumn TItem="DisputeCase" Property="Status" Title="Status" Width="120px">
+                                    <Template Context="dispute">
+                                        <RadzenBadge BadgeStyle="@GetDisputeStatusStyle(dispute.Status)" Text="@dispute.Status" />
+                                    </Template>
+                                </RadzenDataGridColumn>
+                                <RadzenDataGridColumn TItem="DisputeCase" Property="AssignedMediatorName" Title="Mediator" Width="150px" />
+                                <RadzenDataGridColumn TItem="DisputeCase" Title="Actions" Width="150px">
+                                    <Template Context="dispute">
+                                        @if (dispute.Status == "Filed")
+                                        {
+                                            <RadzenButton Text="Mediation" Size="ButtonSize.Small" ButtonStyle="ButtonStyle.Primary" 
+                                                         Click="@(() => StartMediation(dispute))" />
+                                        }
+                                        @if (dispute.Status == "Mediation")
+                                        {
+                                            <RadzenButton Text="Arbitrate" Size="ButtonSize.Small" ButtonStyle="ButtonStyle.Warning" 
+                                                         Click="@(() => StartArbitration(dispute))" />
+                                        }
+                                    </Template>
+                                </RadzenDataGridColumn>
+                            </Columns>
+                        </RadzenDataGrid>
+                    </RadzenColumn>
+                </RadzenRow>
+            </RadzenTabsItem>
+
+            <RadzenTabsItem Text="Government Auctions">
+                <RadzenRow Class="rz-mt-4">
+                    <RadzenColumn Size="12">
+                        <RadzenButton Icon="event" Text="Create Auction" Click="@CreateAuction" ButtonStyle="ButtonStyle.Primary" />
+                    </RadzenColumn>
+                </RadzenRow>
+                <RadzenRow Class="rz-mt-4">
+                    <RadzenColumn Size="12">
+                        <RadzenDataGrid Data="@auctions" TItem="MineralAuction" AllowFiltering="true"
+                                       AllowSorting="true" AllowPaging="true" PageSize="10" @bind-ExpandedRows="@expandedAuctionRows">
+                            <Template Context="auction">
+                                <RadzenCard Style="margin: 1rem;">
+                                    <RadzenText TextStyle="TextStyle.H6">Auction Lots</RadzenText>
+                                    <RadzenDataGrid Data="@auction.Lots" TItem="AuctionLot" AllowSorting="true">
+                                        <Columns>
+                                            <RadzenDataGridColumn TItem="AuctionLot" Property="LotNumber" Title="Lot #" Width="100px" />
+                                            <RadzenDataGridColumn TItem="AuctionLot" Property="MetalType" Title="Metal" Width="100px" />
+                                            <RadzenDataGridColumn TItem="AuctionLot" Property="Quantity" Title="Quantity (MT)" Width="120px" FormatString="{0:N0}" />
+                                            <RadzenDataGridColumn TItem="AuctionLot" Property="QualityGrade" Title="Grade" Width="120px" />
+                                            <RadzenDataGridColumn TItem="AuctionLot" Property="ReservePrice" Title="Reserve" Width="120px" FormatString="{0:C0}" />
+                                            <RadzenDataGridColumn TItem="AuctionLot" Property="CurrentHighestBid" Title="High Bid" Width="120px" FormatString="{0:C0}" />
+                                            <RadzenDataGridColumn TItem="AuctionLot" Property="BidCount" Title="Bids" Width="80px" />
+                                            <RadzenDataGridColumn TItem="AuctionLot" Property="Status" Title="Status" Width="100px">
+                                                <Template Context="lot">
+                                                    <RadzenBadge BadgeStyle="@GetLotStatusStyle(lot.Status)" Text="@lot.Status" />
+                                                </Template>
+                                            </RadzenDataGridColumn>
+                                        </Columns>
+                                    </RadzenDataGrid>
+                                </RadzenCard>
+                            </Template>
+                            <Columns>
+                                <RadzenDataGridColumn TItem="MineralAuction" Property="AuctionNumber" Title="Auction #" Width="140px" />
+                                <RadzenDataGridColumn TItem="MineralAuction" Property="Title" Title="Title" />
+                                <RadzenDataGridColumn TItem="MineralAuction" Property="AuctionAuthority" Title="Authority" Width="120px" />
+                                <RadzenDataGridColumn TItem="MineralAuction" Property="AuctionType" Title="Type" Width="100px" />
+                                <RadzenDataGridColumn TItem="MineralAuction" Property="BiddingStartDate" Title="Start" Width="100px" FormatString="{0:MM/dd/yyyy}" />
+                                <RadzenDataGridColumn TItem="MineralAuction" Property="BiddingEndDate" Title="End" Width="100px" FormatString="{0:MM/dd/yyyy}" />
+                                <RadzenDataGridColumn TItem="MineralAuction" Property="TotalLots" Title="Lots" Width="70px" />
+                                <RadzenDataGridColumn TItem="MineralAuction" Property="TotalQuantity" Title="Qty (MT)" Width="100px" FormatString="{0:N0}" />
+                                <RadzenDataGridColumn TItem="MineralAuction" Property="TotalReservePrice" Title="Reserve" Width="130px" FormatString="{0:C0}" />
+                                <RadzenDataGridColumn TItem="MineralAuction" Property="ParticipantCount" Title="Bidders" Width="80px" />
+                                <RadzenDataGridColumn TItem="MineralAuction" Property="Status" Title="Status" Width="100px">
+                                    <Template Context="auction">
+                                        <RadzenBadge BadgeStyle="@GetAuctionStatusStyle(auction.Status)" Text="@auction.Status" />
+                                    </Template>
+                                </RadzenDataGridColumn>
+                            </Columns>
+                        </RadzenDataGrid>
+                    </RadzenColumn>
+                </RadzenRow>
+            </RadzenTabsItem>
+        </Tabs>
+    </RadzenTabs>
+</RadzenStack>
+
+@code {
+    private IEnumerable<ArtisanalMiner> artisanalMiners = new List<ArtisanalMiner>();
+    private IEnumerable<AggregationCenter> aggregationCenters = new List<AggregationCenter>();
+    private IEnumerable<DisputeCase> disputeCases = new List<DisputeCase>();
+    private IEnumerable<MineralAuction> auctions = new List<MineralAuction>();
+    private IList<MineralAuction> expandedAuctionRows = new List<MineralAuction>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAllData();
+    }
+
+    private async Task LoadAllData()
+    {
+        artisanalMiners = await ParticipantService.GetAllArtisanalMinersAsync();
+        aggregationCenters = await ParticipantService.GetAllAggregationCentersAsync();
+        disputeCases = await ParticipantService.GetAllDisputeCasesAsync();
+        auctions = await ParticipantService.GetAllAuctionsAsync();
+    }
+
+    private async Task RegisterMiner()
+    {
+        NotificationService.Notify(NotificationSeverity.Info, "Register Miner", "Miner registration dialog would open here");
+    }
+
+    private async Task AddAggregationCenter()
+    {
+        NotificationService.Notify(NotificationSeverity.Info, "Aggregation Center", "Add aggregation center dialog would open here");
+    }
+
+    private async Task FileDispute()
+    {
+        NotificationService.Notify(NotificationSeverity.Info, "Dispute", "File dispute dialog would open here");
+    }
+
+    private async Task CreateAuction()
+    {
+        NotificationService.Notify(NotificationSeverity.Info, "Auction", "Create auction dialog would open here");
+    }
+
+    private async Task StartMediation(DisputeCase dispute)
+    {
+        await ParticipantService.StartMediationAsync(dispute.Id);
+        NotificationService.Notify(NotificationSeverity.Success, "Mediation", $"Mediation started for case {dispute.CaseNumber}");
+        disputeCases = await ParticipantService.GetAllDisputeCasesAsync();
+    }
+
+    private async Task StartArbitration(DisputeCase dispute)
+    {
+        await ParticipantService.StartArbitrationAsync(dispute.Id);
+        NotificationService.Notify(NotificationSeverity.Warning, "Arbitration", $"Arbitration started for case {dispute.CaseNumber}");
+        disputeCases = await ParticipantService.GetAllDisputeCasesAsync();
+    }
+
+    private BadgeStyle GetMinerStatusStyle(string status) => status switch
+    {
+        "Approved" => BadgeStyle.Success,
+        "Pending" => BadgeStyle.Warning,
+        "Suspended" => BadgeStyle.Danger,
+        "Inactive" => BadgeStyle.Light,
+        _ => BadgeStyle.Light
+    };
+
+    private BadgeStyle GetLicenseStatusStyle(string status) => status switch
+    {
+        "Valid" => BadgeStyle.Success,
+        "Pending" => BadgeStyle.Warning,
+        "Expired" => BadgeStyle.Danger,
+        "Suspended" => BadgeStyle.Danger,
+        _ => BadgeStyle.Light
+    };
+
+    private BadgeStyle GetCenterStatusStyle(string status) => status switch
+    {
+        "Active" => BadgeStyle.Success,
+        "Suspended" => BadgeStyle.Danger,
+        "Closed" => BadgeStyle.Light,
+        _ => BadgeStyle.Light
+    };
+
+    private BadgeStyle GetDisputeStatusStyle(string status) => status switch
+    {
+        "Filed" => BadgeStyle.Info,
+        "UnderReview" => BadgeStyle.Warning,
+        "Mediation" => BadgeStyle.Primary,
+        "Arbitration" => BadgeStyle.Warning,
+        "Resolved" => BadgeStyle.Success,
+        "Withdrawn" => BadgeStyle.Light,
+        "Appealed" => BadgeStyle.Danger,
+        _ => BadgeStyle.Light
+    };
+
+    private BadgeStyle GetAuctionStatusStyle(string status) => status switch
+    {
+        "Announced" => BadgeStyle.Info,
+        "Open" => BadgeStyle.Success,
+        "Closed" => BadgeStyle.Primary,
+        "Awarded" => BadgeStyle.Secondary,
+        "Cancelled" => BadgeStyle.Danger,
+        _ => BadgeStyle.Light
+    };
+
+    private BadgeStyle GetLotStatusStyle(string status) => status switch
+    {
+        "Available" => BadgeStyle.Info,
+        "Bidding" => BadgeStyle.Primary,
+        "Awarded" => BadgeStyle.Success,
+        "Unsold" => BadgeStyle.Warning,
+        "Withdrawn" => BadgeStyle.Light,
+        _ => BadgeStyle.Light
+    };
+}
