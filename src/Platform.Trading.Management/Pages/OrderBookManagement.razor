@@ -1,0 +1,191 @@
+@page "/order-book"
+@using Platform.Trading.Management.Models
+@using Platform.Trading.Management.Models.Trading
+@using Platform.Trading.Management.Services.Interfaces
+@inject IOrderBookService OrderBookService
+@inject IPriceIndexService PriceIndexService
+@inject NotificationService NotificationService
+
+<PageTitle>Order Book</PageTitle>
+
+<RadzenStack Gap="1rem">
+    <RadzenRow>
+        <RadzenColumn Size="12">
+            <RadzenText TextStyle="TextStyle.H3" TagName="TagName.H1">Order Book</RadzenText>
+            <RadzenText TextStyle="TextStyle.Body1">Real-time order matching with bid/ask spread tracking</RadzenText>
+        </RadzenColumn>
+    </RadzenRow>
+
+    <RadzenRow>
+        <RadzenColumn Size="4">
+            <RadzenCard>
+                <RadzenStack Gap="0.5rem">
+                    <RadzenLabel Text="Select Metal" />
+                    <RadzenDropDown @bind-Value="@selectedMetal" Data="@metalTypes" Style="width: 100%;" 
+                                   Change="@OnMetalChanged" TextProperty="Name" ValueProperty="Value" />
+                </RadzenStack>
+            </RadzenCard>
+        </RadzenColumn>
+        <RadzenColumn Size="8">
+            <RadzenCard>
+                <RadzenRow>
+                    <RadzenColumn Size="3">
+                        <RadzenText TextStyle="TextStyle.Overline">Last Trade</RadzenText>
+                        <RadzenText TextStyle="TextStyle.H5">@(currentOrderBook?.LastTradePrice?.ToString("C0") ?? "N/A")</RadzenText>
+                    </RadzenColumn>
+                    <RadzenColumn Size="3">
+                        <RadzenText TextStyle="TextStyle.Overline">Best Bid</RadzenText>
+                        <RadzenText TextStyle="TextStyle.H5" Style="color: green;">@(currentOrderBook?.BestBidPrice?.ToString("C0") ?? "N/A")</RadzenText>
+                    </RadzenColumn>
+                    <RadzenColumn Size="3">
+                        <RadzenText TextStyle="TextStyle.Overline">Best Ask</RadzenText>
+                        <RadzenText TextStyle="TextStyle.H5" Style="color: red;">@(currentOrderBook?.BestAskPrice?.ToString("C0") ?? "N/A")</RadzenText>
+                    </RadzenColumn>
+                    <RadzenColumn Size="3">
+                        <RadzenText TextStyle="TextStyle.Overline">Spread</RadzenText>
+                        <RadzenText TextStyle="TextStyle.H5">@(currentOrderBook?.Spread?.ToString("C0") ?? "N/A")</RadzenText>
+                    </RadzenColumn>
+                </RadzenRow>
+            </RadzenCard>
+        </RadzenColumn>
+    </RadzenRow>
+
+    <RadzenRow>
+        <RadzenColumn Size="12">
+            <RadzenButton Icon="add_circle_outline" Text="New Order" Click="@CreateNewOrder" ButtonStyle="ButtonStyle.Primary" />
+            <RadzenButton Icon="refresh" Text="Refresh" Click="@RefreshOrderBook" ButtonStyle="ButtonStyle.Secondary" Class="rz-ml-2" />
+            @if (currentOrderBook != null)
+            {
+                <RadzenBadge BadgeStyle="@GetTradingStatusBadgeStyle(currentOrderBook.TradingStatus)" 
+                            Text="@($"Trading: {currentOrderBook.TradingStatus}")" Class="rz-ml-4" />
+            }
+        </RadzenColumn>
+    </RadzenRow>
+
+    <RadzenRow>
+        <RadzenColumn Size="6">
+            <RadzenCard>
+                <RadzenText TextStyle="TextStyle.H6" Style="color: green;">Buy Orders (Bids)</RadzenText>
+                <RadzenDataGrid Data="@(currentOrderBook?.Bids ?? new List<OrderBookLevel>())" TItem="OrderBookLevel" 
+                               Density="Density.Compact" Style="height: 300px;">
+                    <Columns>
+                        <RadzenDataGridColumn TItem="OrderBookLevel" Property="Price" Title="Price" FormatString="{0:C0}" />
+                        <RadzenDataGridColumn TItem="OrderBookLevel" Property="Quantity" Title="Quantity (MT)" FormatString="{0:N2}" />
+                        <RadzenDataGridColumn TItem="OrderBookLevel" Property="OrderCount" Title="Orders" Width="80px" />
+                    </Columns>
+                </RadzenDataGrid>
+            </RadzenCard>
+        </RadzenColumn>
+        <RadzenColumn Size="6">
+            <RadzenCard>
+                <RadzenText TextStyle="TextStyle.H6" Style="color: red;">Sell Orders (Asks)</RadzenText>
+                <RadzenDataGrid Data="@(currentOrderBook?.Asks ?? new List<OrderBookLevel>())" TItem="OrderBookLevel" 
+                               Density="Density.Compact" Style="height: 300px;">
+                    <Columns>
+                        <RadzenDataGridColumn TItem="OrderBookLevel" Property="Price" Title="Price" FormatString="{0:C0}" />
+                        <RadzenDataGridColumn TItem="OrderBookLevel" Property="Quantity" Title="Quantity (MT)" FormatString="{0:N2}" />
+                        <RadzenDataGridColumn TItem="OrderBookLevel" Property="OrderCount" Title="Orders" Width="80px" />
+                    </Columns>
+                </RadzenDataGrid>
+            </RadzenCard>
+        </RadzenColumn>
+    </RadzenRow>
+
+    <RadzenRow>
+        <RadzenColumn Size="12">
+            <RadzenCard>
+                <RadzenText TextStyle="TextStyle.H6">Active Orders</RadzenText>
+                <RadzenDataGrid Data="@orders" TItem="Order" AllowFiltering="true" AllowSorting="true" 
+                               AllowPaging="true" PageSize="10">
+                    <Columns>
+                        <RadzenDataGridColumn TItem="Order" Property="OrderNumber" Title="Order #" Width="140px" />
+                        <RadzenDataGridColumn TItem="Order" Property="OrderDate" Title="Date" Width="130px" FormatString="{0:MM/dd/yyyy HH:mm}" />
+                        <RadzenDataGridColumn TItem="Order" Property="Side" Title="Side" Width="80px">
+                            <Template Context="order">
+                                <RadzenBadge BadgeStyle="@(order.Side == "Buy" ? BadgeStyle.Success : BadgeStyle.Danger)" Text="@order.Side" />
+                            </Template>
+                        </RadzenDataGridColumn>
+                        <RadzenDataGridColumn TItem="Order" Property="OrderType" Title="Type" Width="100px" />
+                        <RadzenDataGridColumn TItem="Order" Property="ParticipantName" Title="Participant" />
+                        <RadzenDataGridColumn TItem="Order" Property="Quantity" Title="Quantity" Width="100px" FormatString="{0:N2}" />
+                        <RadzenDataGridColumn TItem="Order" Property="LimitPrice" Title="Price" Width="100px" FormatString="{0:C0}" />
+                        <RadzenDataGridColumn TItem="Order" Property="FilledQuantity" Title="Filled" Width="100px" FormatString="{0:N2}" />
+                        <RadzenDataGridColumn TItem="Order" Property="Status" Title="Status" Width="120px">
+                            <Template Context="order">
+                                <RadzenBadge BadgeStyle="@GetOrderStatusBadgeStyle(order.Status)" Text="@order.Status" />
+                            </Template>
+                        </RadzenDataGridColumn>
+                        <RadzenDataGridColumn TItem="Order" Width="120px" Title="Actions">
+                            <Template Context="order">
+                                @if (order.Status == "Open")
+                                {
+                                    <RadzenButton Icon="cancel" Size="ButtonSize.Small" ButtonStyle="ButtonStyle.Danger" 
+                                                 Click="@(() => CancelOrder(order))" />
+                                }
+                            </Template>
+                        </RadzenDataGridColumn>
+                    </Columns>
+                </RadzenDataGrid>
+            </RadzenCard>
+        </RadzenColumn>
+    </RadzenRow>
+</RadzenStack>
+
+@code {
+    private MetalType selectedMetal = MetalType.Copper;
+    private OrderBook? currentOrderBook;
+    private IEnumerable<Order> orders = new List<Order>();
+    private List<object> metalTypes = Enum.GetValues<MetalType>().Select(m => new { Name = m.ToString(), Value = m }).Cast<object>().ToList();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        currentOrderBook = await OrderBookService.GetOrderBookAsync(selectedMetal);
+        orders = await OrderBookService.GetAllOrdersAsync();
+    }
+
+    private async Task OnMetalChanged()
+    {
+        await LoadData();
+    }
+
+    private async Task RefreshOrderBook()
+    {
+        currentOrderBook = await OrderBookService.RefreshOrderBookAsync(selectedMetal);
+        NotificationService.Notify(NotificationSeverity.Success, "Refreshed", "Order book refreshed successfully.");
+    }
+
+    private async Task CreateNewOrder()
+    {
+        NotificationService.Notify(NotificationSeverity.Info, "New Order", "Order creation dialog would open here");
+    }
+
+    private async Task CancelOrder(Order order)
+    {
+        await OrderBookService.CancelOrderAsync(order.Id);
+        await LoadData();
+        NotificationService.Notify(NotificationSeverity.Success, "Cancelled", $"Order {order.OrderNumber} cancelled.");
+    }
+
+    private BadgeStyle GetOrderStatusBadgeStyle(string status) => status switch
+    {
+        "Open" => BadgeStyle.Primary,
+        "Filled" => BadgeStyle.Success,
+        "PartiallyFilled" => BadgeStyle.Info,
+        "Cancelled" => BadgeStyle.Warning,
+        "Rejected" => BadgeStyle.Danger,
+        _ => BadgeStyle.Light
+    };
+
+    private BadgeStyle GetTradingStatusBadgeStyle(string status) => status switch
+    {
+        "Open" => BadgeStyle.Success,
+        "Closed" => BadgeStyle.Light,
+        "Halted" => BadgeStyle.Danger,
+        _ => BadgeStyle.Warning
+    };
+}

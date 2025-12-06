@@ -1,0 +1,187 @@
+@page "/audit-logs"
+@using Platform.Trading.Management.Models.Audit
+@using Platform.Trading.Management.Services.Interfaces
+@inject IAuditService AuditService
+@inject NotificationService NotificationService
+
+<PageTitle>Audit Logs</PageTitle>
+
+<RadzenStack Gap="1rem">
+    <RadzenRow>
+        <RadzenColumn Size="12">
+            <RadzenText TextStyle="TextStyle.H3" TagName="TagName.H1">Audit Logs</RadzenText>
+            <RadzenText TextStyle="TextStyle.Body1">Immutable audit trail with tamper detection and hash chain integrity</RadzenText>
+        </RadzenColumn>
+    </RadzenRow>
+
+    <RadzenCard>
+        <RadzenRow AlignItems="AlignItems.End" Gap="1rem">
+            <RadzenColumn Size="3">
+                <RadzenLabel Text="From Date" Component="fromDate" />
+                <RadzenDatePicker @bind-Value="@fromDate" DateFormat="MM/dd/yyyy" Style="width: 100%;" Name="fromDate" />
+            </RadzenColumn>
+            <RadzenColumn Size="3">
+                <RadzenLabel Text="To Date" Component="toDate" />
+                <RadzenDatePicker @bind-Value="@toDate" DateFormat="MM/dd/yyyy" Style="width: 100%;" Name="toDate" />
+            </RadzenColumn>
+            <RadzenColumn Size="3">
+                <RadzenLabel Text="Action Type" Component="actionType" />
+                <RadzenDropDown @bind-Value="@actionTypeFilter" Data="@actionTypes" Style="width: 100%;" Name="actionType" AllowClear="true" Placeholder="All" />
+            </RadzenColumn>
+            <RadzenColumn Size="3">
+                <RadzenButton Icon="search" Text="Search" Click="@LoadAuditLogs" ButtonStyle="ButtonStyle.Primary" />
+                <RadzenButton Icon="verified" Text="Verify Integrity" Click="@VerifyIntegrity" ButtonStyle="ButtonStyle.Secondary" Class="rz-ml-2" />
+            </RadzenColumn>
+        </RadzenRow>
+    </RadzenCard>
+
+    <RadzenTabs>
+        <Tabs>
+            <RadzenTabsItem Text="Activity Logs">
+                <RadzenRow Class="rz-mt-4">
+                    <RadzenColumn Size="12">
+                        <RadzenDataGrid Data="@auditLogs" TItem="AuditLogEntry" AllowFiltering="true"
+                                       AllowSorting="true" AllowPaging="true" PageSize="15"
+                                       RowExpand="@((log) => log.FieldChanges.Any())">
+                            <Columns>
+                                <RadzenDataGridColumn TItem="AuditLogEntry" Property="Timestamp" Title="Timestamp" Width="160px" FormatString="{0:MM/dd/yyyy HH:mm:ss}" />
+                                <RadzenDataGridColumn TItem="AuditLogEntry" Property="Username" Title="User" Width="120px" />
+                                <RadzenDataGridColumn TItem="AuditLogEntry" Property="ActionType" Title="Action" Width="100px">
+                                    <Template Context="log">
+                                        <RadzenBadge BadgeStyle="@GetActionBadgeStyle(log.ActionType)" Text="@log.ActionType" />
+                                    </Template>
+                                </RadzenDataGridColumn>
+                                <RadzenDataGridColumn TItem="AuditLogEntry" Property="EntityType" Title="Entity Type" Width="120px" />
+                                <RadzenDataGridColumn TItem="AuditLogEntry" Property="EntityName" Title="Entity" />
+                                <RadzenDataGridColumn TItem="AuditLogEntry" Property="Description" Title="Description" />
+                                <RadzenDataGridColumn TItem="AuditLogEntry" Property="IpAddress" Title="IP Address" Width="120px" />
+                                <RadzenDataGridColumn TItem="AuditLogEntry" Property="IsSuccessful" Title="Success" Width="80px">
+                                    <Template Context="log">
+                                        <RadzenIcon Icon="@(log.IsSuccessful ? "check_circle" : "error")" 
+                                                   IconStyle="@(log.IsSuccessful ? IconStyle.Success : IconStyle.Danger)" />
+                                    </Template>
+                                </RadzenDataGridColumn>
+                            </Columns>
+                            <Template Context="log">
+                                <RadzenCard Style="margin-left: 2rem; margin-right: 2rem;">
+                                    <RadzenText TextStyle="TextStyle.Subtitle1" Class="rz-mb-2">Field Changes</RadzenText>
+                                    <RadzenDataGrid Data="@log.FieldChanges" TItem="AuditFieldChange" Density="Density.Compact">
+                                        <Columns>
+                                            <RadzenDataGridColumn TItem="AuditFieldChange" Property="FieldName" Title="Field" Width="200px" />
+                                            <RadzenDataGridColumn TItem="AuditFieldChange" Property="OldValue" Title="Old Value" />
+                                            <RadzenDataGridColumn TItem="AuditFieldChange" Property="NewValue" Title="New Value" />
+                                        </Columns>
+                                    </RadzenDataGrid>
+                                </RadzenCard>
+                            </Template>
+                        </RadzenDataGrid>
+                    </RadzenColumn>
+                </RadzenRow>
+            </RadzenTabsItem>
+
+            <RadzenTabsItem Text="Security Events">
+                <RadzenRow Class="rz-mt-4">
+                    <RadzenColumn Size="12">
+                        <RadzenDataGrid Data="@securityEvents" TItem="SecurityAuditEvent" AllowFiltering="true"
+                                       AllowSorting="true" AllowPaging="true" PageSize="15">
+                            <Columns>
+                                <RadzenDataGridColumn TItem="SecurityAuditEvent" Property="Timestamp" Title="Timestamp" Width="160px" FormatString="{0:MM/dd/yyyy HH:mm:ss}" />
+                                <RadzenDataGridColumn TItem="SecurityAuditEvent" Property="EventType" Title="Event Type" Width="130px">
+                                    <Template Context="evt">
+                                        <RadzenBadge BadgeStyle="@GetEventTypeBadgeStyle(evt.EventType)" Text="@evt.EventType" />
+                                    </Template>
+                                </RadzenDataGridColumn>
+                                <RadzenDataGridColumn TItem="SecurityAuditEvent" Property="Username" Title="User" Width="120px" />
+                                <RadzenDataGridColumn TItem="SecurityAuditEvent" Property="IpAddress" Title="IP Address" Width="120px" />
+                                <RadzenDataGridColumn TItem="SecurityAuditEvent" Property="AuthenticationMethod" Title="Auth Method" Width="120px" />
+                                <RadzenDataGridColumn TItem="SecurityAuditEvent" Property="AuthenticationSuccessful" Title="Success" Width="80px">
+                                    <Template Context="evt">
+                                        <RadzenIcon Icon="@(evt.AuthenticationSuccessful ? "check_circle" : "cancel")" 
+                                                   IconStyle="@(evt.AuthenticationSuccessful ? IconStyle.Success : IconStyle.Danger)" />
+                                    </Template>
+                                </RadzenDataGridColumn>
+                                <RadzenDataGridColumn TItem="SecurityAuditEvent" Property="IsAnomalous" Title="Anomaly" Width="90px">
+                                    <Template Context="evt">
+                                        @if (evt.IsAnomalous)
+                                        {
+                                            <RadzenBadge BadgeStyle="BadgeStyle.Danger" Text="Yes" />
+                                        }
+                                    </Template>
+                                </RadzenDataGridColumn>
+                                <RadzenDataGridColumn TItem="SecurityAuditEvent" Property="FailureReason" Title="Failure Reason" />
+                            </Columns>
+                        </RadzenDataGrid>
+                    </RadzenColumn>
+                </RadzenRow>
+            </RadzenTabsItem>
+        </Tabs>
+    </RadzenTabs>
+</RadzenStack>
+
+@code {
+    private IEnumerable<AuditLogEntry> auditLogs = new List<AuditLogEntry>();
+    private IEnumerable<SecurityAuditEvent> securityEvents = new List<SecurityAuditEvent>();
+    private DateTime? fromDate = DateTime.Today.AddDays(-30);
+    private DateTime? toDate = DateTime.Today;
+    private string? actionTypeFilter;
+    private List<string> actionTypes = new() { "Create", "Read", "Update", "Delete", "Login", "Logout", "Export" };
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAuditLogs();
+        await LoadSecurityEvents();
+    }
+
+    private async Task LoadAuditLogs()
+    {
+        if (string.IsNullOrEmpty(actionTypeFilter))
+        {
+            auditLogs = await AuditService.GetAuditLogsAsync(fromDate, toDate);
+        }
+        else
+        {
+            auditLogs = await AuditService.GetAuditLogsByActionAsync(actionTypeFilter);
+        }
+    }
+
+    private async Task LoadSecurityEvents()
+    {
+        securityEvents = await AuditService.GetSecurityEventsAsync(fromDate, toDate);
+    }
+
+    private async Task VerifyIntegrity()
+    {
+        if (fromDate.HasValue && toDate.HasValue)
+        {
+            var isValid = await AuditService.VerifyAuditChainIntegrityAsync(fromDate.Value, toDate.Value);
+            if (isValid)
+            {
+                NotificationService.Notify(NotificationSeverity.Success, "Integrity Check", "Audit chain integrity verified successfully.");
+            }
+            else
+            {
+                NotificationService.Notify(NotificationSeverity.Error, "Integrity Check", "Audit chain integrity verification failed! Possible tampering detected.");
+            }
+        }
+    }
+
+    private BadgeStyle GetActionBadgeStyle(string action) => action switch
+    {
+        "Create" => BadgeStyle.Success,
+        "Update" => BadgeStyle.Info,
+        "Delete" => BadgeStyle.Danger,
+        "Login" => BadgeStyle.Primary,
+        "Logout" => BadgeStyle.Light,
+        _ => BadgeStyle.Secondary
+    };
+
+    private BadgeStyle GetEventTypeBadgeStyle(string eventType) => eventType switch
+    {
+        "Login" => BadgeStyle.Success,
+        "Logout" => BadgeStyle.Light,
+        "FailedLogin" => BadgeStyle.Danger,
+        "PasswordChange" => BadgeStyle.Info,
+        "MfaChallenge" => BadgeStyle.Warning,
+        _ => BadgeStyle.Secondary
+    };
+}
