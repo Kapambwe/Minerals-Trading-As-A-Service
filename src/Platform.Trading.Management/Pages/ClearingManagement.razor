@@ -31,11 +31,11 @@
                         <RadzenDataGrid Data="@clearingMembers" TItem="ClearingMember" AllowFiltering="true"
                                        AllowSorting="true" AllowPaging="true" PageSize="10">
                             <Columns>
-                                <RadzenDataGridColumn TItem="ClearingMember" Property="MemberCode" Title="Code" Width="100px" />
+                                <RadzenDataGridColumn TItem="ClearingMember" Property="MemberNumber" Title="Code" Width="100px" />
                                 <RadzenDataGridColumn TItem="ClearingMember" Property="MemberName" Title="Name" />
                                 <RadzenDataGridColumn TItem="ClearingMember" Property="MemberType" Title="Type" Width="120px" />
-                                <RadzenDataGridColumn TItem="ClearingMember" Property="MembershipDate" Title="Since" Width="100px" FormatString="{0:MM/yyyy}" />
-                                <RadzenDataGridColumn TItem="ClearingMember" Property="NetCapital" Title="Net Capital" Width="130px" FormatString="{0:C0}" />
+                                <RadzenDataGridColumn TItem="ClearingMember" Property="MemberSince" Title="Since" Width="100px" FormatString="{0:MM/yyyy}" />
+                                <RadzenDataGridColumn TItem="ClearingMember" Property="CurrentCapital" Title="Net Capital" Width="130px" FormatString="{0:C0}" />
                                 <RadzenDataGridColumn TItem="ClearingMember" Property="GuaranteeFundContribution" Title="GF Contribution" Width="130px" FormatString="{0:C0}" />
                                 <RadzenDataGridColumn TItem="ClearingMember" Property="Status" Title="Status" Width="100px">
                                     <Template Context="member">
@@ -94,7 +94,7 @@
                                     <Template Context="contrib">
                                         @if (contrib.RequiredContribution > 0)
                                         {
-                                            @(((contrib.ActualContribution / contrib.RequiredContribution) * 100).ToString("N1"))%
+                                            <text>@(((contrib.ActualContribution / contrib.RequiredContribution) * 100).ToString("N1"))%</text>
                                         }
                                     </Template>
                                 </RadzenDataGridColumn>
@@ -230,8 +230,8 @@
                         <RadzenDataGrid Data="@defaultCases" TItem="DefaultManagement" AllowFiltering="true"
                                        AllowSorting="true" AllowPaging="true" PageSize="10">
                             <Columns>
-                                <RadzenDataGridColumn TItem="DefaultManagement" Property="DefaultNumber" Title="Case #" Width="120px" />
-                                <RadzenDataGridColumn TItem="DefaultManagement" Property="MemberName" Title="Member" />
+                                <RadzenDataGridColumn TItem="DefaultManagement" Property="CaseNumber" Title="Case #" Width="120px" />
+                                <RadzenDataGridColumn TItem="DefaultManagement" Property="DefaultingMemberName" Title="Member" />
                                 <RadzenDataGridColumn TItem="DefaultManagement" Property="DefaultType" Title="Type" Width="120px" />
                                 <RadzenDataGridColumn TItem="DefaultManagement" Property="DefaultDate" Title="Default Date" Width="120px" FormatString="{0:MM/dd/yyyy}" />
                                 <RadzenDataGridColumn TItem="DefaultManagement" Property="DefaultAmount" Title="Default Amount" Width="130px" FormatString="{0:C0}" />

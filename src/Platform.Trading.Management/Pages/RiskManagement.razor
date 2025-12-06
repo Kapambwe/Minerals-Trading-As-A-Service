@@ -309,12 +309,12 @@
         await LoadCircuitBreakers();
     }
 
-    private ProgressBarStyle GetUtilizationStyle(decimal utilization) => utilization switch
+    private ProgressBarStyle GetUtilizationStyle(decimal utilization)
     {
-        < 50 => ProgressBarStyle.Success,
-        < 80 => ProgressBarStyle.Warning,
-        _ => ProgressBarStyle.Danger
-    };
+        if (utilization < 50) return ProgressBarStyle.Success;
+        if (utilization < 80) return ProgressBarStyle.Warning;
+        return ProgressBarStyle.Danger;
+    }
 
     private BadgeStyle GetRiskBadgeStyle(string riskLevel) => riskLevel switch
     {
