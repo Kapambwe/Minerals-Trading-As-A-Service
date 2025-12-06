@@ -9,5 +9,9 @@ public enum MetalType
     Lead,
     Tin,
     Gold,
-    Cobalt
+    Cobalt,
+    Manganese,
+    Silver,
+    Platinum,
+    Palladium
 }
